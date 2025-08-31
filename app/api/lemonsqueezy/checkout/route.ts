@@ -33,14 +33,6 @@ export async function POST(req: NextRequest) {
       process.env.LEMONSQUEEZY_STORE_ID!,
       variantId,
       {
-        customData: {
-          clerk_user_id: userId, // Clerk user ID를 명확하게 저장
-          ...customData,
-        },
-        productOptions: {
-          enabledVariants: [parseInt(variantId)],
-          redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard?checkout=success`,
-        },
         checkoutOptions: {
           embed: false,
           media: true,
@@ -49,6 +41,14 @@ export async function POST(req: NextRequest) {
         checkoutData: {
           email: body.email,
           name: body.name,
+          custom: {
+            clerk_user_id: userId, // Clerk user ID를 명확하게 저장
+            ...customData,
+          },
+        },
+        productOptions: {
+          enabledVariants: [parseInt(variantId)],
+          redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard?checkout=success`,
         },
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24시간 후 만료
       }
