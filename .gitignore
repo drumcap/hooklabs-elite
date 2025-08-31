@@ -42,7 +42,7 @@ yarn-error.log*
 next-env.d.ts
 
 # IDE and editor directories
-.claude/
-.windsurf/
+# .claude/
+# .windsurf/
 .vscode/
 .idea/
