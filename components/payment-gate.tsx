@@ -31,12 +31,17 @@ export default function PaymentGate({
     user ? { externalId: user.id } : "skip"
   );
 
-  // 특정 플랜 확인은 아직 external ID 버전이 없으므로 임시 비활성화
-  // TODO: hasSubscriptionToPlanByExternalId 함수 구현 필요
-  const hasRequiredPlan = undefined;
+  // 특정 플랜 구독 확인
+  const hasRequiredPlan = useQuery(
+    api.subscriptions.hasSubscriptionToPlanByExternalId,
+    user && requiredPlan ? { 
+      externalId: user.id, 
+      planName: requiredPlan 
+    } : "skip"
+  );
 
   // 로딩 상태
-  if (!isLoaded || hasActiveSubscription === undefined) {
+  if (!isLoaded || hasActiveSubscription === undefined || (requiredPlan && hasRequiredPlan === undefined)) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin" />

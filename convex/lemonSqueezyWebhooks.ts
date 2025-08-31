@@ -19,8 +19,14 @@ async function findUserByCustomerData(ctx: QueryCtx, customerId: string, userEma
     return userByCustomerId;
   }
 
-  // If not found, try to find by external ID (Clerk user ID) in custom data or fallback to email matching
-  // Note: This is a simplified approach. In practice, you'd want to store the mapping properly.
+  // If not found, try to find by external ID (Clerk user ID) in custom data
+  // This requires the custom data to include the Clerk user ID
+  // For now, we'll implement a basic email-based fallback
+  
+  // TODO: Implement proper custom data parsing to extract Clerk user ID
+  // For production, ensure checkout process includes user mapping data
+  console.log(`User not found for Lemon Squeezy customer ID: ${customerId}, email: ${userEmail}`);
+  
   return null;
 }
 
@@ -31,12 +37,23 @@ export const handleSubscriptionCreated = internalMutation({
   handler: async (ctx, { eventData }) => {
     const subscriptionData = transformSubscriptionData(eventData.data);
     
-    // Find user by customer ID or email
-    const user = await findUserByCustomerData(
-      ctx, 
-      subscriptionData.lemonSqueezyCustomerId, 
-      eventData.data.attributes.user_email
-    );
+    // Try to find user by custom data first (Clerk user ID)
+    let user = null;
+    if (eventData.meta.custom_data?.clerk_user_id) {
+      user = await ctx.db
+        .query("users")
+        .withIndex("byExternalId", (q) => q.eq("externalId", eventData.meta.custom_data.clerk_user_id))
+        .unique();
+    }
+    
+    // Fallback to customer ID or email matching
+    if (!user) {
+      user = await findUserByCustomerData(
+        ctx, 
+        subscriptionData.lemonSqueezyCustomerId, 
+        eventData.data.attributes.user_email
+      );
+    }
 
     // Check if subscription already exists
     const existingSubscription = await ctx.db
@@ -51,6 +68,11 @@ export const handleSubscriptionCreated = internalMutation({
         userId: user._id,
         ...subscriptionData,
       });
+      console.log(`Created subscription for user ${user._id}: ${subscriptionData.lemonSqueezySubscriptionId}`);
+    } else if (!user) {
+      console.error(`User not found for subscription creation: ${subscriptionData.lemonSqueezySubscriptionId}`);
+    } else {
+      console.log(`Subscription already exists: ${subscriptionData.lemonSqueezySubscriptionId}`);
     }
 
     // Update user's Lemon Squeezy customer ID if found
@@ -58,6 +80,7 @@ export const handleSubscriptionCreated = internalMutation({
       await ctx.db.patch(user._id, {
         lemonSqueezyCustomerId: subscriptionData.lemonSqueezyCustomerId,
       });
+      console.log(`Updated user ${user._id} with Lemon Squeezy customer ID: ${subscriptionData.lemonSqueezyCustomerId}`);
     }
 
     return null;
@@ -132,12 +155,23 @@ export const handleOrderCreated = internalMutation({
   handler: async (ctx, { eventData }) => {
     const orderData = transformOrderData(eventData.data);
     
-    // Find user by customer ID or email
-    const user = await findUserByCustomerData(
-      ctx, 
-      orderData.lemonSqueezyCustomerId, 
-      orderData.userEmail
-    );
+    // Try to find user by custom data first (Clerk user ID)
+    let user = null;
+    if (eventData.meta.custom_data?.clerk_user_id) {
+      user = await ctx.db
+        .query("users")
+        .withIndex("byExternalId", (q) => q.eq("externalId", eventData.meta.custom_data.clerk_user_id))
+        .unique();
+    }
+    
+    // Fallback to customer ID or email matching
+    if (!user) {
+      user = await findUserByCustomerData(
+        ctx, 
+        orderData.lemonSqueezyCustomerId, 
+        orderData.userEmail
+      );
+    }
 
     // Check if order already exists
     const existingOrder = await ctx.db

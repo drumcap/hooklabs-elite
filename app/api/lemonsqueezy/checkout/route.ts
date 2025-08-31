@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       variantId,
       {
         customData: {
-          userId, // Clerk user ID를 저장
+          clerk_user_id: userId, // Clerk user ID를 명확하게 저장
           ...customData,
         },
         productOptions: {

@@ -142,7 +142,7 @@ export function transformSubscriptionData(data: any) {
     renewsAt: data.attributes.renews_at,
     endsAt: data.attributes.ends_at,
     price: data.attributes.first_subscription_item?.price || 0,
-    currency: "USD", // Default to USD, should be extracted from price data
+    currency: "USD", // TODO: Extract actual currency from subscription data
     isUsageBased: data.attributes.first_subscription_item?.is_usage_based || false,
     subscriptionItemId: data.attributes.first_subscription_item?.id?.toString(),
     createdAt: data.attributes.created_at,

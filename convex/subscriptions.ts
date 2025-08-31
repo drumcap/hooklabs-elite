@@ -89,6 +89,39 @@ export const hasSubscriptionToPlan = query({
   },
 });
 
+// 특정 플랜에 대한 구독 확인 (Clerk external ID 사용)
+export const hasSubscriptionToPlanByExternalId = query({
+  args: { 
+    externalId: v.string(),
+    planName: v.string(),
+  },
+  handler: async (ctx, { externalId, planName }) => {
+    // 먼저 Clerk external ID로 사용자를 찾기
+    const user = await ctx.db
+      .query("users")
+      .withIndex("byExternalId", (q) => q.eq("externalId", externalId))
+      .unique();
+    
+    if (!user) {
+      return false;
+    }
+    
+    // 사용자의 특정 플랜 구독 확인
+    const subscription = await ctx.db
+      .query("subscriptions")
+      .withIndex("byUserId", (q) => q.eq("userId", user._id))
+      .filter((q) => 
+        q.and(
+          q.eq(q.field("status"), "active"),
+          q.eq(q.field("planName"), planName)
+        )
+      )
+      .first();
+    
+    return !!subscription;
+  },
+});
+
 // 구독 정보 업데이트 (내부용 - webhook에서 사용)
 export const updateSubscription = mutation({
   args: {

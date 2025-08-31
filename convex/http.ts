@@ -174,9 +174,34 @@ async function validateLemonSqueezyRequest(req: Request): Promise<any | null> {
   }
 
   try {
-    // TODO: Implement proper signature verification without node crypto
-    // For now, skip signature verification
-    console.warn("Lemon Squeezy webhook signature verification is temporarily disabled");
+    // Basic signature verification using Web Crypto API
+    // For production, implement proper HMAC-SHA256 verification
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(secret);
+    const bodyData = encoder.encode(body);
+    
+    // Import the secret as a key for HMAC
+    const key = await crypto.subtle.importKey(
+      "raw",
+      keyData,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    
+    // Generate expected signature
+    const expectedSigBuffer = await crypto.subtle.sign("HMAC", key, bodyData);
+    const expectedSigArray = new Uint8Array(expectedSigBuffer);
+    const expectedSig = Array.from(expectedSigArray, byte => byte.toString(16).padStart(2, '0')).join('');
+    
+    // Extract signature from header (usually in format "sha256=...")
+    const providedSig = signature.replace(/^sha256=/, '');
+    
+    // Compare signatures
+    if (expectedSig !== providedSig) {
+      console.error("Lemon Squeezy webhook signature verification failed");
+      return null;
+    }
     
     // Parse and return the event
     return JSON.parse(body);
