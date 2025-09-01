@@ -4,7 +4,8 @@ import { ReactNode } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import PricingTable, { defaultPlans } from "./pricing-table";
+import PricingTable from "./pricing-table";
+import { PRICING_PLANS } from "@/config/pricing";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Lock } from "lucide-react";
 
@@ -98,7 +99,7 @@ export default function PaymentGate({
         </div>
       </div>
       
-      <PricingTable plans={defaultPlans} />
+      <PricingTable plans={PRICING_PLANS} />
     </div>
   );
 }

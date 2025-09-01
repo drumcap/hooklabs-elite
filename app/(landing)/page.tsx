@@ -4,7 +4,8 @@ import Testimonials from "./testimonials";
 import CallToAction from "./call-to-action";
 import FAQs from "./faqs";
 import Footer from "./footer";
-import PricingTable, { defaultPlans } from "@/components/pricing-table";
+import PricingTable from "@/components/pricing-table";
+import { PRICING_PLANS } from "@/config/pricing";
 
 export default function Home() {
   return (
@@ -17,7 +18,7 @@ export default function Home() {
               <h1 className="text-center text-4xl font-semibold lg:text-5xl">Pricing that Scales with You</h1>
               <p>Gemini is evolving to be more than just the models. It supports an entire to the APIs and platforms helping developers and businesses innovate.</p>
           </div>
-          <PricingTable plans={defaultPlans} />
+          <PricingTable plans={PRICING_PLANS} />
         </div>
       </section>
       <Testimonials />

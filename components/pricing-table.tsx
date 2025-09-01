@@ -7,19 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Check, Loader2 } from "lucide-react";
 import { useTheme } from "next-themes";
-
-interface PricingPlan {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  currency: string;
-  interval: string;
-  variantId: string;
-  features: string[];
-  popular?: boolean;
-  buttonText?: string;
-}
+import { PricingPlan } from "@/types/pricing";
 
 interface PricingTableProps {
   plans: PricingPlan[];
@@ -146,43 +134,3 @@ export default function PricingTable({ plans, onSelectPlan }: PricingTableProps)
   );
 }
 
-// Lemon Squeezy에서 가져온 실제 플랜 데이터
-export const defaultPlans: PricingPlan[] = [
-  {
-    id: "basic",
-    name: "Basic",
-    description: "개인 사용자를 위한 기본 플랜",
-    price: 5900, // $59.00 in cents
-    currency: "usd",
-    interval: "월",
-    variantId: "977151",
-    features: [
-      "14일 무료 평가판",
-      "기본 기능 접근",
-      "이메일 지원",
-      "기본 템플릿",
-      "월간 리포트",
-    ],
-    buttonText: "Basic 플랜 시작",
-  },
-  {
-    id: "pro", 
-    name: "Pro",
-    description: "전문가와 팀을 위한 고급 플랜",
-    price: 9900, // $99.00 in cents
-    currency: "usd",
-    interval: "월",
-    variantId: "977158",
-    features: [
-      "모든 Basic 기능",
-      "고급 분석 도구",
-      "우선 지원",
-      "고급 템플릿",
-      "팀 협업 기능",
-      "API 접근",
-      "무제한 보고서",
-    ],
-    popular: true,
-    buttonText: "Pro 플랜 시작",
-  },
-];
