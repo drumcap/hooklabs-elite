@@ -90,7 +90,7 @@ export default function PaymentGate({
 
   // 기본 업그레이드 UI
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-6xl mx-auto space-y-8 min-w-5xl">
       <div className="text-center space-y-4">
         <Lock className="h-16 w-16 mx-auto text-muted-foreground" />
         <div>

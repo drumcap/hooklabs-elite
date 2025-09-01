@@ -77,7 +77,7 @@ export default function PricingTable({ plans, onSelectPlan }: PricingTableProps)
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
+    <div className="grid gap-6 lg:grid-cols-3 lg:gap-8 mt-8">
       {plans.map((plan) => (
         <Card 
           key={plan.id} 
