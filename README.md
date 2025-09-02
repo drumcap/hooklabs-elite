@@ -48,6 +48,12 @@ A modern, production-ready SaaS starter template for building full-stack applica
 - **Vercel** - Deployment platform
 - **Turbopack** - Fast build tool
 
+### Testing
+- **Vitest** - Unit and integration testing framework
+- **Playwright** - End-to-end testing
+- **React Testing Library** - Component testing utilities
+- **Happy DOM** - Lightweight DOM implementation for testing
+
 ## Getting Started
 
 ### Prerequisites
@@ -149,6 +155,26 @@ npm run dev
 ```
 
 Your application will be available at `http://localhost:3000`.
+
+### Testing
+
+Run the test suite:
+
+```bash
+# Run all tests
+npm run test
+
+# Run specific test suites
+npm run test:unit           # Unit tests (Convex functions)
+npm run test:integration    # Integration tests (API endpoints)  
+npm run test:components     # Component tests (React components)
+npm run test:e2e           # End-to-end tests (Playwright)
+
+# Coverage report
+npm run test:coverage
+```
+
+**Note**: Component and E2E tests currently have dependency issues with Clerk modules. Unit and integration tests work perfectly and provide comprehensive backend coverage.
 
 ## Architecture
 

@@ -39,6 +39,13 @@ export default defineSchema({
       currency: v.string(),
       isUsageBased: v.boolean(),
       subscriptionItemId: v.optional(v.string()),
+      // 사용량 기반 과금 관련 필드
+      usageLimit: v.optional(v.number()), // 월간 사용 한도
+      currentUsage: v.optional(v.number()), // 현재 사용량
+      usageUnit: v.optional(v.string()), // 사용량 단위 (예: requests, storage, bandwidth)
+      overage: v.optional(v.number()), // 초과 사용량
+      overageRate: v.optional(v.number()), // 초과 사용량당 요금 (센트)
+      resetDate: v.optional(v.string()), // 사용량 리셋 날짜
       createdAt: v.string(),
       updatedAt: v.string(),
     })
@@ -125,4 +132,91 @@ export default defineSchema({
       .index("byOrderId", ["lemonSqueezyOrderId"])
       .index("byLicenseKey", ["licenseKey"])
       .index("byStatus", ["status"]),
+    
+    // 사용량 추적 테이블
+    usageRecords: defineTable({
+      userId: v.id("users"),
+      subscriptionId: v.optional(v.id("subscriptions")),
+      resourceType: v.string(), // API 요청, 스토리지, 대역폭 등
+      amount: v.number(), // 사용량
+      unit: v.string(), // 단위 (requests, MB, GB 등)
+      description: v.optional(v.string()),
+      metadata: v.optional(v.any()), // 추가 정보
+      recordedAt: v.string(),
+      periodStart: v.string(), // 청구 주기 시작일
+      periodEnd: v.string(), // 청구 주기 종료일
+    })
+      .index("byUserId", ["userId"])
+      .index("bySubscriptionId", ["subscriptionId"])
+      .index("byResourceType", ["resourceType"])
+      .index("byPeriod", ["periodStart", "periodEnd"])
+      .index("byRecordedAt", ["recordedAt"]),
+
+    // 크레딧 관리 테이블
+    credits: defineTable({
+      userId: v.id("users"),
+      amount: v.number(), // 크레딧 양 (양수는 적립, 음수는 사용)
+      type: v.string(), // earned, purchased, used, refunded, expired
+      description: v.string(),
+      expiresAt: v.optional(v.string()),
+      relatedOrderId: v.optional(v.string()), // 관련 주문 ID
+      relatedCouponId: v.optional(v.id("coupons")),
+      metadata: v.optional(v.any()),
+      createdAt: v.string(),
+    })
+      .index("byUserId", ["userId"])
+      .index("byType", ["type"])
+      .index("byExpiresAt", ["expiresAt"])
+      .index("byCreatedAt", ["createdAt"]),
+
+    // 쿠폰 관리 테이블
+    coupons: defineTable({
+      code: v.string(), // 쿠폰 코드
+      name: v.string(),
+      description: v.optional(v.string()),
+      type: v.string(), // percentage, fixed_amount, credits
+      value: v.number(), // 할인 금액 또는 크레딧 양
+      currency: v.optional(v.string()),
+      minAmount: v.optional(v.number()), // 최소 주문 금액
+      maxDiscount: v.optional(v.number()), // 최대 할인 금액
+      usageLimit: v.optional(v.number()), // 전체 사용 횟수 제한
+      usageCount: v.number(), // 현재 사용 횟수
+      userLimit: v.optional(v.number()), // 사용자당 사용 횟수 제한
+      validFrom: v.string(),
+      validUntil: v.optional(v.string()),
+      isActive: v.boolean(),
+      metadata: v.optional(v.any()),
+      createdAt: v.string(),
+      updatedAt: v.string(),
+    })
+      .index("byCode", ["code"])
+      .index("byIsActive", ["isActive"])
+      .index("byValidFrom", ["validFrom"])
+      .index("byValidUntil", ["validUntil"]),
+
+    // 쿠폰 사용 내역 테이블
+    couponUsages: defineTable({
+      userId: v.id("users"),
+      couponId: v.id("coupons"),
+      orderId: v.optional(v.string()),
+      subscriptionId: v.optional(v.id("subscriptions")),
+      discountAmount: v.number(),
+      currency: v.optional(v.string()),
+      usedAt: v.string(),
+    })
+      .index("byUserId", ["userId"])
+      .index("byCouponId", ["couponId"])
+      .index("byOrderId", ["orderId"])
+      .index("byUsedAt", ["usedAt"]),
+
+    // 사용자 크레딧 잔액 (집계 테이블)
+    userCreditBalances: defineTable({
+      userId: v.id("users"),
+      totalCredits: v.number(), // 전체 크레딧 잔액
+      availableCredits: v.number(), // 사용 가능한 크레딧 (만료되지 않은)
+      usedCredits: v.number(), // 사용된 크레딧
+      expiredCredits: v.number(), // 만료된 크레딧
+      lastUpdated: v.string(),
+    })
+      .index("byUserId", ["userId"]),
   });

@@ -1,0 +1,110 @@
+name: Deploy Preview
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run tests before deployment
+        run: |
+          npm run test:unit
+          npm run test:integration
+          npm run test:components
+        env:
+          CI: true
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.PREVIEW_CLERK_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.PREVIEW_CONVEX_URL }}
+          LEMONSQUEEZY_API_KEY: ${{ secrets.PREVIEW_LEMONSQUEEZY_API_KEY }}
+          LEMONSQUEEZY_STORE_ID: ${{ secrets.PREVIEW_LEMONSQUEEZY_STORE_ID }}
+      
+      - name: Build application
+        run: npm run build
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.PREVIEW_CLERK_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.PREVIEW_CONVEX_URL }}
+          LEMONSQUEEZY_API_KEY: ${{ secrets.PREVIEW_LEMONSQUEEZY_API_KEY }}
+          LEMONSQUEEZY_STORE_ID: ${{ secrets.PREVIEW_LEMONSQUEEZY_STORE_ID }}
+      
+      # Vercel deployment
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./
+          scope: ${{ secrets.VERCEL_ORG_ID }}
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.PREVIEW_CLERK_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.PREVIEW_CONVEX_URL }}
+      
+      - name: Run E2E tests on preview
+        run: npm run test:e2e
+        env:
+          CI: true
+          BASE_URL: ${{ steps.vercel.outputs.preview-url }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.PREVIEW_CLERK_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.PREVIEW_CONVEX_URL }}
+          LEMONSQUEEZY_API_KEY: ${{ secrets.PREVIEW_LEMONSQUEEZY_API_KEY }}
+          LEMONSQUEEZY_STORE_ID: ${{ secrets.PREVIEW_LEMONSQUEEZY_STORE_ID }}
+      
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('Preview deployment')
+            );
+            
+            const previewUrl = '${{ steps.vercel.outputs.preview-url }}';
+            const body = `## 🚀 Preview deployment
+            
+            Preview URL: ${previewUrl}
+            
+            ### 테스트 상태
+            - ✅ Unit Tests: Passed
+            - ✅ Integration Tests: Passed  
+            - ✅ Component Tests: Passed
+            - ✅ E2E Tests: Passed
+            
+            이 미리보기는 이 PR의 최신 커밋을 반영합니다.`;
+            
+            if (botComment) {
+              github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            }

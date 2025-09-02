@@ -1,0 +1,63 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 1%
+    patch:
+      default:
+        target: 80%
+        threshold: 1%
+
+comment:
+  layout: "header, diff, flags, components, footer"
+  behavior: default
+  require_changes: false
+  require_base: no
+  require_head: yes
+
+flags:
+  unit:
+    paths:
+      - __tests__/unit/
+  integration:
+    paths:
+      - __tests__/integration/
+  components:
+    paths:
+      - __tests__/components/
+  combined:
+    carryforward: true
+
+ignore:
+  - "**/*.d.ts"
+  - "**/*.config.js"
+  - "**/*.config.ts"
+  - "**/node_modules/**"
+  - "**/.next/**"
+  - "**/convex/_generated/**"
+  - "**/test-utils/**"
+  - "**/__mocks__/**"
+  - "**/fixtures/**"
+  - "**/*.stories.tsx"
+  - "**/*.test.tsx"
+  - "**/*.test.ts"
+  - "**/*.spec.tsx"
+  - "**/*.spec.ts"
+
+component_management:
+  default_rules:
+    flag_coverage_not_uploaded_behavior: include
+  individual_components:
+    - component_id: convex-functions
+      name: Convex Functions
+      paths:
+        - convex/
+    - component_id: react-components
+      name: React Components  
+      paths:
+        - components/
+    - component_id: api-routes
+      name: API Routes
+      paths:
+        - app/api/
