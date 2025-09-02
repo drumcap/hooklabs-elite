@@ -1,6 +1,6 @@
 # Starter.diy - Elite Next.js SaaS Starter Kit
 
-A modern, production-ready SaaS starter template for building full-stack applications using Next.js 15, Convex, Clerk, and Clerk Billing. The easiest way to start accepting payments with beautiful UI and seamless integrations.
+A modern, production-ready SaaS starter template for building full-stack applications using Next.js 15, Convex, Clerk, and Lemon Squeezy. The easiest way to start accepting payments with beautiful UI and seamless integrations.
 
 [🌐 Live Demo](https://elite-next-clerk-convex-starter.vercel.app/) – Try the app in your browser!
 
@@ -11,7 +11,7 @@ A modern, production-ready SaaS starter template for building full-stack applica
 - ⚡️ **Turbopack** - Ultra-fast development with hot module replacement
 - 🎨 **TailwindCSS v4** - Modern utility-first CSS with custom design system
 - 🔐 **Clerk Authentication** - Complete user management with social logins
-- 💳 **Clerk Billing** - Integrated subscription management and payments
+- 💳 **Lemon Squeezy** - Modern subscription billing and payment processing
 - 🗄️ **Convex Real-time Database** - Serverless backend with real-time sync
 - 🛡️ **Protected Routes** - Authentication-based route protection
 - 💰 **Payment Gating** - Subscription-based content access
@@ -40,7 +40,7 @@ A modern, production-ready SaaS starter template for building full-stack applica
 ### Backend & Services
 - **Convex** - Real-time database and serverless functions
 - **Clerk** - Authentication and user management
-- **Clerk Billing** - Subscription billing and payments
+- **Lemon Squeezy** - Subscription billing and payment processing
 - **Svix** - Webhook handling and validation
 
 ### Development & Deployment
@@ -53,8 +53,9 @@ A modern, production-ready SaaS starter template for building full-stack applica
 ### Prerequisites
 
 - Node.js 18+ 
-- Clerk account for authentication and billing
+- Clerk account for authentication
 - Convex account for database
+- Lemon Squeezy account for payment processing
 
 ### Installation
 
@@ -77,7 +78,7 @@ cp .env.example .env.local
 3a. run `npx convex dev` or `bunx convex dev` to configure your convex database variables
 
 ```bash
-# Clerk Authentication & Billing
+# Clerk Authentication
 # Get these from your Clerk dashboard at https://dashboard.clerk.com
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your_clerk_publishable_key_here
 CLERK_SECRET_KEY=sk_test_your_clerk_secret_key_here
@@ -90,6 +91,15 @@ NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL=/dashboard
 NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL=/dashboard
 NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/dashboard
 NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/dashboard
+
+# Lemon Squeezy Configuration
+# Get these from your Lemon Squeezy dashboard at https://app.lemonsqueezy.com
+LEMONSQUEEZY_API_KEY=your_lemon_squeezy_api_key_here
+LEMONSQUEEZY_STORE_ID=your_store_id_here
+NEXT_PUBLIC_LEMONSQUEEZY_CHECKOUT_URL=https://your-store.lemonsqueezy.com/checkout
+
+# Note: LEMONSQUEEZY_WEBHOOK_SECRET should be set in your Convex dashboard environment variables
+# Do not add it to this .env.local file for security reasons
 ```
 
 4. Initialize Convex:

@@ -131,16 +131,16 @@ export function transformSubscriptionData(data: any) {
     lemonSqueezyCustomerId: data.attributes.customer_id.toString(),
     lemonSqueezyProductId: data.attributes.product_id.toString(),
     lemonSqueezyVariantId: data.attributes.variant_id.toString(),
-    lemonSqueezyOrderId: data.attributes.order_id.toString(),
+    lemonSqueezyOrderId: data.attributes.order_id?.toString() || undefined,
     status: data.attributes.status,
     planName: data.attributes.variant_name,
     cardBrand: data.attributes.card_brand || undefined,
     cardLastFour: data.attributes.card_last_four || undefined,
     intervalUnit: "month", // Lemon Squeezy doesn't provide this directly
     intervalCount: 1,
-    trialEndsAt: data.attributes.trial_ends_at,
-    renewsAt: data.attributes.renews_at,
-    endsAt: data.attributes.ends_at,
+    trialEndsAt: data.attributes.trial_ends_at || undefined,
+    renewsAt: data.attributes.renews_at || undefined,
+    endsAt: data.attributes.ends_at || undefined,
     price: data.attributes.first_subscription_item?.price || 0,
     currency: "USD", // TODO: Extract actual currency from subscription data
     isUsageBased: data.attributes.first_subscription_item?.is_usage_based || false,
@@ -187,7 +187,7 @@ export function transformOrderData(data: any) {
 export function transformLicenseData(data: any) {
   return {
     lemonSqueezyLicenseId: data.id,
-    lemonSqueezyOrderId: data.attributes.order_id.toString(),
+    lemonSqueezyOrderId: data.attributes.order_id?.toString() || "",
     lemonSqueezyProductId: data.attributes.product_id.toString(),
     lemonSqueezyCustomerId: data.attributes.customer_id.toString(),
     identifier: data.attributes.key_short,
