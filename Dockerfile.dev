@@ -1,0 +1,40 @@
+# ======================
+# 개발 환경용 Dockerfile
+# Hot Reload와 개발 도구를 포함
+# ======================
+
+FROM node:20-alpine AS base
+
+# 개발 도구 설치
+RUN apk add --no-cache libc6-compat git curl vim
+
+WORKDIR /app
+
+# 패키지 파일 복사
+COPY package*.json ./
+
+# ======================
+# 개발 단계
+# ======================
+FROM base AS development
+
+# 모든 의존성 설치 (개발 의존성 포함)
+RUN npm ci
+
+# 소스 코드 복사
+COPY . .
+
+# 개발 환경 설정
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV CHOKIDAR_USEPOLLING=true
+
+# 포트 노출
+EXPOSE 3000 9229
+
+# 헬스체크
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
+
+# 개발 서버 실행
+CMD ["npm", "run", "dev"]

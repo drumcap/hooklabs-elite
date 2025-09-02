@@ -1,0 +1,101 @@
+# ======================
+# 개발 환경용 Docker Compose
+# 빠른 개발을 위한 최적화된 설정
+# ======================
+
+version: '3.8'
+
+services:
+  # 개발용 Next.js 애플리케이션
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: hooklabs-elite-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "9229:9229" # Node.js 디버깅 포트
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    networks:
+      - dev-network
+    volumes:
+      # 소스코드 실시간 반영을 위한 바인드 마운트
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - redis-dev
+    command: npm run dev
+
+  # 개발용 Redis
+  redis-dev:
+    image: redis:7-alpine
+    container_name: hooklabs-elite-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --save "" --appendonly no --loglevel notice
+    networks:
+      - dev-network
+
+  # 테스트용 데이터베이스
+  test-db:
+    image: postgres:15-alpine
+    container_name: hooklabs-elite-test-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=test_hooklabs
+      - POSTGRES_USER=test_user
+      - POSTGRES_PASSWORD=test_password
+    ports:
+      - "5433:5432"
+    networks:
+      - dev-network
+    tmpfs:
+      - /var/lib/postgresql/data # 테스트용이므로 메모리에 저장
+
+  # Mailhog (이메일 테스트용)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: hooklabs-elite-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
+    networks:
+      - dev-network
+
+  # 개발용 프록시 (SSL 인증서 테스트)
+  dev-proxy:
+    image: traefik:v2.10
+    container_name: hooklabs-elite-dev-proxy
+    restart: unless-stopped
+    command:
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080" # Traefik 대시보드
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - dev-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.api.service=api@internal"
+
+networks:
+  dev-network:
+    driver: bridge

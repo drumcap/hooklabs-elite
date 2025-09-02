@@ -294,26 +294,122 @@ The starter kit includes a fully customizable theme system. You can customize co
 - `CLERK_WEBHOOK_SECRET` - Clerk webhook secret (set in Convex dashboard)
 - `NEXT_PUBLIC_CLERK_FRONTEND_API_URL` - Clerk frontend API URL (set in Convex dashboard)
 
-## Deployment
+## 🚀 Production Deployment
 
-### Vercel Deployment (Recommended)
+### Quick Deployment (Vercel + GitHub Actions)
 
-1. Connect your repository to Vercel
-2. Set environment variables in Vercel dashboard
-3. Deploy automatically on push to main branch
+1. **Fork/Clone** this repository
+2. **Connect to Vercel** - Import project from GitHub
+3. **Set environment variables** in Vercel dashboard
+4. **Push to main branch** - Automatic deployment via GitHub Actions
 
-The project is optimized for Vercel with:
-- Automatic builds with Turbopack
-- Environment variable management
-- Edge function support
+### Complete Production Setup
+
+For a full production-ready deployment with monitoring, security, and CI/CD:
+
+📚 **[View Complete Deployment Guide →](docs/deployment/README.md)**
+
+Key features included:
+- ✅ **Automated CI/CD** with GitHub Actions
+- ✅ **Multi-environment** setup (dev/staging/prod)
+- ✅ **Health monitoring** with Sentry error tracking
+- ✅ **Performance monitoring** with Web Vitals
+- ✅ **Security hardening** with CSP, Rate Limiting, DDoS protection
+- ✅ **Docker containerization** for flexibility
+- ✅ **Comprehensive logging** with structured logs
+- ✅ **Real-time analytics** with Google Analytics & Mixpanel
+
+### Environment-Specific Guides
+
+- 🛠️ **[Environment Setup Guide](docs/deployment/environment-setup.md)** - Detailed configuration for each environment
+- 📊 **[Monitoring & Operations Guide](docs/deployment/monitoring-guide.md)** - Complete monitoring and alerting setup
+
+### Quick Commands
+
+```bash
+# Development
+npm run dev                    # Start dev server
+npm run docker:dev            # Run with Docker (dev mode)
+
+# Testing  
+npm run test                   # All tests
+npm run test:e2e              # End-to-end tests
+npm run security-audit        # Security scan
+
+# Production Build
+npm run build                  # Production build
+npm run build:analyze         # Bundle analysis
+npm run docker:prod           # Docker production build
+
+# Health & Monitoring
+npm run health-check          # Test health endpoint
+npm run lighthouse           # Performance audit
+```
+
+### Production Checklist
+
+Before going live, ensure:
+
+- [ ] **Environment variables** configured in Vercel
+- [ ] **Convex production** deployment created
+- [ ] **Clerk production** instance configured
+- [ ] **Lemon Squeezy** live mode enabled  
+- [ ] **Custom domain** connected with SSL
+- [ ] **Sentry error tracking** configured
+- [ ] **Health monitoring** alerts setup
+- [ ] **Backup strategy** implemented
+- [ ] **Security headers** configured
+- [ ] **Performance optimization** completed
+
+### Architecture Overview
+
+```
+Production Stack:
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Vercel CDN    │    │ GitHub Actions  │    │    Sentry       │
+│   (Frontend)    │    │    (CI/CD)      │    │ (Monitoring)    │  
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                        │                        │
+         ▼                        ▼                        ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Next.js App   │◄──►│ Convex Backend  │    │ Upstash Redis   │
+│    (Server)     │    │  (Serverless)   │    │   (Caching)     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### Performance Optimizations
+
+Built-in production optimizations:
+- **Advanced caching** strategies with Redis
+- **Image optimization** with Next.js Image component
+- **Bundle splitting** for optimal loading
+- **CDN integration** via Vercel Edge Network
+- **Database query optimization** with Convex indexing
+- **Rate limiting** to prevent abuse
+
+### Security Features
+
+Production security measures:
+- **Content Security Policy** (CSP) headers
+- **Rate limiting** with Redis-backed counters  
+- **DDoS protection** with automated IP blocking
+- **XSS protection** with sanitized inputs
+- **CSRF protection** with SameSite cookies
+- **Secure headers** (HSTS, X-Frame-Options, etc.)
 
 ### Manual Deployment
 
-Build for production:
+Build and deploy manually:
 
 ```bash
+# Build for production
 npm run build
+
+# Test production build locally
 npm start
+
+# Deploy with Vercel CLI
+npx vercel --prod
 ```
 
 ## Customization

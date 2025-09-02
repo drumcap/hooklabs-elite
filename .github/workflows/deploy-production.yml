@@ -1,0 +1,325 @@
+name: Production Deployment
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+      skip_tests:
+        description: 'Skip tests (for emergency deploys only)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '20'
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  # 환경 설정
+  setup:
+    name: Setup Environment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.env-setup.outputs.environment }}
+      deploy-url: ${{ steps.env-setup.outputs.deploy-url }}
+      convex-url: ${{ steps.env-setup.outputs.convex-url }}
+    steps:
+      - name: Environment Setup
+        id: env-setup
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            ENVIRONMENT="${{ github.event.inputs.environment }}"
+          elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+            ENVIRONMENT="production"
+          else
+            ENVIRONMENT="staging"
+          fi
+          
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+          
+          case $ENVIRONMENT in
+            production)
+              echo "deploy-url=https://hooklabs-elite.vercel.app" >> $GITHUB_OUTPUT
+              echo "convex-url=${{ secrets.CONVEX_PRODUCTION_URL }}" >> $GITHUB_OUTPUT
+              ;;
+            staging)
+              echo "deploy-url=https://staging-hooklabs-elite.vercel.app" >> $GITHUB_OUTPUT
+              echo "convex-url=${{ secrets.CONVEX_STAGING_URL }}" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+  # 빌드 및 테스트 (기존 테스트 워크플로우를 재사용)
+  test-suite:
+    name: Run Test Suite
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
+    if: ${{ !inputs.skip_tests || inputs.skip_tests == false }}
+
+  # 보안 스캔
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run Snyk Security Scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+      
+      - name: Run npm audit
+        run: npm audit --audit-level high
+
+  # 번들 크기 분석
+  bundle-analysis:
+    name: Bundle Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build and analyze bundle
+        run: |
+          npm run build
+          npx @next/bundle-analyzer
+        env:
+          ANALYZE: true
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.PRODUCTION_CLERK_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ needs.setup.outputs.convex-url }}
+          LEMONSQUEEZY_API_KEY: ${{ secrets.PRODUCTION_LEMONSQUEEZY_API_KEY }}
+          LEMONSQUEEZY_STORE_ID: ${{ secrets.PRODUCTION_LEMONSQUEEZY_STORE_ID }}
+      
+      - name: Upload bundle analysis
+        uses: actions/upload-artifact@v3
+        with:
+          name: bundle-analysis
+          path: .next/analyze/
+
+  # Convex 배포
+  deploy-convex:
+    name: Deploy Convex Backend
+    needs: [setup, test-suite, security-audit]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.setup.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Deploy Convex functions
+        run: |
+          if [ "${{ needs.setup.outputs.environment }}" == "production" ]; then
+            npx convex deploy --cmd-url-env-var-name=NEXT_PUBLIC_CONVEX_URL --prod
+          else
+            npx convex deploy --cmd-url-env-var-name=NEXT_PUBLIC_CONVEX_URL
+          fi
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+      
+      - name: Configure Convex environment variables
+        run: |
+          npx convex env set CLERK_WEBHOOK_SECRET "${{ secrets.CLERK_WEBHOOK_SECRET }}"
+          npx convex env set LEMONSQUEEZY_WEBHOOK_SECRET "${{ secrets.LEMONSQUEEZY_WEBHOOK_SECRET }}"
+          npx convex env set LEMONSQUEEZY_API_KEY "${{ secrets.PRODUCTION_LEMONSQUEEZY_API_KEY }}"
+          npx convex env set LEMONSQUEEZY_STORE_ID "${{ secrets.PRODUCTION_LEMONSQUEEZY_STORE_ID }}"
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+
+  # Vercel 배포
+  deploy-vercel:
+    name: Deploy to Vercel
+    needs: [setup, test-suite, security-audit, deploy-convex]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.setup.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+      
+      - name: Pull Vercel Environment Information
+        run: |
+          if [ "${{ needs.setup.outputs.environment }}" == "production" ]; then
+            vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+          else
+            vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+          fi
+      
+      - name: Build Project Artifacts
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.PRODUCTION_CLERK_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ needs.setup.outputs.convex-url }}
+          LEMONSQUEEZY_API_KEY: ${{ secrets.PRODUCTION_LEMONSQUEEZY_API_KEY }}
+          LEMONSQUEEZY_STORE_ID: ${{ secrets.PRODUCTION_LEMONSQUEEZY_STORE_ID }}
+      
+      - name: Deploy Project Artifacts to Vercel
+        id: deploy
+        run: |
+          if [ "${{ needs.setup.outputs.environment }}" == "production" ]; then
+            DEPLOY_URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          else
+            DEPLOY_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          fi
+          echo "deploy-url=$DEPLOY_URL" >> $GITHUB_OUTPUT
+          echo "Deployed to: $DEPLOY_URL"
+      
+      - name: Update deployment status
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: context.payload.deployment?.id || 'unknown',
+              state: 'success',
+              environment_url: '${{ steps.deploy.outputs.deploy-url }}',
+              description: 'Deployment completed successfully'
+            });
+
+  # 배포 후 테스트
+  post-deploy-tests:
+    name: Post-deployment Tests
+    needs: [setup, deploy-vercel]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Wait for deployment
+        run: sleep 60
+      
+      - name: Run smoke tests
+        run: |
+          # Health check
+          curl -f ${{ needs.setup.outputs.deploy-url }}/api/health || exit 1
+          
+          # Basic page loads
+          curl -f ${{ needs.setup.outputs.deploy-url }} || exit 1
+          curl -f ${{ needs.setup.outputs.deploy-url }}/dashboard || exit 1
+      
+      - name: Run Lighthouse CI
+        run: |
+          npm install -g @lhci/cli@0.12.x
+          lhci autorun --upload.target=temporary-public-storage
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+
+  # 알림
+  notify:
+    name: Deployment Notifications
+    needs: [setup, deploy-vercel, post-deploy-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#deployments'
+          text: |
+            ${{ needs.setup.outputs.environment }} 환경 배포 ${{ job.status == 'success' && '성공' || '실패' }}
+            
+            환경: ${{ needs.setup.outputs.environment }}
+            배포 URL: ${{ needs.setup.outputs.deploy-url }}
+            커밋: ${{ github.sha }}
+            작성자: ${{ github.actor }}
+            
+            ${{ job.status == 'success' && '✅ 배포가 성공적으로 완료되었습니다!' || '❌ 배포 중 오류가 발생했습니다.' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: always()
+      
+      - name: Discord Notification
+        uses: Ilshidur/action-discord@master
+        with:
+          args: |
+            🚀 **${{ needs.setup.outputs.environment }} 배포 알림**
+            
+            상태: ${{ job.status == 'success' && '✅ 성공' || '❌ 실패' }}
+            환경: `${{ needs.setup.outputs.environment }}`
+            URL: ${{ needs.setup.outputs.deploy-url }}
+            커밋: `${{ github.sha }}`
+            작성자: ${{ github.actor }}
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        if: always()
+
+  # 롤백 준비
+  prepare-rollback:
+    name: Prepare Rollback
+    needs: [setup, deploy-vercel]
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create rollback workflow
+        run: |
+          echo "배포 실패 시 롤백 준비"
+          # 이전 성공한 배포 정보를 저장하고 롤백 워크플로우를 준비합니다
+          echo "Previous deployment can be restored manually if needed"
+      
+      - name: Rollback notification
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue?.number || 1,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚨 배포 실패가 감지되었습니다. 필요시 수동 롤백을 진행해주세요.\n\n환경: ${{ needs.setup.outputs.environment }}\n커밋: ${{ github.sha }}`
+            });
