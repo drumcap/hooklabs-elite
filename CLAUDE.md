@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
-This is a Next.js 15 SaaS starter template with integrated authentication (Clerk), real-time database (Convex), and subscription billing (Lemon Squeezy).
+This is a Next.js 15 SaaS starter template with integrated authentication (Clerk), real-time database (Convex), and subscription billing (Lemon Squeezy). The project has evolved into an enterprise-grade billing system with comprehensive usage tracking, credit management, and coupon systems.
 
 ## Development Commands
 
@@ -12,6 +12,17 @@ This is a Next.js 15 SaaS starter template with integrated authentication (Clerk
 - `npm run build` - Build production bundle
 - `npm start` - Start production server
 - `npm run lint` - Run Next.js linting
+- `npm run type-check` - TypeScript type checking
+
+### Testing Commands
+- `npm test` - Run all tests with Vitest
+- `npm run test:unit` - Run unit tests (Convex functions)
+- `npm run test:integration` - Run integration tests (API endpoints)
+- `npm run test:components` - Run component tests (React components)
+- `npm run test:e2e` - Run end-to-end tests with Playwright
+- `npm run test:coverage` - Run tests with coverage report
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:ui` - Run tests with Vitest UI
 
 ### Convex Development
 - `npx convex dev` - Start Convex development server (required for database)
@@ -44,7 +55,10 @@ This is a Next.js 15 SaaS starter template with integrated authentication (Clerk
   - `checkouts` table: Tracks checkout sessions
   - `licenses` table: License key management (optional)
   - `paymentAttempts` table: Legacy table (to be phased out)
-- All database operations in `convex/` directory
+  - `usage` table: **NEW** - Comprehensive usage tracking with timestamps and metadata
+  - `credits` table: **NEW** - Credit management system with expiration dates
+  - `coupons` table: **NEW** - Coupon system with validation and usage tracking
+- All database operations in `convex/` directory with enhanced business logic
 
 #### Payment Integration
 1. Lemon Squeezy handles subscription management and checkout
@@ -52,6 +66,8 @@ This is a Next.js 15 SaaS starter template with integrated authentication (Clerk
 3. Payment-gated content uses `<PaymentGate>` component
 4. Webhook events update subscription and payment status in Convex
 5. Customer portal for subscription management
+6. **NEW**: Enterprise-grade billing with usage tracking and credit system
+7. **NEW**: Coupon management for promotional campaigns
 
 ### Project Structure
 ```
@@ -74,9 +90,12 @@ components/
 └── ConvexClientProvider.tsx
 
 convex/
-├── schema.ts         # Database schema
+├── schema.ts         # Database schema with enhanced billing tables
 ├── users.ts          # User CRUD operations
 ├── subscriptions.ts  # Subscription queries/mutations
+├── usage.ts          # **NEW** - Usage tracking and analytics
+├── credits.ts        # **NEW** - Credit management system
+├── coupons.ts        # **NEW** - Coupon validation and management
 ├── lemonSqueezyTypes.ts # Webhook data types
 ├── lemonSqueezyWebhooks.ts # Webhook handlers
 ├── paymentAttempts.ts # Legacy payment tracking
@@ -117,6 +136,33 @@ convex/
 4. User data synced between Clerk and Convex
 5. Subscription status updates trigger real-time UI changes
 6. Lemon Squeezy webhooks update Convex data in real-time
+
+## Enterprise Billing Features
+
+### Usage Tracking System
+- Comprehensive usage analytics with `convex/usage.ts`
+- Real-time usage monitoring and reporting
+- Configurable usage limits per subscription tier
+- Historical usage data for analytics
+
+### Credit Management System
+- Flexible credit-based billing with `convex/credits.ts`
+- Automatic credit deduction for usage
+- Credit expiration and renewal policies
+- Admin credit management interface
+
+### Coupon System
+- Advanced coupon management with `convex/coupons.ts`
+- Percentage and fixed amount discounts
+- Usage limits and expiration dates
+- Coupon validation and redemption tracking
+
+### Testing Infrastructure
+- Comprehensive test suite with Vitest and Playwright
+- Unit tests for business logic (80% coverage target)
+- Integration tests for API endpoints
+- E2E tests for user workflows
+- Component tests for React UI elements
 
 ## Shadcn Component Installation Rules
 When installing shadcn/ui components:
