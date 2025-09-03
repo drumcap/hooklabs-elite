@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback, memo } from "react"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
@@ -35,7 +35,7 @@ interface PersonaManagerProps {
   className?: string
 }
 
-export function PersonaManager({ className }: PersonaManagerProps) {
+export const PersonaManager = memo(function PersonaManager({ className }: PersonaManagerProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("all")
   const [showDialog, setShowDialog] = useState(false)
@@ -54,29 +54,43 @@ export function PersonaManager({ className }: PersonaManagerProps) {
 
   const [isLoading, setIsLoading] = useState(false)
 
-  // Filter personas based on search and tab
-  const filteredPersonas = personas?.filter(persona => {
-    const matchesSearch = persona.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         persona.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         persona.interests.some(interest => 
-                           interest.toLowerCase().includes(searchTerm.toLowerCase())
-                         )
+  // 메모이제이션된 필터링 로직
+  const filteredPersonas = useMemo(() => {
+    if (!personas) return []
     
-    const matchesTab = activeTab === "all" || 
-                      (activeTab === "active" && persona.isActive) ||
-                      (activeTab === "inactive" && !persona.isActive)
+    return personas.filter(persona => {
+      const matchesSearch = persona.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           persona.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           persona.interests.some(interest => 
+                             interest.toLowerCase().includes(searchTerm.toLowerCase())
+                           )
+      
+      const matchesTab = activeTab === "all" || 
+                        (activeTab === "active" && persona.isActive) ||
+                        (activeTab === "inactive" && !persona.isActive)
+      
+      return matchesSearch && matchesTab
+    })
+  }, [personas, searchTerm, activeTab])
+
+  // 메모이제이션된 통계 계산
+  const stats = useMemo(() => {
+    if (!personas) return { active: 0, inactive: 0, total: 0 }
     
-    return matchesSearch && matchesTab
-  }) || []
+    const active = personas.filter(p => p.isActive).length
+    const inactive = personas.filter(p => !p.isActive).length
+    const total = personas.length
+    
+    return { active, inactive, total }
+  }, [personas])
 
-  const activePersonasCount = personas?.filter(p => p.isActive).length || 0
-  const inactivePersonasCount = personas?.filter(p => !p.isActive).length || 0
-
-  const getPostCount = (personaId: Id<"personas">) => {
+  // 메모이제이션된 게시물 수 계산 함수
+  const getPostCount = useCallback((personaId: Id<"personas">) => {
     return postCounts?.find(count => count.personaId === personaId)?.postCount || 0
-  }
+  }, [postCounts])
 
-  const handleCreatePersona = async (data: PersonaFormData) => {
+  // 메모이제이션된 이벤트 핸들러들
+  const handleCreatePersona = useCallback(async (data: PersonaFormData) => {
     setIsLoading(true)
     try {
       await createPersona(data)
@@ -89,9 +103,9 @@ export function PersonaManager({ className }: PersonaManagerProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [createPersona])
 
-  const handleUpdatePersona = async (data: PersonaFormData) => {
+  const handleUpdatePersona = useCallback(async (data: PersonaFormData) => {
     if (!editingPersona) return
 
     setIsLoading(true)
@@ -109,9 +123,9 @@ export function PersonaManager({ className }: PersonaManagerProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [updatePersona, editingPersona])
 
-  const handleDeletePersona = async (personaId: Id<"personas">) => {
+  const handleDeletePersona = useCallback(async (personaId: Id<"personas">) => {
     if (!confirm("정말로 이 페르소나를 삭제하시겠습니까?")) return
 
     try {
@@ -121,9 +135,9 @@ export function PersonaManager({ className }: PersonaManagerProps) {
       console.error("페르소나 삭제 오류:", error)
       toast.error(error.message || "페르소나 삭제에 실패했습니다.")
     }
-  }
+  }, [deletePersona])
 
-  const handleToggleActive = async (personaId: Id<"personas">) => {
+  const handleToggleActive = useCallback(async (personaId: Id<"personas">) => {
     try {
       await toggleActivePersona({ id: personaId })
       toast.success("페르소나 상태가 변경되었습니다.")
@@ -131,30 +145,30 @@ export function PersonaManager({ className }: PersonaManagerProps) {
       console.error("페르소나 상태 변경 오류:", error)
       toast.error("페르소나 상태 변경에 실패했습니다.")
     }
-  }
+  }, [toggleActivePersona])
 
-  const handleEditPersona = (persona: any) => {
+  const handleEditPersona = useCallback((persona: any) => {
     setEditingPersona(persona)
     setShowTemplates(false)
     setShowDialog(true)
-  }
+  }, [])
 
-  const handleNewPersona = () => {
+  const handleNewPersona = useCallback(() => {
     setEditingPersona(null)
     setShowTemplates(true)
     setShowDialog(true)
-  }
+  }, [])
 
-  const handleTemplateSelect = (template: PersonaFormData) => {
+  const handleTemplateSelect = useCallback((template: PersonaFormData) => {
     setShowTemplates(false)
     setEditingPersona(template)
-  }
+  }, [])
 
-  const handleCloseDialog = () => {
+  const handleCloseDialog = useCallback(() => {
     setShowDialog(false)
     setEditingPersona(null)
     setShowTemplates(false)
-  }
+  }, [])
 
   if (personas === undefined) {
     return (
@@ -186,7 +200,7 @@ export function PersonaManager({ className }: PersonaManagerProps) {
           <CardContent className="flex items-center p-6">
             <Users className="h-8 w-8 text-blue-500 mr-3" />
             <div>
-              <p className="text-2xl font-bold">{personas.length}</p>
+              <p className="text-2xl font-bold">{stats.total}</p>
               <p className="text-muted-foreground">전체 페르소나</p>
             </div>
           </CardContent>
@@ -195,7 +209,7 @@ export function PersonaManager({ className }: PersonaManagerProps) {
           <CardContent className="flex items-center p-6">
             <UserCheck className="h-8 w-8 text-green-500 mr-3" />
             <div>
-              <p className="text-2xl font-bold">{activePersonasCount}</p>
+              <p className="text-2xl font-bold">{stats.active}</p>
               <p className="text-muted-foreground">활성 페르소나</p>
             </div>
           </CardContent>
@@ -204,7 +218,7 @@ export function PersonaManager({ className }: PersonaManagerProps) {
           <CardContent className="flex items-center p-6">
             <UserX className="h-8 w-8 text-gray-500 mr-3" />
             <div>
-              <p className="text-2xl font-bold">{inactivePersonasCount}</p>
+              <p className="text-2xl font-bold">{stats.inactive}</p>
               <p className="text-muted-foreground">비활성 페르소나</p>
             </div>
           </CardContent>
@@ -308,4 +322,4 @@ export function PersonaManager({ className }: PersonaManagerProps) {
       </Dialog>
     </div>
   )
-}
+})

@@ -1,94 +1,152 @@
-# ======================
-# Docker 이미지에 포함하지 않을 파일들
-# ======================
+# ==============================================================================
+# Docker 이미지 크기 최적화를 위한 .dockerignore
+# HookLabs Elite Platform - 최적화된 제외 목록
+# ==============================================================================
 
-# Git
+# Git 관련
 .git
 .gitignore
-README.md
-docs/
+.gitattributes
+.github/
 
-# 환경 파일
-.env
-.env.local
-.env.*.local
-
-# Node.js
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Next.js
-.next/
-out/
-
-# 테스트 관련
-coverage/
-test-results/
-playwright-report/
-__tests__/
-*.test.ts
-*.test.tsx
-*.spec.ts
-*.spec.tsx
-jest.config.*
-playwright.config.*
-vitest.config.*
-
-# IDE
+# IDE 및 에디터
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# macOS
-.DS_Store
+# 로그 파일
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 
-# Windows
+# 운영체제 관련
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# 로그
-logs/
-*.log
+# Next.js 빌드 캐시 (빌드 시점에 새로 생성)
+.next/
+out/
 
-# 임시 파일
-*.tmp
-*.temp
+# 의존성 디렉토리 (Dockerfile에서 별도 설치)
+node_modules/
+npm-cache/
 
-# 빌드 캐시
+# 테스트 관련
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+**/*.test.*
+**/*.spec.*
+__tests__/
+__mocks__/
+jest.config.*
+playwright.config.*
+vitest.config.*
+
+# 환경 설정 파일 (보안)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 개발 도구 설정
+.eslintcache
+.prettierignore
+.stylelintcache
 .cache/
 .parcel-cache/
 
-# Vercel
-.vercel/
+# 빌드 도구
+.turbo/
+dist/
+build/
 
-# TypeScript
-*.tsbuildinfo
+# 문서 및 마크다운 (런타임에 불필요)
+README.md
+CHANGELOG.md
+CONTRIBUTING.md
+LICENSE.md
+docs/
+*.md
 
-# ESLint
-.eslintcache
-
-# Development 도구
-.storybook/
-storybook-static/
-
-# CI/CD
+# CI/CD 설정
 .github/
+.circleci/
 .gitlab-ci.yml
 .travis.yml
-circle.yml
+Jenkinsfile
 
-# Docker
+# Docker 관련
 Dockerfile*
-docker-compose*
+docker-compose*.yml
 .dockerignore
 
+# 인프라스트럭처 코드
+infrastructure/
+terraform/
+k8s/
+
+# 분석 및 리포트
+reports/
+lighthouse/
+bundle-analyzer/
+analyze/
+
+# 임시 파일
+tmp/
+temp/
+*.tmp
+
 # 백업 파일
-*.bak
 *.backup
-*.old
+*.bak
+*.orig
+
+# 패키지 매니저 잠금 파일 (package-lock.json은 포함)
+yarn.lock
+pnpm-lock.yaml
+
+# Vercel 설정
+.vercel/
+
+# 보안 스캔 결과
+.snyk
+security-scan-results/
+
+# 성능 테스트 결과
+performance-results/
+
+# 모니터링 설정 (로컬)
+monitoring/local/
+
+# 로컬 데이터베이스
+*.sqlite
+*.db
+
+# TypeScript 빌드 정보
+*.tsbuildinfo
+
+# Next.js 텔레메트리 (비활성화됨)
+.next-telemetry/
+
+# Sentry
+.sentryclirc
+
+# 로컬 개발 스크립트
+scripts/dev/
+scripts/local/
 
 # 압축 파일
 *.zip
@@ -96,7 +154,6 @@ docker-compose*
 *.tar.gz
 *.rar
 
-# 메모 파일
-TODO.md
-CHANGELOG.md
-CONTRIBUTING.md
+# 개발 도구
+.storybook/
+storybook-static/

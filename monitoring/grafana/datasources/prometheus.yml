@@ -1,0 +1,93 @@
+# ==============================================================================
+# Grafana 데이터소스 설정 - Prometheus
+# ==============================================================================
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus-hooklabs-elite
+    url: http://prometheus:9090
+    access: proxy
+    isDefault: true
+    
+    # 연결 설정
+    httpMethod: POST
+    timeout: 60
+    
+    # 쿼리 최적화 설정
+    customQueryParameters: ''
+    manageAlerts: true
+    alerting: true
+    
+    # Prometheus 특화 설정
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 60s
+      timeInterval: 15s
+      defaultRegion: 'default'
+      
+      # 메트릭 브라우저 설정
+      manageAlerts: true
+      prometheusType: Prometheus
+      prometheusVersion: 2.40.0
+      
+      # 쿼리 에디터 설정
+      disableMetricsLookup: false
+      customQueryParameters: ''
+      
+      # Exemplar 설정 (분산 추적)
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: 'jaeger-hooklabs-elite'
+          urlDisplayLabel: 'View Trace'
+      
+      # 알림 설정
+      alerting:
+        enabled: true
+        
+      # 캐시 설정
+      incrementalQuerying: true
+      
+    # 보안 설정 (필요 시)
+    secureJsonData: {}
+
+  - name: Prometheus-Long-Term
+    type: prometheus  
+    uid: prometheus-long-term
+    url: https://prometheus-remote-storage.hooklabs-elite.com
+    access: proxy
+    isDefault: false
+    
+    # 장기 저장소용 설정
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 120s
+      timeInterval: 60s
+      manageAlerts: false
+      prometheusType: Prometheus
+      
+    # 인증 정보
+    basicAuth: true
+    basicAuthUser: hooklabs-elite-readonly
+    secureJsonData:
+      basicAuthPassword: ${PROMETHEUS_LONG_TERM_PASSWORD}
+
+  - name: Node-Exporter-Direct
+    type: prometheus
+    uid: node-exporter
+    url: http://node-exporter:9100/metrics
+    access: proxy
+    isDefault: false
+    
+    # 노드 익스포터 전용 설정
+    jsonData:
+      httpMethod: GET
+      queryTimeout: 30s
+      manageAlerts: false
+      
+    # 메타데이터
+    meta:
+      purpose: "시스템 메트릭 전용"
+      retention: "30d"

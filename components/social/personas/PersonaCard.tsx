@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState, memo, useMemo, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -43,7 +43,7 @@ interface PersonaCardProps {
   onToggleActive: (personaId: Id<"personas">) => void
 }
 
-export function PersonaCard({
+export const PersonaCard = memo(function PersonaCard({
   persona,
   postCount = 0,
   onEdit,
@@ -52,14 +52,38 @@ export function PersonaCard({
 }: PersonaCardProps) {
   const [isToggling, setIsToggling] = useState(false)
 
-  const handleToggleActive = async () => {
+  // 메모이제이션된 핸들러들
+  const handleToggleActive = useCallback(async () => {
     setIsToggling(true)
     try {
       await onToggleActive(persona._id)
     } finally {
       setIsToggling(false)
     }
-  }
+  }, [onToggleActive, persona._id])
+
+  const handleEdit = useCallback(() => {
+    onEdit(persona)
+  }, [onEdit, persona])
+
+  const handleDelete = useCallback(() => {
+    onDelete(persona._id)
+  }, [onDelete, persona._id])
+
+  // 메모이제이션된 계산값들
+  const formattedDate = useMemo(() => {
+    return new Date(persona.createdAt).toLocaleDateString('ko-KR')
+  }, [persona.createdAt])
+
+  const activeStatusStyle = useMemo(() => {
+    return persona.isActive 
+      ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' 
+      : 'bg-gray-50 text-gray-500 dark:bg-gray-900/20 dark:text-gray-400'
+  }, [persona.isActive])
+
+  const avatarInitial = useMemo(() => {
+    return persona.name.charAt(0).toUpperCase()
+  }, [persona.name])
 
   return (
     <Card className="group hover:shadow-md transition-shadow">
@@ -70,7 +94,7 @@ export function PersonaCard({
               <img src={persona.avatar} alt={persona.name} className="object-cover" />
             ) : (
               <div className="bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
-                {persona.name.charAt(0).toUpperCase()}
+                {avatarInitial}
               </div>
             )}
           </Avatar>
@@ -93,12 +117,12 @@ export function PersonaCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(persona)}>
+              <DropdownMenuItem onClick={handleEdit}>
                 <Edit className="h-4 w-4 mr-2" />
                 수정
               </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={() => onDelete(persona._id)}
+                onClick={handleDelete}
                 className="text-red-600 hover:text-red-700"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -160,19 +184,15 @@ export function PersonaCard({
             <span>게시물 {postCount}개</span>
           </div>
           <div className="text-xs text-muted-foreground">
-            {new Date(persona.createdAt).toLocaleDateString('ko-KR')}
+            {formattedDate}
           </div>
         </div>
 
         {/* 활성 상태 표시 */}
-        <div className={`text-center py-1 rounded text-xs font-medium ${
-          persona.isActive 
-            ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' 
-            : 'bg-gray-50 text-gray-500 dark:bg-gray-900/20 dark:text-gray-400'
-        }`}>
+        <div className={`text-center py-1 rounded text-xs font-medium ${activeStatusStyle}`}>
           {persona.isActive ? '활성' : '비활성'}
         </div>
       </CardContent>
     </Card>
   )
-}
+})

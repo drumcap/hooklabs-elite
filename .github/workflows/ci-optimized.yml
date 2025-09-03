@@ -1,0 +1,381 @@
+name: 🚀 최적화된 CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+  CACHE_VERSION: 'v2'
+  HUSKY: 0
+  NEXT_TELEMETRY_DISABLED: 1
+
+# 동시 실행 제한 (같은 브랜치에서 중복 실행 방지)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # =======================
+  # 📋 변경사항 감지 및 설정
+  # =======================
+  changes:
+    name: 📋 변경사항 감지
+    runs-on: ubuntu-latest
+    outputs:
+      src: ${{ steps.changes.outputs.src }}
+      docs: ${{ steps.changes.outputs.docs }}
+      deps: ${{ steps.changes.outputs.deps }}
+      docker: ${{ steps.changes.outputs.docker }}
+      ci: ${{ steps.changes.outputs.ci }}
+      
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🔍 변경사항 감지
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            src:
+              - 'app/**'
+              - 'components/**'
+              - 'lib/**'
+              - 'convex/**'
+              - 'public/**'
+              - '*.ts'
+              - '*.tsx'
+              - '*.js'
+              - '*.jsx'
+            docs:
+              - '*.md'
+              - 'docs/**'
+            deps:
+              - 'package*.json'
+              - 'pnpm-lock.yaml'
+              - 'yarn.lock'
+            docker:
+              - 'Dockerfile*'
+              - 'docker-compose*.yml'
+              - '.dockerignore'
+            ci:
+              - '.github/workflows/**'
+
+  # =======================
+  # 🚀 의존성 설치 및 캐시
+  # =======================
+  setup:
+    name: 🚀 환경 설정
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.src == 'true' || needs.changes.outputs.deps == 'true' || needs.changes.outputs.ci == 'true'
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+          
+      - name: 📦 의존성 캐시 확인
+        id: cache-deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-node-
+            
+      - name: 📦 의존성 설치
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: |
+          npm ci --prefer-offline --no-audit --progress=false
+          
+      - name: 🔍 의존성 보안 감사
+        if: needs.changes.outputs.deps == 'true'
+        run: npm audit --audit-level high --omit=dev
+
+  # =======================
+  # 🔍 코드 품질 검사 (병렬)
+  # =======================
+  quality:
+    name: 🔍 코드 품질
+    runs-on: ubuntu-latest
+    needs: [setup, changes]
+    if: needs.changes.outputs.src == 'true' || needs.changes.outputs.ci == 'true'
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        check: [lint, type-check]
+        
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 의존성 캐시 복원
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          
+      - name: 🧹 코드 품질 검사
+        run: npm run ${{ matrix.check }}
+
+  # =======================
+  # 🧪 테스트 실행 (병렬)
+  # =======================
+  test:
+    name: 🧪 테스트
+    runs-on: ubuntu-latest
+    needs: [setup, changes]
+    if: needs.changes.outputs.src == 'true' || needs.changes.outputs.ci == 'true'
+    timeout-minutes: 15
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        test-suite: [unit, integration, components]
+        
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 의존성 캐시 복원
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          
+      - name: 🧪 ${{ matrix.test-suite }} 테스트 실행
+        run: npm run test:${{ matrix.test-suite }}
+        
+      - name: 📊 테스트 커버리지 (unit 테스트만)
+        if: matrix.test-suite == 'unit'
+        run: npm run test:coverage
+        
+      - name: 📈 커버리지 업로드
+        if: matrix.test-suite == 'unit'
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/lcov.info
+          flags: unittests
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  # =======================
+  # 🏗️ 빌드 최적화
+  # =======================
+  build:
+    name: 🏗️ 빌드
+    runs-on: ubuntu-latest
+    needs: [quality, test, changes]
+    if: needs.changes.outputs.src == 'true' || needs.changes.outputs.ci == 'true'
+    timeout-minutes: 10
+    
+    strategy:
+      matrix:
+        environment:
+          - name: development
+            branch: develop
+          - name: production  
+            branch: main
+        exclude:
+          - environment: { name: development }
+            branch: ${{ github.ref != 'refs/heads/develop' && 'exclude' || '' }}
+          - environment: { name: production }
+            branch: ${{ github.ref != 'refs/heads/main' && 'exclude' || '' }}
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 의존성 캐시 복원
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          
+      - name: 📦 Next.js 빌드 캐시
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ env.CACHE_VERSION }}-${{ matrix.environment.name }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ env.CACHE_VERSION }}-${{ matrix.environment.name }}-${{ hashFiles('package-lock.json') }}-
+            ${{ runner.os }}-nextjs-${{ env.CACHE_VERSION }}-${{ matrix.environment.name }}-
+            
+      - name: 🏗️ Next.js 빌드
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_APP_ENV: ${{ matrix.environment.name }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          
+      - name: 📊 빌드 아티팩트 저장
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.environment.name }}
+          path: |
+            .next/
+            !.next/cache
+          retention-days: 1
+
+  # =======================  
+  # 🎭 E2E 테스트 (조건부)
+  # =======================
+  e2e:
+    name: 🎭 E2E 테스트
+    runs-on: ubuntu-latest
+    needs: [build, changes]
+    if: github.event_name == 'push' && needs.changes.outputs.src == 'true'
+    timeout-minutes: 30
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 의존성 캐시 복원
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-node-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          
+      - name: 🏗️ 빌드 아티팩트 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: build-production
+          path: .next/
+          
+      - name: 🎭 Playwright 설치
+        run: npx playwright install --with-deps chromium
+        
+      - name: 🚀 애플리케이션 시작
+        run: npm start &
+        
+      - name: ⏳ 헬스체크 대기
+        run: npx wait-on http://localhost:3000/api/health --timeout 60000
+        
+      - name: 🧪 E2E 테스트 실행
+        run: npm run test:e2e
+        
+      - name: 📸 실패 시 스크린샷
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # =======================
+  # 🐳 Docker 빌드 (조건부)
+  # =======================
+  docker:
+    name: 🐳 Docker 빌드
+    runs-on: ubuntu-latest
+    needs: [build, changes]
+    if: needs.changes.outputs.docker == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    timeout-minutes: 20
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🐳 Docker Buildx 설정
+        uses: docker/setup-buildx-action@v3
+        
+      - name: 🔐 Docker Hub 로그인
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          
+      - name: 📊 Docker 메타데이터 추출
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: hooklabs/elite
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            
+      - name: 🏗️ Docker 이미지 빌드 및 푸시
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_APP_ENV=production
+            
+  # =======================
+  # 📱 배포 알림
+  # =======================
+  notify:
+    name: 📱 배포 알림
+    runs-on: ubuntu-latest
+    needs: [build, e2e, docker]
+    if: always() && github.event_name == 'push'
+    
+    steps:
+      - name: 📱 슬랙 알림
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ needs.build.result == 'success' && needs.e2e.result != 'failure' && 'success' || 'failure' }}
+          channel: '#ci-cd'
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

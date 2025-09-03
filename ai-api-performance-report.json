@@ -1,0 +1,1030 @@
+{
+  "timestamp": "2025-09-03T03:19:49.334Z",
+  "testSummary": {
+    "totalTests": 10,
+    "totalRequests": 99,
+    "totalSuccesses": 97,
+    "totalTokens": 14641,
+    "overallSuccessRate": 97.97979797979798,
+    "averageLatency": 1151.45,
+    "medianLatency": 1026,
+    "p95Latency": 2289,
+    "p99Latency": 2289
+  },
+  "latencyTests": [
+    {
+      "type": "content-generation",
+      "complexity": "low",
+      "measurements": [
+        {
+          "attempt": 1,
+          "latency": 439,
+          "tokens": 91,
+          "tokensPerSecond": 207.28929384965832,
+          "success": true
+        },
+        {
+          "attempt": 2,
+          "latency": 538,
+          "tokens": 96,
+          "tokensPerSecond": 178.43866171003717,
+          "success": true
+        },
+        {
+          "attempt": 3,
+          "latency": 496,
+          "tokens": 97,
+          "tokensPerSecond": 195.56451612903226,
+          "success": true
+        },
+        {
+          "attempt": 4,
+          "latency": 479,
+          "tokens": 100,
+          "tokensPerSecond": 208.76826722338205,
+          "success": true
+        },
+        {
+          "attempt": 5,
+          "latency": 466,
+          "tokens": 101,
+          "tokensPerSecond": 216.7381974248927,
+          "success": true
+        }
+      ],
+      "statistics": {
+        "min": 439,
+        "max": 538,
+        "avg": 483.6,
+        "median": 479,
+        "p95": 538,
+        "p99": 538
+      },
+      "successRate": 100
+    },
+    {
+      "type": "content-variant",
+      "complexity": "medium",
+      "measurements": [
+        {
+          "attempt": 1,
+          "latency": 1095,
+          "tokens": 192,
+          "tokensPerSecond": 175.34246575342465,
+          "success": true
+        },
+        {
+          "attempt": 2,
+          "latency": 957,
+          "tokens": 200,
+          "tokensPerSecond": 208.9864158829676,
+          "success": true
+        },
+        {
+          "attempt": 3,
+          "latency": 1077,
+          "tokens": 188,
+          "tokensPerSecond": 174.5589600742804,
+          "success": true
+        },
+        {
+          "attempt": 4,
+          "latency": 853,
+          "tokens": 217,
+          "tokensPerSecond": 254.39624853458383,
+          "success": true
+        },
+        {
+          "attempt": 5,
+          "latency": 1053,
+          "tokens": 210,
+          "tokensPerSecond": 199.43019943019945,
+          "success": true
+        }
+      ],
+      "statistics": {
+        "min": 853,
+        "max": 1095,
+        "avg": 1007,
+        "median": 1053,
+        "p95": 1095,
+        "p99": 1095
+      },
+      "successRate": 100
+    },
+    {
+      "type": "analysis",
+      "complexity": "high",
+      "measurements": [
+        {
+          "attempt": 1,
+          "latency": 1948,
+          "tokens": 277,
+          "tokensPerSecond": 142.1971252566735,
+          "success": true
+        },
+        {
+          "attempt": 2,
+          "latency": 2132,
+          "tokens": 293,
+          "tokensPerSecond": 137.4296435272045,
+          "success": true
+        },
+        {
+          "attempt": 3,
+          "latency": 2289,
+          "tokens": 327,
+          "tokensPerSecond": 142.85714285714286,
+          "success": true
+        },
+        {
+          "attempt": 4,
+          "latency": 2289,
+          "tokens": 314,
+          "tokensPerSecond": 137.17780690257754,
+          "success": true
+        },
+        {
+          "attempt": 5,
+          "latency": 1847,
+          "tokens": 277,
+          "tokensPerSecond": 149.97292907417435,
+          "success": true
+        }
+      ],
+      "statistics": {
+        "min": 1847,
+        "max": 2289,
+        "avg": 2101,
+        "median": 2132,
+        "p95": 2289,
+        "p99": 2289
+      },
+      "successRate": 100
+    },
+    {
+      "type": "persona-content",
+      "complexity": "medium",
+      "measurements": [
+        {
+          "attempt": 1,
+          "latency": 924,
+          "tokens": 244,
+          "tokensPerSecond": 264.0692640692641,
+          "success": true
+        },
+        {
+          "attempt": 2,
+          "latency": 1058,
+          "tokens": 234,
+          "tokensPerSecond": 221.17202268431,
+          "success": true
+        },
+        {
+          "attempt": 3,
+          "latency": 979,
+          "tokens": 241,
+          "tokensPerSecond": 246.16956077630235,
+          "success": true
+        },
+        {
+          "attempt": 4,
+          "latency": 999,
+          "tokens": 225,
+          "tokensPerSecond": 225.22522522522522,
+          "success": true
+        },
+        {
+          "attempt": 5,
+          "latency": 1111,
+          "tokens": 262,
+          "tokensPerSecond": 235.82358235823583,
+          "success": true
+        }
+      ],
+      "statistics": {
+        "min": 924,
+        "max": 1111,
+        "avg": 1014.2,
+        "median": 999,
+        "p95": 1111,
+        "p99": 1111
+      },
+      "successRate": 100
+    }
+  ],
+  "throughputTests": [
+    {
+      "type": "content-generation",
+      "duration": 30033,
+      "totalRequests": 50,
+      "successfulRequests": 49,
+      "totalTokens": 4820,
+      "requestsPerSecond": 1.66,
+      "successfulRequestsPerSecond": 1.63,
+      "tokensPerSecond": 160.49,
+      "successRate": 98,
+      "results": [
+        {
+          "requestId": 1,
+          "latency": 561,
+          "tokens": 109,
+          "success": true
+        },
+        {
+          "requestId": 2,
+          "latency": 431,
+          "tokens": 96,
+          "success": true
+        },
+        {
+          "requestId": 3,
+          "latency": 515,
+          "tokens": 93,
+          "success": true
+        },
+        {
+          "requestId": 4,
+          "latency": 434,
+          "tokens": 110,
+          "success": true
+        },
+        {
+          "requestId": 5,
+          "latency": 522,
+          "tokens": 96,
+          "success": true
+        },
+        {
+          "requestId": 6,
+          "latency": 541,
+          "tokens": 100,
+          "success": true
+        },
+        {
+          "requestId": 7,
+          "latency": 482,
+          "tokens": 96,
+          "success": true
+        },
+        {
+          "requestId": 8,
+          "latency": 456,
+          "tokens": 95,
+          "success": true
+        },
+        {
+          "requestId": 9,
+          "latency": 556,
+          "tokens": 104,
+          "success": true
+        },
+        {
+          "requestId": 10,
+          "latency": 503,
+          "tokens": 91,
+          "success": true
+        },
+        {
+          "requestId": 11,
+          "latency": 533,
+          "tokens": 91,
+          "success": true
+        },
+        {
+          "requestId": 12,
+          "latency": 429,
+          "tokens": 91,
+          "success": true
+        },
+        {
+          "requestId": 13,
+          "latency": 520,
+          "tokens": 97,
+          "success": true
+        },
+        {
+          "requestId": 14,
+          "latency": 568,
+          "tokens": 91,
+          "success": true
+        },
+        {
+          "requestId": 15,
+          "latency": 479,
+          "tokens": 98,
+          "success": true
+        },
+        {
+          "requestId": 16,
+          "latency": 430,
+          "tokens": 109,
+          "success": true
+        },
+        {
+          "requestId": 17,
+          "latency": 457,
+          "tokens": 108,
+          "success": true
+        },
+        {
+          "requestId": 18,
+          "latency": 489,
+          "tokens": 105,
+          "success": true
+        },
+        {
+          "requestId": 19,
+          "latency": 479,
+          "tokens": 107,
+          "success": true
+        },
+        {
+          "requestId": 20,
+          "latency": 500,
+          "tokens": 92,
+          "success": true
+        },
+        {
+          "requestId": 21,
+          "latency": 443,
+          "tokens": 91,
+          "success": true
+        },
+        {
+          "requestId": 22,
+          "latency": 565,
+          "tokens": 109,
+          "success": true
+        },
+        {
+          "requestId": 23,
+          "latency": 426,
+          "tokens": 93,
+          "success": true
+        },
+        {
+          "requestId": 24,
+          "latency": 571,
+          "tokens": 101,
+          "success": true
+        },
+        {
+          "requestId": 25,
+          "latency": 516,
+          "tokens": 92,
+          "success": true
+        },
+        {
+          "requestId": 26,
+          "latency": 504,
+          "tokens": 93,
+          "success": true
+        },
+        {
+          "requestId": 27,
+          "latency": 563,
+          "tokens": 96,
+          "success": true
+        },
+        {
+          "requestId": 28,
+          "latency": 455,
+          "tokens": 98,
+          "success": true
+        },
+        {
+          "requestId": 29,
+          "latency": 563,
+          "tokens": 92,
+          "success": true
+        },
+        {
+          "requestId": 30,
+          "latency": 485,
+          "tokens": 94,
+          "success": true
+        },
+        {
+          "requestId": 31,
+          "success": false,
+          "error": "Invalid request"
+        },
+        {
+          "requestId": 32,
+          "latency": 540,
+          "tokens": 97,
+          "success": true
+        },
+        {
+          "requestId": 33,
+          "latency": 565,
+          "tokens": 96,
+          "success": true
+        },
+        {
+          "requestId": 34,
+          "latency": 518,
+          "tokens": 96,
+          "success": true
+        },
+        {
+          "requestId": 35,
+          "latency": 491,
+          "tokens": 103,
+          "success": true
+        },
+        {
+          "requestId": 36,
+          "latency": 533,
+          "tokens": 98,
+          "success": true
+        },
+        {
+          "requestId": 37,
+          "latency": 514,
+          "tokens": 96,
+          "success": true
+        },
+        {
+          "requestId": 38,
+          "latency": 435,
+          "tokens": 110,
+          "success": true
+        },
+        {
+          "requestId": 39,
+          "latency": 507,
+          "tokens": 101,
+          "success": true
+        },
+        {
+          "requestId": 40,
+          "latency": 451,
+          "tokens": 98,
+          "success": true
+        },
+        {
+          "requestId": 41,
+          "latency": 518,
+          "tokens": 94,
+          "success": true
+        },
+        {
+          "requestId": 42,
+          "latency": 493,
+          "tokens": 103,
+          "success": true
+        },
+        {
+          "requestId": 43,
+          "latency": 566,
+          "tokens": 90,
+          "success": true
+        },
+        {
+          "requestId": 44,
+          "latency": 464,
+          "tokens": 103,
+          "success": true
+        },
+        {
+          "requestId": 45,
+          "latency": 496,
+          "tokens": 104,
+          "success": true
+        },
+        {
+          "requestId": 46,
+          "latency": 455,
+          "tokens": 96,
+          "success": true
+        },
+        {
+          "requestId": 47,
+          "latency": 427,
+          "tokens": 107,
+          "success": true
+        },
+        {
+          "requestId": 48,
+          "latency": 523,
+          "tokens": 91,
+          "success": true
+        },
+        {
+          "requestId": 49,
+          "latency": 554,
+          "tokens": 105,
+          "success": true
+        },
+        {
+          "requestId": 50,
+          "latency": 438,
+          "tokens": 94,
+          "success": true
+        }
+      ]
+    },
+    {
+      "type": "content-variant",
+      "duration": 30923,
+      "totalRequests": 29,
+      "successfulRequests": 28,
+      "totalTokens": 5635,
+      "requestsPerSecond": 0.94,
+      "successfulRequestsPerSecond": 0.91,
+      "tokensPerSecond": 182.23,
+      "successRate": 96.55172413793103,
+      "results": [
+        {
+          "requestId": 1,
+          "latency": 892,
+          "tokens": 207,
+          "success": true
+        },
+        {
+          "requestId": 2,
+          "latency": 913,
+          "tokens": 182,
+          "success": true
+        },
+        {
+          "requestId": 3,
+          "latency": 954,
+          "tokens": 201,
+          "success": true
+        },
+        {
+          "requestId": 4,
+          "latency": 852,
+          "tokens": 188,
+          "success": true
+        },
+        {
+          "requestId": 5,
+          "latency": 991,
+          "tokens": 207,
+          "success": true
+        },
+        {
+          "requestId": 6,
+          "latency": 893,
+          "tokens": 206,
+          "success": true
+        },
+        {
+          "requestId": 7,
+          "latency": 1054,
+          "tokens": 202,
+          "success": true
+        },
+        {
+          "requestId": 8,
+          "latency": 895,
+          "tokens": 186,
+          "success": true
+        },
+        {
+          "requestId": 9,
+          "latency": 927,
+          "tokens": 203,
+          "success": true
+        },
+        {
+          "requestId": 10,
+          "latency": 954,
+          "tokens": 208,
+          "success": true
+        },
+        {
+          "requestId": 11,
+          "latency": 853,
+          "tokens": 212,
+          "success": true
+        },
+        {
+          "requestId": 12,
+          "latency": 973,
+          "tokens": 219,
+          "success": true
+        },
+        {
+          "requestId": 13,
+          "latency": 1115,
+          "tokens": 199,
+          "success": true
+        },
+        {
+          "requestId": 14,
+          "success": false,
+          "error": "Rate limit exceeded"
+        },
+        {
+          "requestId": 15,
+          "latency": 987,
+          "tokens": 206,
+          "success": true
+        },
+        {
+          "requestId": 16,
+          "latency": 1117,
+          "tokens": 192,
+          "success": true
+        },
+        {
+          "requestId": 17,
+          "latency": 854,
+          "tokens": 188,
+          "success": true
+        },
+        {
+          "requestId": 18,
+          "latency": 898,
+          "tokens": 213,
+          "success": true
+        },
+        {
+          "requestId": 19,
+          "latency": 1143,
+          "tokens": 215,
+          "success": true
+        },
+        {
+          "requestId": 20,
+          "latency": 887,
+          "tokens": 189,
+          "success": true
+        },
+        {
+          "requestId": 21,
+          "latency": 1004,
+          "tokens": 194,
+          "success": true
+        },
+        {
+          "requestId": 22,
+          "latency": 1132,
+          "tokens": 199,
+          "success": true
+        },
+        {
+          "requestId": 23,
+          "latency": 966,
+          "tokens": 202,
+          "success": true
+        },
+        {
+          "requestId": 24,
+          "latency": 1019,
+          "tokens": 184,
+          "success": true
+        },
+        {
+          "requestId": 25,
+          "latency": 927,
+          "tokens": 180,
+          "success": true
+        },
+        {
+          "requestId": 26,
+          "latency": 896,
+          "tokens": 201,
+          "success": true
+        },
+        {
+          "requestId": 27,
+          "latency": 1091,
+          "tokens": 215,
+          "success": true
+        },
+        {
+          "requestId": 28,
+          "latency": 1011,
+          "tokens": 219,
+          "success": true
+        },
+        {
+          "requestId": 29,
+          "latency": 891,
+          "tokens": 218,
+          "success": true
+        }
+      ]
+    }
+  ],
+  "concurrencyTests": [
+    {
+      "concurrencyLevel": 1,
+      "totalTime": 551,
+      "results": [
+        {
+          "requestId": 0,
+          "type": "content-generation",
+          "latency": 550,
+          "tokens": 110,
+          "success": true
+        }
+      ],
+      "successCount": 1,
+      "failureCount": 0,
+      "successRate": 100,
+      "averageLatency": 550,
+      "maxLatency": 550,
+      "throughput": 1.8148820326678765
+    },
+    {
+      "concurrencyLevel": 5,
+      "totalTime": 1704,
+      "results": [
+        {
+          "requestId": 0,
+          "type": "content-generation",
+          "latency": 498,
+          "tokens": 102,
+          "success": true
+        },
+        {
+          "requestId": 1,
+          "type": "content-variant",
+          "latency": 943,
+          "success": false,
+          "error": "Rate limit exceeded"
+        },
+        {
+          "requestId": 2,
+          "type": "analysis",
+          "latency": 1704,
+          "tokens": 312,
+          "success": true
+        },
+        {
+          "requestId": 3,
+          "type": "persona-content",
+          "latency": 1039,
+          "tokens": 258,
+          "success": true
+        },
+        {
+          "requestId": 4,
+          "type": "content-generation",
+          "latency": 489,
+          "tokens": 109,
+          "success": true
+        }
+      ],
+      "successCount": 4,
+      "failureCount": 1,
+      "successRate": 80,
+      "averageLatency": 932.5,
+      "maxLatency": 1704,
+      "throughput": 2.347417840375587
+    },
+    {
+      "concurrencyLevel": 10,
+      "totalTime": 2245,
+      "results": [
+        {
+          "requestId": 0,
+          "type": "content-generation",
+          "latency": 565,
+          "tokens": 104,
+          "success": true
+        },
+        {
+          "requestId": 1,
+          "type": "content-variant",
+          "latency": 925,
+          "tokens": 209,
+          "success": true
+        },
+        {
+          "requestId": 2,
+          "type": "analysis",
+          "latency": 2216,
+          "tokens": 280,
+          "success": true
+        },
+        {
+          "requestId": 3,
+          "type": "persona-content",
+          "latency": 1061,
+          "tokens": 265,
+          "success": true
+        },
+        {
+          "requestId": 4,
+          "type": "content-generation",
+          "latency": 478,
+          "success": false,
+          "error": "Rate limit exceeded"
+        },
+        {
+          "requestId": 5,
+          "type": "content-variant",
+          "latency": 1035,
+          "tokens": 205,
+          "success": true
+        },
+        {
+          "requestId": 6,
+          "type": "analysis",
+          "latency": 2245,
+          "tokens": 303,
+          "success": true
+        },
+        {
+          "requestId": 7,
+          "type": "persona-content",
+          "latency": 861,
+          "tokens": 268,
+          "success": true
+        },
+        {
+          "requestId": 8,
+          "type": "content-generation",
+          "latency": 432,
+          "success": false,
+          "error": "Service unavailable"
+        },
+        {
+          "requestId": 9,
+          "type": "content-variant",
+          "latency": 897,
+          "tokens": 192,
+          "success": true
+        }
+      ],
+      "successCount": 8,
+      "failureCount": 2,
+      "successRate": 80,
+      "averageLatency": 1225.625,
+      "maxLatency": 2245,
+      "throughput": 3.56347438752784
+    },
+    {
+      "concurrencyLevel": 20,
+      "totalTime": 2087,
+      "results": [
+        {
+          "requestId": 0,
+          "type": "content-generation",
+          "latency": 440,
+          "tokens": 91,
+          "success": true
+        },
+        {
+          "requestId": 1,
+          "type": "content-variant",
+          "latency": 1010,
+          "tokens": 209,
+          "success": true
+        },
+        {
+          "requestId": 2,
+          "type": "analysis",
+          "latency": 1937,
+          "tokens": 277,
+          "success": true
+        },
+        {
+          "requestId": 3,
+          "type": "persona-content",
+          "latency": 1038,
+          "tokens": 259,
+          "success": true
+        },
+        {
+          "requestId": 4,
+          "type": "content-generation",
+          "latency": 520,
+          "success": false,
+          "error": "Rate limit exceeded"
+        },
+        {
+          "requestId": 5,
+          "type": "content-variant",
+          "latency": 1067,
+          "tokens": 182,
+          "success": true
+        },
+        {
+          "requestId": 6,
+          "type": "analysis",
+          "latency": 1751,
+          "tokens": 291,
+          "success": true
+        },
+        {
+          "requestId": 7,
+          "type": "persona-content",
+          "latency": 934,
+          "tokens": 230,
+          "success": true
+        },
+        {
+          "requestId": 8,
+          "type": "content-generation",
+          "latency": 429,
+          "tokens": 95,
+          "success": true
+        },
+        {
+          "requestId": 9,
+          "type": "content-variant",
+          "latency": 1071,
+          "tokens": 197,
+          "success": true
+        },
+        {
+          "requestId": 10,
+          "type": "analysis",
+          "latency": 1924,
+          "tokens": 319,
+          "success": true
+        },
+        {
+          "requestId": 11,
+          "type": "persona-content",
+          "latency": 1085,
+          "tokens": 231,
+          "success": true
+        },
+        {
+          "requestId": 12,
+          "type": "content-generation",
+          "latency": 562,
+          "tokens": 105,
+          "success": true
+        },
+        {
+          "requestId": 13,
+          "type": "content-variant",
+          "latency": 1000,
+          "tokens": 209,
+          "success": true
+        },
+        {
+          "requestId": 14,
+          "type": "analysis",
+          "latency": 1734,
+          "tokens": 274,
+          "success": true
+        },
+        {
+          "requestId": 15,
+          "type": "persona-content",
+          "latency": 860,
+          "tokens": 243,
+          "success": true
+        },
+        {
+          "requestId": 16,
+          "type": "content-generation",
+          "latency": 524,
+          "tokens": 107,
+          "success": true
+        },
+        {
+          "requestId": 17,
+          "type": "content-variant",
+          "latency": 991,
+          "success": false,
+          "error": "Service unavailable"
+        },
+        {
+          "requestId": 18,
+          "type": "analysis",
+          "latency": 2086,
+          "tokens": 291,
+          "success": true
+        },
+        {
+          "requestId": 19,
+          "type": "persona-content",
+          "latency": 863,
+          "tokens": 269,
+          "success": true
+        }
+      ],
+      "successCount": 18,
+      "failureCount": 2,
+      "successRate": 90,
+      "averageLatency": 1128.611111111111,
+      "maxLatency": 2086,
+      "throughput": 8.624820316243412
+    }
+  ],
+  "errorAnalysis": {
+    "totalErrors": 0,
+    "errorTypes": {},
+    "errorsByPromptType": {
+      "content-generation": [],
+      "content-variant": [],
+      "analysis": [],
+      "persona-content": []
+    },
+    "mostCommonError": null
+  },
+  "recommendations": []
+}

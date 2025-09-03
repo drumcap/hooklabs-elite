@@ -1,0 +1,45 @@
+{
+  "timestamp": "2025-09-03T04:16:41.874Z",
+  "tests": {
+    "bundleSize": {
+      "error": "Command failed: npm run build\nBus error (core dumped)\n"
+    },
+    "networkSimulation": {
+      "Fast 3G": {
+        "estimatedLoadTime": "1.65",
+        "target": "< 4s",
+        "passed": true
+      },
+      "Slow 3G": {
+        "estimatedLoadTime": "6.40",
+        "target": "< 8s",
+        "passed": true
+      },
+      "4G": {
+        "estimatedLoadTime": "0.44",
+        "target": "< 2s",
+        "passed": true
+      }
+    },
+    "optimizations": {
+      "serviceWorker": true,
+      "manifest": true,
+      "nextConfigOptimizations": true,
+      "lazyLoading": true,
+      "memoization": true,
+      "bundleSplitting": false
+    }
+  },
+  "summary": {
+    "overallScore": "91.7",
+    "grade": "A",
+    "improvements": {
+      "bundleSize": "N/A",
+      "lighthouse": "N/A"
+    }
+  },
+  "recommendations": [
+    "번들 크기가 목표치를 초과합니다. 더 적극적인 코드 스플리팅을 적용하세요.",
+    "사용하지 않는 라이브러리를 제거하고 트리 셰이킹을 개선하세요."
+  ]
+}

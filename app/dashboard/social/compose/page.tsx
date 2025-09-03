@@ -3,10 +3,56 @@
 import { useState } from "react"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@/convex/_generated/api"
-import { ContentEditor } from "@/components/social/content/ContentEditor"
-import { VariantGenerator } from "@/components/social/content/VariantGenerator"
-import { ContentPreview } from "@/components/social/content/ContentPreview"
-import { PostScheduler } from "@/components/social/scheduling/PostScheduler"
+import dynamic from "next/dynamic"
+import { Suspense } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
+
+// 동적 임포트로 큰 컴포넌트들을 레이지 로딩
+const ContentEditor = dynamic(
+  () => import("@/components/social/content/ContentEditor"),
+  {
+    loading: () => <Skeleton className="h-96 w-full" />,
+    ssr: false
+  }
+)
+
+const VariantGenerator = dynamic(
+  () => import("@/components/social/content/VariantGenerator"),
+  {
+    loading: () => (
+      <div className="space-y-4">
+        <Skeleton className="h-12 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-32 w-full" />
+          ))}
+        </div>
+      </div>
+    ),
+    ssr: false
+  }
+)
+
+const ContentPreview = dynamic(
+  () => import("@/components/social/content/ContentPreview"),
+  {
+    loading: () => (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    ),
+    ssr: false
+  }
+)
+
+const PostScheduler = dynamic(
+  () => import("@/components/social/scheduling/PostScheduler"),
+  {
+    loading: () => <Skeleton className="h-80 w-full" />,
+    ssr: false
+  }
+)
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"

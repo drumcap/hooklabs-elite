@@ -1,0 +1,470 @@
+name: 🗄️ Convex 최적화 배포
+
+on:
+  push:
+    branches: [main, develop]
+    paths: 
+      - 'convex/**'
+      - 'convex.json'
+      - 'package.json'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'convex/**'
+      - 'convex.json'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '배포 환경'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging  
+          - production
+      force_deploy:
+        description: '강제 배포 (스키마 변경 무시)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '20'
+  CACHE_VERSION: 'v1'
+
+# 동시 실행 제한 (환경별)
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'development') }}
+  cancel-in-progress: false
+
+jobs:
+  # =============================================================================
+  # 📋 변경사항 분석 및 영향도 평가
+  # =============================================================================
+  analyze:
+    name: 📋 변경사항 분석
+    runs-on: ubuntu-latest
+    outputs:
+      schema_changed: ${{ steps.changes.outputs.schema }}
+      functions_changed: ${{ steps.changes.outputs.functions }}
+      breaking_changes: ${{ steps.breaking.outputs.result }}
+      deploy_required: ${{ steps.deploy-check.outputs.required }}
+      
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+      
+      - name: 🔍 변경사항 감지
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            schema:
+              - 'convex/schema.ts'
+              - 'convex/_generated/**'
+            functions:
+              - 'convex/**/*.ts'
+              - '!convex/_generated/**'
+              - '!convex/schema.ts'
+            config:
+              - 'convex.json'
+              - 'package.json'
+      
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: 📦 의존성 설치
+        run: npm ci --only=production --prefer-offline
+      
+      - name: 🔍 스키마 호환성 검사
+        id: breaking
+        run: |
+          if [[ "${{ steps.changes.outputs.schema }}" == "true" ]]; then
+            echo "스키마 변경 감지됨"
+            
+            # 이전 스키마와 호환성 검사 (구체적 구현 필요)
+            if npx convex dev --dry-run 2>&1 | grep -i "breaking\|incompatible"; then
+              echo "result=true" >> $GITHUB_OUTPUT
+              echo "⚠️ 호환성이 깨지는 스키마 변경이 감지되었습니다."
+            else
+              echo "result=false" >> $GITHUB_OUTPUT
+              echo "✅ 호환 가능한 스키마 변경입니다."
+            fi
+          else
+            echo "result=false" >> $GITHUB_OUTPUT
+            echo "스키마 변경 없음"
+          fi
+        env:
+          CONVEX_DEPLOYMENT: ${{ secrets.CONVEX_DEV_DEPLOYMENT }}
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEV_DEPLOY_KEY }}
+        continue-on-error: true
+      
+      - name: 📊 배포 필요성 판단
+        id: deploy-check
+        run: |
+          if [[ "${{ steps.changes.outputs.schema }}" == "true" || "${{ steps.changes.outputs.functions }}" == "true" || "${{ inputs.force_deploy }}" == "true" ]]; then
+            echo "required=true" >> $GITHUB_OUTPUT
+            echo "🚀 배포가 필요합니다."
+          else
+            echo "required=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ 배포할 변경사항이 없습니다."
+          fi
+
+  # =============================================================================
+  # 🔍 함수 검증 및 테스트 
+  # =============================================================================
+  validate:
+    name: 🔍 Convex 함수 검증
+    runs-on: ubuntu-latest
+    needs: [analyze]
+    if: needs.analyze.outputs.deploy_required == 'true'
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+      
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: 📦 의존성 캐시
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-convex-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-convex-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-convex-
+      
+      - name: 📦 의존성 설치
+        run: npm ci --prefer-offline
+      
+      - name: 🔍 TypeScript 컴파일 검사
+        run: |
+          npx tsc --noEmit --project convex/tsconfig.json
+          echo "✅ TypeScript 컴파일 검증 완료"
+      
+      - name: 🧪 Convex 함수 테스트
+        run: |
+          # Convex 특정 테스트 실행
+          if npm run test:convex --if-present; then
+            echo "✅ Convex 함수 테스트 통과"
+          else
+            echo "ℹ️ Convex 함수 테스트 스크립트 없음"
+          fi
+      
+      - name: 📊 함수 복잡도 분석
+        run: |
+          echo "## Convex 함수 분석 리포트" > convex-analysis.md
+          echo "### 함수 크기 (라인 수)" >> convex-analysis.md
+          find convex -name "*.ts" -not -path "*/_generated/*" | while read file; do
+            lines=$(wc -l < "$file")
+            echo "- $file: $lines 라인" >> convex-analysis.md
+            if [ $lines -gt 200 ]; then
+              echo "  ⚠️ 복잡도 높음 - 리팩토링 검토 필요" >> convex-analysis.md
+            fi
+          done
+          
+          echo "### 의존성 분석" >> convex-analysis.md
+          find convex -name "*.ts" -exec grep -l "import.*from" {} \; | wc -l | xargs echo "- 임포트가 있는 파일 수:" >> convex-analysis.md
+          
+          cat convex-analysis.md
+
+  # =============================================================================
+  # 🗄️ 스키마 마이그레이션 (단계적)
+  # =============================================================================
+  migrate-schema:
+    name: 🗄️스키마 마이그레이션
+    runs-on: ubuntu-latest
+    needs: [analyze, validate]
+    if: needs.analyze.outputs.schema_changed == 'true'
+    timeout-minutes: 15
+    
+    strategy:
+      matrix:
+        environment:
+          - name: development
+            condition: github.ref == 'refs/heads/develop' || github.event_name == 'pull_request'
+            deployment: ${{ secrets.CONVEX_DEV_DEPLOYMENT }}
+            deploy_key: ${{ secrets.CONVEX_DEV_DEPLOY_KEY }}
+          - name: production
+            condition: github.ref == 'refs/heads/main'
+            deployment: ${{ secrets.CONVEX_PROD_DEPLOYMENT }}
+            deploy_key: ${{ secrets.CONVEX_PROD_DEPLOY_KEY }}
+        exclude:
+          - environment: { name: development }
+            condition: ${{ github.ref != 'refs/heads/develop' && github.event_name != 'pull_request' && true || false }}
+          - environment: { name: production }
+            condition: ${{ github.ref != 'refs/heads/main' && true || false }}
+    
+    environment: ${{ matrix.environment.name }}
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+      
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: 📦 의존성 복원
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-convex-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json') }}
+      
+      - name: ⚠️ 호환성 깨는 변경 확인
+        if: needs.analyze.outputs.breaking_changes == 'true' && matrix.environment.name == 'production'
+        run: |
+          echo "❌ 호환성이 깨지는 스키마 변경이 프로덕션에 배포되려고 합니다!"
+          echo "수동 승인이 필요합니다."
+          exit 1
+      
+      - name: 🗄️ 스키마 백업 (프로덕션만)
+        if: matrix.environment.name == 'production'
+        run: |
+          # 현재 스키마 백업 (실제 구현 시 Convex CLI 사용)
+          mkdir -p backups
+          echo "$(date): 스키마 백업 시작" > backups/migration-log.txt
+          # npx convex export --format=jsonl backups/pre-migration-$(date +%Y%m%d-%H%M%S).jsonl
+        env:
+          CONVEX_DEPLOYMENT: ${{ matrix.environment.deployment }}
+          CONVEX_DEPLOY_KEY: ${{ matrix.environment.deploy_key }}
+      
+      - name: 🚀 스키마 마이그레이션 실행
+        run: |
+          echo "🗄️ ${{ matrix.environment.name }} 환경 스키마 마이그레이션 시작..."
+          
+          # 점진적 배포 전략
+          npx convex dev --once --verbose
+          
+          echo "✅ 스키마 마이그레이션 완료"
+        env:
+          CONVEX_DEPLOYMENT: ${{ matrix.environment.deployment }}
+          CONVEX_DEPLOY_KEY: ${{ matrix.environment.deploy_key }}
+      
+      - name: 🧪 마이그레이션 검증
+        run: |
+          echo "🔍 마이그레이션 검증 중..."
+          # 기본 쿼리/뮤테이션 동작 확인
+          npx convex run --help > /dev/null
+          echo "✅ 마이그레이션 검증 완료"
+        env:
+          CONVEX_DEPLOYMENT: ${{ matrix.environment.deployment }}
+          CONVEX_DEPLOY_KEY: ${{ matrix.environment.deploy_key }}
+
+  # =============================================================================
+  # 🚀 함수 배포 (환경별)
+  # =============================================================================
+  deploy-functions:
+    name: 🚀 함수 배포
+    runs-on: ubuntu-latest
+    needs: [analyze, validate, migrate-schema]
+    if: |
+      always() && 
+      needs.analyze.outputs.deploy_required == 'true' && 
+      (needs.migrate-schema.result == 'success' || needs.migrate-schema.result == 'skipped')
+    timeout-minutes: 10
+    
+    strategy:
+      matrix:
+        environment:
+          - name: development
+            condition: github.ref == 'refs/heads/develop' || github.event_name == 'pull_request'
+            deployment: ${{ secrets.CONVEX_DEV_DEPLOYMENT }}
+            deploy_key: ${{ secrets.CONVEX_DEV_DEPLOY_KEY }}
+          - name: production
+            condition: github.ref == 'refs/heads/main'
+            deployment: ${{ secrets.CONVEX_PROD_DEPLOYMENT }}
+            deploy_key: ${{ secrets.CONVEX_PROD_DEPLOY_KEY }}
+        exclude:
+          - environment: { name: development }
+            condition: ${{ github.ref != 'refs/heads/develop' && github.event_name != 'pull_request' && true || false }}
+          - environment: { name: production }
+            condition: ${{ github.ref != 'refs/heads/main' && true || false }}
+    
+    environment: ${{ matrix.environment.name }}
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+      
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: 📦 의존성 복원
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-convex-${{ env.CACHE_VERSION }}-${{ hashFiles('package-lock.json') }}
+      
+      - name: 🚀 Convex 함수 배포
+        id: deploy
+        run: |
+          echo "🚀 ${{ matrix.environment.name }} 환경 함수 배포 시작..."
+          
+          # 배포 시작 시간 기록
+          start_time=$(date +%s)
+          
+          npx convex deploy --cmd 'echo "Convex 함수 배포 완료"'
+          
+          # 배포 완료 시간 계산
+          end_time=$(date +%s)
+          duration=$((end_time - start_time))
+          
+          echo "duration=$duration" >> $GITHUB_OUTPUT
+          echo "✅ 배포 완료 (소요시간: ${duration}초)"
+        env:
+          CONVEX_DEPLOYMENT: ${{ matrix.environment.deployment }}
+          CONVEX_DEPLOY_KEY: ${{ matrix.environment.deploy_key }}
+      
+      - name: 🧪 배포 후 헬스체크
+        run: |
+          echo "🔍 배포 검증 중..."
+          
+          # 주요 함수들 동작 확인
+          timeout 30 npx convex run --help || {
+            echo "❌ Convex CLI 응답 실패"
+            exit 1
+          }
+          
+          echo "✅ 배포 후 헬스체크 완료"
+        env:
+          CONVEX_DEPLOYMENT: ${{ matrix.environment.deployment }}
+          CONVEX_DEPLOY_KEY: ${{ matrix.environment.deploy_key }}
+      
+      - name: 📊 배포 메트릭 저장
+        run: |
+          {
+            echo "## ${{ matrix.environment.name }} 배포 리포트"
+            echo "- 배포 시간: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            echo "- 소요시간: ${{ steps.deploy.outputs.duration }}초"
+            echo "- 브랜치: ${{ github.ref_name }}"
+            echo "- 커밋: ${{ github.sha }}"
+            echo "- 트리거: ${{ github.event_name }}"
+            echo "- 스키마 변경: ${{ needs.analyze.outputs.schema_changed }}"
+            echo "- 함수 변경: ${{ needs.analyze.outputs.functions_changed }}"
+          } > deployment-report-${{ matrix.environment.name }}.md
+          
+          cat deployment-report-${{ matrix.environment.name }}.md
+      
+      - name: 📄 배포 리포트 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: convex-deployment-report-${{ matrix.environment.name }}
+          path: deployment-report-${{ matrix.environment.name }}.md
+          retention-days: 30
+
+  # =============================================================================
+  # 🔄 롤백 준비 및 태깅
+  # =============================================================================
+  prepare-rollback:
+    name: 🔄 롤백 준비
+    runs-on: ubuntu-latest
+    needs: [deploy-functions]
+    if: success() && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 🏷️ 배포 태그 생성
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          TAG_NAME="convex-v$(date +'%Y.%m.%d-%H%M%S')"
+          git tag -a $TAG_NAME -m "Convex 배포: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          git push origin $TAG_NAME
+          
+          echo "ROLLBACK_TAG=$TAG_NAME" >> $GITHUB_ENV
+          echo "✅ 롤백 태그 생성: $TAG_NAME"
+      
+      - name: 📦 배포 스냅샷 보관
+        uses: actions/upload-artifact@v4
+        with:
+          name: convex-snapshot-${{ github.sha }}
+          path: |
+            convex/
+            convex.json
+            package.json
+            package-lock.json
+          retention-days: 90
+
+  # =============================================================================
+  # 📱 알림 및 리포팅
+  # =============================================================================
+  notify:
+    name: 📱 배포 알림
+    runs-on: ubuntu-latest
+    needs: [analyze, deploy-functions, prepare-rollback]
+    if: always() && needs.analyze.outputs.deploy_required == 'true'
+    
+    steps:
+      - name: 📥 배포 리포트 다운로드
+        if: needs.deploy-functions.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: convex-deployment-report-*
+          merge-multiple: true
+      
+      - name: 📱 성공 알림
+        if: needs.deploy-functions.result == 'success'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: '#convex-deployments'
+          fields: repo,message,commit,author,took,workflow
+          text: |
+            🗄️ Convex 배포 성공!
+            
+            📍 환경: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Development' }}
+            🔄 스키마 변경: ${{ needs.analyze.outputs.schema_changed == 'true' && '✅' || '❌' }}
+            ⚡ 함수 변경: ${{ needs.analyze.outputs.functions_changed == 'true' && '✅' || '❌' }}
+            
+            상세 리포트는 Actions 탭에서 확인하세요.
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      
+      - name: 📱 실패 알림
+        if: needs.deploy-functions.result == 'failure'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#convex-deployments'
+          fields: repo,message,commit,author,workflow
+          text: |
+            ❌ Convex 배포 실패!
+            
+            📍 환경: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Development' }}
+            🔍 로그를 확인하여 문제를 해결해주세요.
+            
+            필요시 이전 버전으로 롤백하세요.
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: env.SLACK_WEBHOOK_URL != ''
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

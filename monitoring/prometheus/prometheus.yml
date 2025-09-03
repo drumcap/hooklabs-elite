@@ -1,0 +1,144 @@
+# ==============================================================================
+# Prometheus 설정 - HookLabs Elite 모니터링
+# ==============================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'production'
+    service: 'hooklabs-elite'
+
+# 알림 규칙 파일
+rule_files:
+  - "alert-rules.yml"
+  - "recording-rules.yml"
+
+# 알림 매니저 설정
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# 스크래핑 작업 설정
+scrape_configs:
+  # Prometheus 자체 모니터링
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  # Next.js 애플리케이션 메트릭
+  - job_name: 'hooklabs-elite-app'
+    static_configs:
+      - targets: ['app:3000']
+    scrape_interval: 10s
+    metrics_path: '/api/metrics'
+    scrape_timeout: 5s
+    honor_labels: true
+    params:
+      format: ['prometheus']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: app:3000
+
+  # Node Exporter (시스템 메트릭)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.*):\d+'
+        target_label: instance
+        replacement: 'hooklabs-elite-server'
+
+  # cAdvisor (컨테이너 메트릭)  
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    honor_labels: true
+
+  # Redis 메트릭
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 30s
+
+  # 블랙박스 익스포터 (외부 서비스 가용성 체크)
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - https://hooklabs-elite.com
+        - https://hooklabs-elite.com/api/health
+        - https://hooklabs-elite.com/dashboard
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # Vercel Edge Functions 모니터링 (webhook을 통한 커스텀 메트릭)
+  - job_name: 'vercel-functions'
+    honor_timestamps: true
+    scrape_interval: 60s
+    metrics_path: '/api/internal/metrics'
+    scheme: https
+    static_configs:
+      - targets: ['hooklabs-elite.vercel.app']
+    basic_auth:
+      username: 'metrics'
+      password_file: '/etc/prometheus/vercel-metrics-password'
+
+  # Convex 데이터베이스 메트릭 (커스텀 익스포터)
+  - job_name: 'convex-metrics'
+    scrape_interval: 60s
+    static_configs:
+      - targets: ['app:3000']
+    metrics_path: '/api/internal/convex-metrics'
+    bearer_token_file: '/etc/prometheus/convex-bearer-token'
+
+  # Lemon Squeezy 결제 메트릭 (webhook 기반)
+  - job_name: 'payment-metrics'
+    scrape_interval: 300s  # 5분마다
+    static_configs:
+      - targets: ['app:3000']
+    metrics_path: '/api/internal/payment-metrics'
+    bearer_token_file: '/etc/prometheus/internal-api-token'
+
+# 원격 쓰기 설정 (장기 저장용)
+remote_write:
+  - url: "https://prometheus-remote-write.hooklabs-elite.com/api/v1/write"
+    basic_auth:
+      username: "hooklabs-elite"
+      password_file: "/etc/prometheus/remote-write-password"
+    queue_config:
+      max_samples_per_send: 1000
+      batch_send_deadline: 5s
+      max_retries: 3
+      min_backoff: 30ms
+      max_backoff: 100ms
+    write_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'node_.*'
+        action: drop  # 노드 메트릭은 원격 저장소에서 제외
+
+# 메트릭 보존 정책
+storage:
+  tsdb:
+    retention.time: 30d
+    retention.size: 50GB
+    wal-compression: true

@@ -465,4 +465,319 @@ export default defineSchema({
       .index("byPlatform", ["platform"])
       .index("byEngagementRate", ["engagementRate"])
       .index("byRecordedAt", ["recordedAt"]),
+
+    // === 성능 모니터링 테이블들 ===
+    
+    // Web Vitals 메트릭
+    webVitals: defineTable({
+      userId: v.optional(v.id("users")),
+      sessionId: v.string(),
+      pathname: v.string(),
+      // Core Web Vitals
+      lcp: v.optional(v.number()), // Largest Contentful Paint
+      fid: v.optional(v.number()), // First Input Delay
+      cls: v.optional(v.number()), // Cumulative Layout Shift
+      fcp: v.optional(v.number()), // First Contentful Paint
+      ttfb: v.optional(v.number()), // Time to First Byte
+      inp: v.optional(v.number()), // Interaction to Next Paint
+      // 추가 메트릭
+      navigationTiming: v.optional(v.object({
+        domContentLoaded: v.number(),
+        loadComplete: v.number(),
+        domInteractive: v.number(),
+        redirectTime: v.number(),
+        dnsTime: v.number(),
+        connectionTime: v.number(),
+        requestTime: v.number(),
+        responseTime: v.number(),
+      })),
+      // 디바이스 정보
+      deviceType: v.string(), // mobile, tablet, desktop
+      browser: v.string(),
+      browserVersion: v.string(),
+      os: v.string(),
+      connectionType: v.optional(v.string()), // 4g, 3g, wifi 등
+      viewport: v.object({
+        width: v.number(),
+        height: v.number(),
+      }),
+      // 메타데이터
+      url: v.string(),
+      referrer: v.optional(v.string()),
+      userAgent: v.string(),
+      timestamp: v.string(),
+    })
+      .index("byUserId", ["userId"])
+      .index("bySessionId", ["sessionId"])
+      .index("byPathname", ["pathname"])
+      .index("byTimestamp", ["timestamp"])
+      .index("byDeviceType", ["deviceType"]),
+
+    // API 성능 메트릭
+    apiMetrics: defineTable({
+      userId: v.optional(v.id("users")),
+      endpoint: v.string(),
+      method: v.string(), // GET, POST, PUT, DELETE 등
+      // 성능 지표
+      responseTime: v.number(), // 밀리초
+      statusCode: v.number(),
+      success: v.boolean(),
+      // 상세 타이밍
+      timing: v.optional(v.object({
+        dns: v.optional(v.number()),
+        connection: v.optional(v.number()),
+        tls: v.optional(v.number()),
+        firstByte: v.optional(v.number()),
+        download: v.optional(v.number()),
+        total: v.number(),
+      })),
+      // 요청/응답 크기
+      requestSize: v.optional(v.number()), // bytes
+      responseSize: v.optional(v.number()), // bytes
+      // 에러 정보
+      errorMessage: v.optional(v.string()),
+      errorStack: v.optional(v.string()),
+      // 컨텍스트
+      traceId: v.optional(v.string()),
+      spanId: v.optional(v.string()),
+      parentSpanId: v.optional(v.string()),
+      // 메타데이터
+      userAgent: v.optional(v.string()),
+      ip: v.optional(v.string()),
+      country: v.optional(v.string()),
+      timestamp: v.string(),
+    })
+      .index("byUserId", ["userId"])
+      .index("byEndpoint", ["endpoint"])
+      .index("byMethod", ["method"])
+      .index("bySuccess", ["success"])
+      .index("byStatusCode", ["statusCode"])
+      .index("byTimestamp", ["timestamp"])
+      .index("byResponseTime", ["responseTime"]),
+
+    // 데이터베이스 쿼리 성능
+    queryMetrics: defineTable({
+      userId: v.optional(v.id("users")),
+      queryName: v.string(), // Convex 함수 이름
+      queryType: v.string(), // query, mutation, action
+      // 성능 지표
+      executionTime: v.number(), // 밀리초
+      success: v.boolean(),
+      // 쿼리 상세
+      tableName: v.optional(v.string()),
+      operation: v.optional(v.string()), // get, list, create, update, delete
+      rowsAffected: v.optional(v.number()),
+      rowsReturned: v.optional(v.number()),
+      // 캐시 정보
+      cacheHit: v.optional(v.boolean()),
+      cacheKey: v.optional(v.string()),
+      // 에러 정보
+      errorMessage: v.optional(v.string()),
+      errorCode: v.optional(v.string()),
+      // 컨텍스트
+      traceId: v.optional(v.string()),
+      requestId: v.optional(v.string()),
+      timestamp: v.string(),
+    })
+      .index("byUserId", ["userId"])
+      .index("byQueryName", ["queryName"])
+      .index("byQueryType", ["queryType"])
+      .index("bySuccess", ["success"])
+      .index("byTimestamp", ["timestamp"])
+      .index("byExecutionTime", ["executionTime"]),
+
+    // 시스템 리소스 메트릭
+    systemMetrics: defineTable({
+      instanceId: v.string(), // 서버/컨테이너 인스턴스 ID
+      // CPU 메트릭
+      cpuUsage: v.number(), // 백분율
+      cpuCores: v.number(),
+      cpuModel: v.optional(v.string()),
+      // 메모리 메트릭
+      memoryUsage: v.number(), // 백분율
+      memoryUsed: v.number(), // MB
+      memoryTotal: v.number(), // MB
+      heapUsed: v.number(), // MB (Node.js heap)
+      heapTotal: v.number(), // MB
+      // 네트워크 메트릭
+      networkIn: v.number(), // bytes/sec
+      networkOut: v.number(), // bytes/sec
+      activeConnections: v.number(),
+      // 디스크 메트릭
+      diskUsage: v.optional(v.number()), // 백분율
+      diskRead: v.optional(v.number()), // bytes/sec
+      diskWrite: v.optional(v.number()), // bytes/sec
+      // 프로세스 정보
+      processUptime: v.number(), // 초
+      processId: v.number(),
+      nodeVersion: v.string(),
+      // 메타데이터
+      region: v.optional(v.string()),
+      environment: v.string(), // production, staging, development
+      timestamp: v.string(),
+    })
+      .index("byInstanceId", ["instanceId"])
+      .index("byEnvironment", ["environment"])
+      .index("byTimestamp", ["timestamp"]),
+
+    // 비즈니스 메트릭
+    businessMetrics: defineTable({
+      userId: v.optional(v.id("users")),
+      metricType: v.string(), // user_activity, content_generation, payment, engagement 등
+      metricName: v.string(),
+      value: v.number(),
+      // 세부 메트릭
+      dimensions: v.optional(v.object({
+        platform: v.optional(v.string()),
+        personaId: v.optional(v.string()),
+        planType: v.optional(v.string()),
+        source: v.optional(v.string()),
+        campaign: v.optional(v.string()),
+      })),
+      // 집계 정보
+      aggregationType: v.optional(v.string()), // count, sum, avg, min, max
+      period: v.optional(v.string()), // minute, hour, day, week, month
+      // 메타데이터
+      metadata: v.optional(v.any()),
+      timestamp: v.string(),
+    })
+      .index("byUserId", ["userId"])
+      .index("byMetricType", ["metricType"])
+      .index("byMetricName", ["metricName"])
+      .index("byTimestamp", ["timestamp"]),
+
+    // 에러 및 이벤트 로그
+    errorLogs: defineTable({
+      userId: v.optional(v.id("users")),
+      level: v.string(), // error, warn, info, debug
+      category: v.string(), // api, database, frontend, payment, ai 등
+      message: v.string(),
+      // 에러 상세
+      errorName: v.optional(v.string()),
+      errorStack: v.optional(v.string()),
+      errorCode: v.optional(v.string()),
+      // 컨텍스트
+      pathname: v.optional(v.string()),
+      endpoint: v.optional(v.string()),
+      component: v.optional(v.string()),
+      action: v.optional(v.string()),
+      // 추적 정보
+      traceId: v.optional(v.string()),
+      sessionId: v.optional(v.string()),
+      requestId: v.optional(v.string()),
+      // 메타데이터
+      metadata: v.optional(v.any()),
+      userAgent: v.optional(v.string()),
+      ip: v.optional(v.string()),
+      timestamp: v.string(),
+    })
+      .index("byUserId", ["userId"])
+      .index("byLevel", ["level"])
+      .index("byCategory", ["category"])
+      .index("byTimestamp", ["timestamp"])
+      .index("bySessionId", ["sessionId"]),
+
+    // 알림 규칙
+    alertRules: defineTable({
+      name: v.string(),
+      description: v.optional(v.string()),
+      isActive: v.boolean(),
+      // 조건
+      metricType: v.string(), // webVitals, api, query, system, business
+      metricName: v.string(),
+      condition: v.string(), // gt, lt, gte, lte, eq, neq
+      threshold: v.number(),
+      // 집계 설정
+      aggregationWindow: v.number(), // 분 단위
+      aggregationType: v.string(), // avg, sum, min, max, count
+      consecutiveBreaches: v.number(), // 연속 위반 횟수
+      // 알림 채널
+      channels: v.array(v.object({
+        type: v.string(), // email, slack, discord, webhook
+        config: v.any(), // 채널별 설정
+      })),
+      // 알림 설정
+      severity: v.string(), // critical, high, medium, low
+      cooldownMinutes: v.number(), // 재알림 쿨다운
+      maxAlertsPerDay: v.optional(v.number()),
+      // 메타데이터
+      tags: v.optional(v.array(v.string())),
+      owner: v.optional(v.string()),
+      createdAt: v.string(),
+      updatedAt: v.string(),
+    })
+      .index("byIsActive", ["isActive"])
+      .index("byMetricType", ["metricType"])
+      .index("bySeverity", ["severity"])
+      .index("byCreatedAt", ["createdAt"]),
+
+    // 알림 이력
+    alertHistory: defineTable({
+      ruleId: v.id("alertRules"),
+      ruleName: v.string(),
+      // 알림 상세
+      status: v.string(), // triggered, resolved, acknowledged, ignored
+      severity: v.string(),
+      message: v.string(),
+      // 위반 정보
+      metricValue: v.number(),
+      threshold: v.number(),
+      condition: v.string(),
+      // 알림 전송 정보
+      channelsSent: v.array(v.string()),
+      sendSuccess: v.boolean(),
+      sendErrors: v.optional(v.array(v.string())),
+      // 응답 정보
+      acknowledgedBy: v.optional(v.id("users")),
+      acknowledgedAt: v.optional(v.string()),
+      resolvedAt: v.optional(v.string()),
+      notes: v.optional(v.string()),
+      // 메타데이터
+      metadata: v.optional(v.any()),
+      triggeredAt: v.string(),
+    })
+      .index("byRuleId", ["ruleId"])
+      .index("byStatus", ["status"])
+      .index("bySeverity", ["severity"])
+      .index("byTriggeredAt", ["triggeredAt"]),
+
+    // 성능 보고서
+    performanceReports: defineTable({
+      reportType: v.string(), // daily, weekly, monthly
+      period: v.object({
+        start: v.string(),
+        end: v.string(),
+      }),
+      // 요약 메트릭
+      summary: v.object({
+        avgResponseTime: v.number(),
+        p95ResponseTime: v.number(),
+        p99ResponseTime: v.number(),
+        errorRate: v.number(),
+        availability: v.number(),
+        // Web Vitals 평균
+        avgLCP: v.optional(v.number()),
+        avgFID: v.optional(v.number()),
+        avgCLS: v.optional(v.number()),
+        // 비즈니스 메트릭
+        totalUsers: v.number(),
+        activeUsers: v.number(),
+        totalRevenue: v.optional(v.number()),
+        conversionRate: v.optional(v.number()),
+      }),
+      // 상세 데이터
+      details: v.optional(v.any()),
+      // 추천 사항
+      recommendations: v.optional(v.array(v.object({
+        type: v.string(),
+        priority: v.string(),
+        description: v.string(),
+        impact: v.string(),
+      }))),
+      // 메타데이터
+      generatedAt: v.string(),
+      generatedBy: v.optional(v.string()), // system, user
+    })
+      .index("byReportType", ["reportType"])
+      .index("byGeneratedAt", ["generatedAt"]),
   });

@@ -1,0 +1,156 @@
+# ==============================================================================
+# 초최적화 멀티스테이지 Docker 빌드
+# HookLabs Elite - Next.js 15 SaaS Platform
+# ==============================================================================
+
+# 1단계: 베이스 의존성 이미지 (캐시 최적화)
+FROM node:20-alpine AS base
+
+# 메타데이터 설정
+LABEL org.opencontainers.image.title="HookLabs Elite" \
+      org.opencontainers.image.description="소셜 미디어 자동화 플랫폼" \
+      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.source="https://github.com/hooklabs/elite"
+
+# 보안 및 성능 최적화 환경 변수
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    NPM_CONFIG_LOGLEVEL=warn \
+    NPM_CONFIG_PROGRESS=false \
+    CI=true
+
+# 작업 디렉토리 설정
+WORKDIR /app
+
+# 시스템 패키지 업데이트 및 최소 필수 패키지 설치
+RUN apk add --no-cache --virtual .build-deps \
+    python3 \
+    make \
+    g++ \
+    git \
+    && apk add --no-cache \
+    libc6-compat \
+    curl \
+    dumb-init \
+    tzdata \
+    && rm -rf /var/cache/apk/*
+
+# 타임존 설정
+ENV TZ=Asia/Seoul
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# ==============================================================================
+# 2단계: 의존성 설치 (레이어 캐싱 최적화)
+# ==============================================================================
+FROM base AS deps
+
+# 패키지 파일만 먼저 복사 (레이어 캐싱 최적화)
+COPY package*.json ./
+
+# npm 설정 최적화
+RUN npm config set registry https://registry.npmjs.org/ && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retries 3
+
+# 프로덕션 의존성만 설치
+RUN npm ci --omit=dev --frozen-lockfile --prefer-offline && \
+    npm cache clean --force
+
+# ==============================================================================
+# 3단계: 개발 의존성 포함 빌드 환경
+# ==============================================================================
+FROM base AS builder
+
+# 패키지 파일 복사
+COPY package*.json ./
+
+# 모든 의존성 설치 (개발 의존성 포함)
+RUN npm ci --frozen-lockfile --prefer-offline
+
+# 소스 코드 복사 (레이어 최적화를 위해 자주 변경되는 파일은 나중에)
+COPY public ./public
+COPY convex ./convex
+COPY components ./components
+COPY lib ./lib
+COPY app ./app
+COPY *.ts *.js *.json ./
+
+# 빌드 시점 ARG (환경별 설정)
+ARG NEXT_PUBLIC_APP_ENV=production
+ARG NEXT_PUBLIC_CONVEX_URL
+ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+ARG SENTRY_AUTH_TOKEN
+
+# 환경 변수 설정
+ENV NEXT_PUBLIC_APP_ENV=$NEXT_PUBLIC_APP_ENV \
+    NEXT_PUBLIC_CONVEX_URL=$NEXT_PUBLIC_CONVEX_URL \
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY \
+    SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN
+
+# 빌드 시점 유효성 검사
+RUN npm run type-check
+
+# Next.js 빌드 (standalone 모드로 최적화)
+RUN npm run build && \
+    # 불필요한 파일 제거로 이미지 크기 최적화
+    rm -rf .git && \
+    rm -rf node_modules/@types && \
+    rm -rf node_modules/typescript && \
+    rm -rf **/*.test.* && \
+    rm -rf **/*.spec.*
+
+# ==============================================================================
+# 4단계: 최종 프로덕션 이미지 (distroless 기반)
+# ==============================================================================
+FROM gcr.io/distroless/nodejs20-debian12 AS runner
+
+# 보안을 위한 비root 사용자 설정 (distroless에서는 미리 설정됨)
+WORKDIR /app
+
+# 빌드 아티팩트만 복사 (최소한의 파일만)
+COPY --from=deps --chown=nonroot:nonroot /app/node_modules ./node_modules
+COPY --from=builder --chown=nonroot:nonroot /app/.next/standalone ./
+COPY --from=builder --chown=nonroot:nonroot /app/.next/static ./.next/static
+COPY --from=builder --chown=nonroot:nonroot /app/public ./public
+
+# 환경 변수 설정
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME="0.0.0.0"
+
+# 포트 노출
+EXPOSE 3000
+
+# 헬스체크는 Kubernetes/docker-compose에서 처리
+# CMD는 distroless에서 자동으로 node 실행
+CMD ["server.js"]
+
+# ==============================================================================
+# 5단계: 개발용 이미지 (Optional - Multi-target build)
+# ==============================================================================
+FROM base AS development
+
+WORKDIR /app
+
+# 개발 도구 설치
+RUN apk add --no-cache bash vim
+
+# 패키지 파일 복사 및 모든 의존성 설치
+COPY package*.json ./
+RUN npm ci
+
+# 소스 코드 복사
+COPY . .
+
+# 개발 서버 실행
+EXPOSE 3000
+CMD ["npm", "run", "dev"]
+
+# ==============================================================================
+# 빌드 사용법:
+# 프로덕션: docker build --target runner -t hooklabs-elite:latest .
+# 개발용: docker build --target development -t hooklabs-elite:dev .
+# 멀티플랫폼: docker buildx build --platform linux/amd64,linux/arm64 .
+# ==============================================================================
