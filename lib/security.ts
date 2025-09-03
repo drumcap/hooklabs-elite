@@ -530,29 +530,37 @@ export class TokenCrypto {
    * 토큰 암호화
    */
   static encrypt(text: string, key?: string): string {
-    const encryptionKey = key || process.env.SOCIAL_TOKEN_ENCRYPTION_KEY;
-    if (!encryptionKey || encryptionKey.length !== this.keyLength) {
-      throw new Error('Invalid encryption key');
+    const encryptionKey = Buffer.from(
+      key || process.env.SOCIAL_TOKEN_ENCRYPTION_KEY || '',
+      'hex'
+    );
+    
+    if (encryptionKey.length !== 32) {
+      throw new Error('Encryption key must be 32 bytes (64 hex characters)');
     }
 
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipher(this.algorithm, encryptionKey);
+    const cipher = crypto.createCipheriv(this.algorithm, encryptionKey, iv);
     
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
     
     const authTag = cipher.getAuthTag();
     
-    return `${iv.toString('hex')}:${encrypted}:${authTag.toString('hex')}`;
+    return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
   }
 
   /**
    * 토큰 복호화
    */
   static decrypt(encryptedText: string, key?: string): string {
-    const encryptionKey = key || process.env.SOCIAL_TOKEN_ENCRYPTION_KEY;
-    if (!encryptionKey || encryptionKey.length !== this.keyLength) {
-      throw new Error('Invalid encryption key');
+    const encryptionKey = Buffer.from(
+      key || process.env.SOCIAL_TOKEN_ENCRYPTION_KEY || '',
+      'hex'
+    );
+    
+    if (encryptionKey.length !== 32) {
+      throw new Error('Encryption key must be 32 bytes (64 hex characters)');
     }
 
     const parts = encryptedText.split(':');
@@ -560,11 +568,11 @@ export class TokenCrypto {
       throw new Error('Invalid encrypted text format');
     }
 
-    const [ivHex, encrypted, authTagHex] = parts;
+    const [ivHex, authTagHex, encrypted] = parts;
     const iv = Buffer.from(ivHex, 'hex');
     const authTag = Buffer.from(authTagHex, 'hex');
     
-    const decipher = crypto.createDecipher(this.algorithm, encryptionKey);
+    const decipher = crypto.createDecipheriv(this.algorithm, encryptionKey, iv);
     decipher.setAuthTag(authTag);
     
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
