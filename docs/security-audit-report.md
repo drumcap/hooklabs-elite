@@ -1,90 +1,103 @@
-# 보안 감사 보고서 - HookLabs Elite SaaS Platform
+# 🔒 HookLabs Elite 보안 감사 보고서
 
-## 📅 감사 일자: 2025-09-03
-## 🔍 감사 범위: Twitter/Threads 자동 발행 SaaS 플랫폼
+**감사일자**: 2025년 1월 3일  
+**감사자**: Security Auditor  
+**버전**: 1.0.0  
+**심각도 등급**: 🔴 Critical | 🟠 High | 🟡 Medium | 🔵 Low
 
----
+## 📋 요약
 
-## 📊 전체 보안 평가
+HookLabs Elite 프로젝트의 포괄적인 보안 감사를 수행했습니다. 전반적으로 보안 아키텍처가 잘 구성되어 있으나, 몇 가지 중요한 개선사항이 필요합니다.
 
-### 보안 수준: **중간 (Medium)** ⚠️
-- **강점**: 견고한 인증 시스템, Rate Limiting, 입력 검증
-- **개선 필요**: 토큰 암호화, CSP 정책, 웹훅 검증, 환경 변수 관리
+### 감사 범위
+- OWASP Top 10 취약점
+- 인증/권한 시스템 (Clerk)
+- API 보안 및 Rate Limiting
+- 데이터 암호화
+- 웹훅 보안
+- 써드파티 의존성
 
----
+## 🚨 발견된 취약점 및 권장사항
 
-## 🚨 발견된 주요 취약점 (OWASP Top 10 기준)
+### 1. 🔴 Critical - 암호화 구현 오류
 
-### 1. **[심각도: 높음]** A02:2021 - 암호화 실패 (Cryptographic Failures)
+**위치**: `/lib/security.ts` (라인 539, 567)
 
-#### 문제점
-1. **소셜 미디어 OAuth 토큰이 평문으로 저장됨**
-   - 위치: `/workspace/hooklabs-elite/convex/schema.ts` (Line 258-259)
-   - `accessToken`, `refreshToken`이 암호화 없이 저장
-   
-2. **TokenCrypto 클래스의 암호화 구현 오류**
-   - 위치: `/workspace/hooklabs-elite/lib/security.ts` (Line 539, 567)
-   - `crypto.createCipher` 사용 (deprecated) → `crypto.createCipheriv` 사용 필요
-
-#### 해결 방안
+**문제점**:
 ```typescript
-// lib/security.ts 수정
-export class TokenCrypto {
-  private static readonly algorithm = 'aes-256-gcm';
-  private static readonly keyLength = 32;
+// 잘못된 구현
+const cipher = crypto.createCipher(this.algorithm, encryptionKey);
+const decipher = crypto.createDecipher(this.algorithm, encryptionKey);
+```
 
-  static encrypt(text: string, key?: string): string {
-    const encryptionKey = Buffer.from(
-      key || process.env.SOCIAL_TOKEN_ENCRYPTION_KEY!,
-      'hex'
-    );
-    
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv(this.algorithm, encryptionKey, iv);
-    
-    let encrypted = cipher.update(text, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    
-    const authTag = cipher.getAuthTag();
-    
-    return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+**영향**: 
+- `createCipher`는 deprecated되었고 보안상 취약함
+- IV가 제대로 사용되지 않음
+- AES-256-GCM 암호화가 올바르게 구현되지 않음
+
+**해결방안**:
+```typescript
+// 올바른 구현
+static encrypt(text: string, key?: string): string {
+  const encryptionKey = Buffer.from(
+    key || process.env.SOCIAL_TOKEN_ENCRYPTION_KEY || '',
+    'hex'
+  );
+  
+  if (encryptionKey.length !== 32) {
+    throw new Error('Encryption key must be 32 bytes');
   }
 
-  static decrypt(encryptedText: string, key?: string): string {
-    const encryptionKey = Buffer.from(
-      key || process.env.SOCIAL_TOKEN_ENCRYPTION_KEY!,
-      'hex'
-    );
-    
-    const [ivHex, authTagHex, encrypted] = encryptedText.split(':');
-    const iv = Buffer.from(ivHex, 'hex');
-    const authTag = Buffer.from(authTagHex, 'hex');
-    
-    const decipher = crypto.createDecipheriv(this.algorithm, encryptionKey, iv);
-    decipher.setAuthTag(authTag);
-    
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    
-    return decrypted;
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv(this.algorithm, encryptionKey, iv);
+  
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+  
+  const authTag = cipher.getAuthTag();
+  
+  return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+}
+
+static decrypt(encryptedText: string, key?: string): string {
+  const encryptionKey = Buffer.from(
+    key || process.env.SOCIAL_TOKEN_ENCRYPTION_KEY || '',
+    'hex'
+  );
+  
+  if (encryptionKey.length !== 32) {
+    throw new Error('Encryption key must be 32 bytes');
   }
+
+  const parts = encryptedText.split(':');
+  if (parts.length !== 3) {
+    throw new Error('Invalid encrypted text format');
+  }
+
+  const [ivHex, authTagHex, encrypted] = parts;
+  const iv = Buffer.from(ivHex, 'hex');
+  const authTag = Buffer.from(authTagHex, 'hex');
+  
+  const decipher = crypto.createDecipheriv(this.algorithm, encryptionKey, iv);
+  decipher.setAuthTag(authTag);
+  
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+  
+  return decrypted;
 }
 ```
 
----
+### 2. 🟠 High - 웹훅 서명 검증 불완전
 
-### 2. **[심각도: 높음]** A07:2021 - 식별 및 인증 실패
+**위치**: `/convex/http.ts` (라인 176-204)
 
-#### 문제점
-1. **Lemon Squeezy 웹훅 서명 검증 불완전**
-   - 위치: `/workspace/hooklabs-elite/convex/http.ts` (Line 196-204)
-   - 타이밍 공격에 취약한 문자열 비교 사용
+**문제점**:
+- Lemon Squeezy 웹훅 서명 검증이 타이밍 공격에 취약
+- 서명 비교시 일반 문자열 비교 사용
 
-#### 해결 방안
+**해결방안**:
 ```typescript
-// convex/http.ts 수정
-import { timingSafeEqual } from 'crypto';
-
 async function validateLemonSqueezyRequest(req: Request): Promise<any | null> {
   const body = await req.text();
   const signature = req.headers.get('X-Signature');
@@ -110,22 +123,21 @@ async function validateLemonSqueezyRequest(req: Request): Promise<any | null> {
       keyData,
       { name: "HMAC", hash: "SHA-256" },
       false,
-      ["sign"]
+      ["sign", "verify"]
     );
     
-    const expectedSigBuffer = await crypto.subtle.sign("HMAC", key, bodyData);
     const providedSig = signature.replace(/^sha256=/, '');
-    
-    // 타이밍 안전 비교 사용
-    const expectedSigHex = Buffer.from(expectedSigBuffer).toString('hex');
     const providedSigBuffer = Buffer.from(providedSig, 'hex');
-    const expectedSigBuffer = Buffer.from(expectedSigHex, 'hex');
     
-    if (providedSigBuffer.length !== expectedSigBuffer.length) {
-      return null;
-    }
+    // 타이밍 안전 비교를 위해 verify 사용
+    const isValid = await crypto.subtle.verify(
+      "HMAC",
+      key,
+      providedSigBuffer,
+      bodyData
+    );
     
-    if (!timingSafeEqual(providedSigBuffer, expectedSigBuffer)) {
+    if (!isValid) {
       console.error("Lemon Squeezy webhook signature verification failed");
       return null;
     }
@@ -138,290 +150,354 @@ async function validateLemonSqueezyRequest(req: Request): Promise<any | null> {
 }
 ```
 
----
+### 3. 🟠 High - 민감한 토큰 노출 위험
 
-### 3. **[심각도: 중간]** A05:2021 - 보안 구성 오류
+**위치**: `/convex/socialAccounts.ts`
 
-#### 문제점
-1. **CSP 정책에 unsafe-inline 허용**
-   - 위치: `/workspace/hooklabs-elite/lib/security.ts` (Line 141, 150)
-   - 개발 환경에서 `unsafe-eval`과 `unsafe-inline` 허용
+**문제점**:
+- `getWithTokens` 쿼리가 클라이언트에서 직접 호출 가능
+- 민감한 토큰이 네트워크를 통해 전송될 수 있음
 
-2. **환경 변수 검증 부재**
-   - `.env.example`에는 있지만 런타임 검증 없음
-
-#### 해결 방안
+**해결방안**:
 ```typescript
-// lib/env-validator.ts 생성
+// internal mutation으로 변경
+export const getWithTokensInternal = internalMutation({
+  args: { id: v.id("socialAccounts") },
+  handler: async (ctx, { id }) => {
+    // 내부에서만 호출 가능
+    const account = await ctx.db.get(id);
+    if (!account) {
+      throw new Error("소셜 계정을 찾을 수 없습니다");
+    }
+    
+    return account;
+  },
+});
+```
+
+### 4. 🟡 Medium - 불충분한 입력 검증
+
+**위치**: 여러 API 엔드포인트
+
+**문제점**:
+- 일부 API 엔드포인트에서 입력 검증이 불충분
+- JSON 파싱 에러 처리 미흡
+
+**해결방안**:
+```typescript
+// Zod를 사용한 입력 검증 예시
 import { z } from 'zod';
 
-const envSchema = z.object({
-  // 필수 환경 변수
-  CONVEX_DEPLOYMENT: z.string().min(1),
-  NEXT_PUBLIC_CONVEX_URL: z.string().url(),
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().startsWith('pk_'),
-  CLERK_SECRET_KEY: z.string().startsWith('sk_'),
-  CLERK_WEBHOOK_SECRET: z.string().startsWith('whsec_'),
-  LEMONSQUEEZY_API_KEY: z.string().min(1),
-  LEMONSQUEEZY_WEBHOOK_SECRET: z.string().min(32),
-  SOCIAL_TOKEN_ENCRYPTION_KEY: z.string().length(64), // 32바이트 hex
-  
-  // 선택적 환경 변수
-  UPSTASH_REDIS_REST_URL: z.string().url().optional(),
-  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+const checkoutSchema = z.object({
+  variantId: z.string().min(1),
+  email: z.string().email().optional(),
+  name: z.string().min(1).max(100).optional(),
+  customData: z.record(z.unknown()).optional(),
 });
 
-export function validateEnv() {
+export async function POST(req: NextRequest) {
   try {
-    return envSchema.parse(process.env);
+    const body = await req.json().catch(() => null);
+    if (!body) {
+      return NextResponse.json(
+        { error: "Invalid JSON" },
+        { status: 400 }
+      );
+    }
+
+    const validation = checkoutSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: "Invalid input", details: validation.error.flatten() },
+        { status: 400 }
+      );
+    }
+    
+    // ... rest of the code
   } catch (error) {
-    console.error('환경 변수 검증 실패:', error);
-    throw new Error('필수 환경 변수가 설정되지 않았습니다');
+    // ...
   }
 }
 ```
 
----
+### 5. 🟡 Medium - CORS 설정 개선 필요
 
-### 4. **[심각도: 중간]** A04:2021 - 안전하지 않은 설계
+**위치**: `/lib/security.ts`
 
-#### 문제점
-1. **Rate Limiting이 Redis 실패 시 무조건 허용**
-   - 위치: `/workspace/hooklabs-elite/lib/rate-limiting.ts` (Line 158-164)
-   - Redis 오류 시 모든 요청을 허용하는 것은 위험
+**문제점**:
+- 개발 환경에서 CORS가 너무 관대함 (`origin: true`)
+- 프로덕션 도메인 하드코딩
 
-#### 해결 방안
+**해결방안**:
 ```typescript
-// lib/rate-limiting.ts 수정
-async check(key: string): Promise<RateLimitResult> {
-  try {
-    // ... 기존 코드 ...
-  } catch (error) {
-    console.error('Rate limiting error:', error);
-    
-    // Redis 장애 시 기본 폴백 전략
-    // 1. 메모리 캐시 확인
-    const memoryCache = this.getMemoryCache(key);
-    if (memoryCache && memoryCache.count >= this.config.max) {
-      return {
-        success: false,
-        remaining: 0,
-        resetTime: memoryCache.resetTime,
-        totalRequests: memoryCache.count,
-      };
-    }
-    
-    // 2. 제한적 허용 (더 엄격한 제한 적용)
-    const fallbackMax = Math.floor(this.config.max * 0.3); // 30%만 허용
-    this.updateMemoryCache(key, fallbackMax);
-    
+export function getCORSConfig(): CORSConfig {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // 환경변수에서 허용 도메인 가져오기
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ?.split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean) || [];
+  
+  if (isProduction) {
     return {
-      success: true,
-      remaining: fallbackMax - 1,
-      resetTime: Math.ceil((Date.now() + this.config.window * 1000) / 1000),
-      totalRequests: 1,
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      // ... rest of config
+    };
+  } else {
+    // 개발 환경에서도 최소한의 제약 적용
+    return {
+      origin: ['http://localhost:3000', 'http://localhost:3001'],
+      // ... rest of config
     };
   }
 }
 ```
 
----
+### 6. 🔵 Low - 보안 헤더 강화
 
-### 5. **[심각도: 낮음]** A09:2021 - 보안 로깅 및 모니터링 실패
+**위치**: `/middleware.ts`, `/next.config.ts`
 
-#### 문제점
-1. **보안 이벤트 로깅이 console.log 사용**
-   - 위치: `/workspace/hooklabs-elite/lib/security.ts` (Line 416, 418)
-   - 프로덕션에서도 console.log만 사용
+**문제점**:
+- CSP 정책에 `unsafe-inline` 포함
+- Permissions Policy가 제한적이지 않음
 
-#### 해결 방안
+**해결방안**:
+- Nonce 기반 CSP 구현
+- 더 엄격한 Permissions Policy 적용
+
+### 7. 🔵 Low - 로깅 개선
+
+**위치**: 전체 프로젝트
+
+**문제점**:
+- 보안 이벤트 로깅이 콘솔에만 의존
+- 구조화된 로깅 부재
+
+**해결방안**:
+- Winston 또는 Pino 같은 구조화된 로거 도입
+- 보안 이벤트를 별도 로그 파일/서비스로 전송
+
+## ✅ 긍정적인 보안 구현
+
+### 강점
+
+1. **우수한 Rate Limiting 시스템**
+   - Redis 기반의 효율적인 구현
+   - 다양한 엔드포인트별 설정
+   - 구독 플랜별 차별화
+
+2. **강력한 인증 시스템**
+   - Clerk를 통한 검증된 인증
+   - JWT 토큰 적절히 구성
+   - 미들웨어 레벨 보호
+
+3. **입력 검증 유틸리티**
+   - SQL 인젝션 패턴 감지
+   - XSS 방어
+   - 경로 순회 공격 방지
+
+4. **보안 헤더 적용**
+   - HSTS, X-Frame-Options 등 기본 헤더 구성
+   - 환경별 차별화된 설정
+
+## 📊 OWASP Top 10 준수 현황
+
+| OWASP 항목 | 현재 상태 | 위험도 | 권장사항 |
+|-----------|----------|--------|----------|
+| A01: Broken Access Control | ✅ 양호 | 🔵 Low | 추가 권한 검증 레이어 추가 |
+| A02: Cryptographic Failures | ❌ 취약 | 🔴 Critical | 암호화 구현 즉시 수정 필요 |
+| A03: Injection | ✅ 양호 | 🔵 Low | Prepared statements 사용 권장 |
+| A04: Insecure Design | ⚠️ 보통 | 🟡 Medium | 위협 모델링 수행 권장 |
+| A05: Security Misconfiguration | ✅ 양호 | 🔵 Low | 환경변수 검증 강화 |
+| A06: Vulnerable Components | ⚠️ 보통 | 🟡 Medium | 정기적 의존성 업데이트 필요 |
+| A07: Auth Failures | ✅ 우수 | 🔵 Low | MFA 구현 고려 |
+| A08: Software/Data Integrity | ⚠️ 보통 | 🟠 High | 웹훅 서명 검증 개선 필요 |
+| A09: Logging Failures | ❌ 취약 | 🟡 Medium | 구조화된 로깅 시스템 필요 |
+| A10: SSRF | ✅ 양호 | 🔵 Low | URL 화이트리스트 구현 권장 |
+
+## 🛡️ 즉시 조치 필요 사항
+
+### Priority 1 (24시간 내)
+1. **TokenCrypto 클래스 암호화 수정** - Critical 취약점
+2. **Lemon Squeezy 웹훅 서명 검증 개선**
+
+### Priority 2 (1주일 내)
+1. **민감한 토큰 접근 제한** - internal mutation으로 변경
+2. **입력 검증 스키마 구현** - Zod 활용
+3. **구조화된 로깅 시스템 도입**
+
+### Priority 3 (1개월 내)
+1. **CSP 정책 강화** - Nonce 기반 구현
+2. **정기적인 의존성 업데이트 프로세스 수립**
+3. **보안 테스트 자동화** - CI/CD 파이프라인 통합
+
+## 🔧 구현 예제
+
+### 보안 강화된 API 라우트 템플릿
+
 ```typescript
-// lib/security-logger.ts 생성
-import * as Sentry from '@sentry/nextjs';
+// app/api/secure-endpoint/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { z } from 'zod';
+import { RateLimiter } from '@/lib/rate-limiting';
+import { SecurityAuditLogger, InputValidator } from '@/lib/security';
 
-export class SecurityLogger {
-  static async logSecurityEvent(
-    event: SecurityEvent,
-    severity: 'low' | 'medium' | 'high' | 'critical'
-  ) {
-    const logData = {
-      timestamp: new Date().toISOString(),
-      event,
-      severity,
-      environment: process.env.NODE_ENV,
-    };
+// 입력 스키마 정의
+const requestSchema = z.object({
+  data: z.string().min(1).max(1000),
+  type: z.enum(['create', 'update', 'delete']),
+});
 
-    // Sentry로 전송
-    if (severity === 'high' || severity === 'critical') {
-      Sentry.captureMessage(`Security Event: ${event.type}`, {
-        level: severity === 'critical' ? 'error' : 'warning',
-        extra: logData,
-      });
+// Rate Limiter 인스턴스
+const rateLimiter = new RateLimiter({
+  window: 60,
+  max: 10,
+});
+
+export async function POST(req: NextRequest) {
+  const startTime = Date.now();
+  
+  try {
+    // 1. 인증 확인
+    const { userId } = await auth();
+    if (!userId) {
+      SecurityAuditLogger.logUnauthorizedAccess(req.url, req);
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
-    // 프로덕션에서는 구조화된 로깅 서비스 사용
-    if (process.env.NODE_ENV === 'production') {
-      // CloudWatch, DataDog 등으로 전송
-      await sendToLoggingService(logData);
-    } else {
-      console.warn('[SECURITY]', logData);
+    // 2. Rate Limiting
+    const rateLimitKey = `api:secure:${userId}`;
+    const rateLimitResult = await rateLimiter.check(rateLimitKey);
+    
+    if (!rateLimitResult.success) {
+      SecurityAuditLogger.logRateLimitExceeded(rateLimitKey, req);
+      return NextResponse.json(
+        { 
+          error: 'Rate limit exceeded',
+          resetTime: rateLimitResult.resetTime 
+        },
+        { status: 429 }
+      );
     }
 
-    // 데이터베이스에 저장 (Convex)
-    await storeSecurityEvent(logData);
+    // 3. 입력 파싱 및 검증
+    const body = await req.json().catch(() => null);
+    if (!body) {
+      return NextResponse.json(
+        { error: 'Invalid JSON' },
+        { status: 400 }
+      );
+    }
+
+    // 4. 스키마 검증
+    const validation = requestSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid input',
+          details: validation.error.flatten() 
+        },
+        { status: 400 }
+      );
+    }
+
+    // 5. 추가 보안 검증
+    const inputValidation = InputValidator.validate(validation.data.data, {
+      maxLength: 1000,
+      allowHTML: false,
+    });
+
+    if (!inputValidation.isValid) {
+      SecurityAuditLogger.logSuspiciousActivity(
+        `Input validation failed: ${inputValidation.errors.join(', ')}`,
+        req
+      );
+      return NextResponse.json(
+        { error: 'Invalid input detected' },
+        { status: 400 }
+      );
+    }
+
+    // 6. 비즈니스 로직 처리
+    // ... your business logic here ...
+
+    // 7. 성공 응답
+    const response = NextResponse.json(
+      { success: true, data: {} },
+      { status: 200 }
+    );
+
+    // 8. 응답 헤더 추가
+    response.headers.set('X-Request-Duration', `${Date.now() - startTime}ms`);
+    response.headers.set('X-RateLimit-Remaining', rateLimitResult.remaining.toString());
+
+    return response;
+
+  } catch (error) {
+    // 9. 에러 로깅
+    console.error('API Error:', error);
+    SecurityAuditLogger.logSuspiciousActivity(
+      `API Error: ${error instanceof Error ? error.message : 'Unknown'}`,
+      req
+    );
+
+    // 10. 에러 응답 (정보 노출 방지)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 ```
 
----
+## 📈 보안 메트릭 및 모니터링
 
-## ✅ 발견된 양호한 보안 구현
+### 추천 보안 KPI
 
-### 1. **인증 시스템**
-- Clerk를 통한 안전한 사용자 인증
-- JWT 토큰 기반 인증
-- 보호된 라우트에 대한 적절한 미들웨어 적용
+1. **인증 실패율** - 비정상적인 패턴 감지
+2. **Rate Limit 초과 빈도** - DDoS 공격 조기 감지
+3. **입력 검증 실패율** - 인젝션 시도 모니터링
+4. **API 응답 시간** - 성능 저하 감지
+5. **웹훅 검증 실패** - 위조 시도 감지
 
-### 2. **Rate Limiting**
-- 엔드포인트별 세분화된 제한
-- 사용자 플랜별 차등 적용
-- IP 기반 및 사용자 기반 추적
+### 모니터링 도구 권장사항
 
-### 3. **입력 검증**
-- SQL 인젝션 패턴 검사
-- XSS 패턴 검사
-- 경로 순회 공격 방지
+- **Sentry** - 에러 추적 및 성능 모니터링
+- **Datadog** - 인프라 및 애플리케이션 모니터링
+- **AWS CloudWatch** - 로그 집계 및 알림
+- **OWASP ZAP** - 정기적인 취약점 스캔
 
-### 4. **보안 헤더**
-- X-Frame-Options
-- X-Content-Type-Options
-- X-XSS-Protection
-- Referrer-Policy
+## 🎯 결론
 
----
+HookLabs Elite는 전반적으로 견고한 보안 아키텍처를 가지고 있으나, 몇 가지 중요한 개선이 필요합니다:
 
-## 🔧 즉시 수정이 필요한 항목
+1. **즉시 수정 필요**: 암호화 구현 오류는 민감한 데이터 노출로 이어질 수 있음
+2. **단기 개선**: 웹훅 검증 강화 및 입력 검증 체계화
+3. **장기 강화**: 로깅 시스템 개선 및 정기적인 보안 감사 프로세스 수립
 
-### 우선순위 1 (24시간 내)
-1. **OAuth 토큰 암호화 구현**
-2. **웹훅 서명 검증 수정**
-3. **환경 변수 검증 추가**
+보안은 지속적인 프로세스입니다. 정기적인 감사, 의존성 업데이트, 그리고 새로운 위협에 대한 대응이 필요합니다.
 
-### 우선순위 2 (1주일 내)
-1. **CSP 정책 강화**
-2. **Rate Limiting 폴백 전략 개선**
-3. **보안 로깅 시스템 구축**
+## 📚 참고 자료
 
-### 우선순위 3 (1개월 내)
-1. **침입 탐지 시스템 구현**
-2. **자동화된 보안 스캔 설정**
-3. **보안 대시보드 구축**
+- [OWASP Top 10 2021](https://owasp.org/www-project-top-ten/)
+- [Node.js Security Best Practices](https://nodejs.org/en/docs/guides/security/)
+- [Next.js Security Headers](https://nextjs.org/docs/advanced-features/security-headers)
+- [Convex Security Guide](https://docs.convex.dev/production/security)
+- [Clerk Security Documentation](https://clerk.com/docs/security)
 
 ---
 
-## 📋 보안 체크리스트
-
-### 인증 및 인가
-- [x] 사용자 인증 시스템 (Clerk)
-- [x] API 키 관리
-- [x] 세션 관리
-- [ ] 2FA 구현
-- [ ] 비밀번호 정책 강화
-
-### 데이터 보호
-- [ ] OAuth 토큰 암호화
-- [x] 입력 검증
-- [x] XSS 방지
-- [x] SQL 인젝션 방지
-- [ ] 민감 데이터 마스킹
-
-### API 보안
-- [x] Rate Limiting
-- [x] CORS 설정
-- [ ] API 버전 관리
-- [ ] API 문서 보안
-- [x] 웹훅 검증
-
-### 인프라 보안
-- [x] HTTPS 강제
-- [x] 보안 헤더
-- [ ] CSP 정책 개선
-- [ ] 환경 변수 암호화
-- [ ] 시크릿 관리 시스템
-
-### 모니터링
-- [ ] 실시간 보안 모니터링
-- [ ] 이상 탐지 시스템
-- [ ] 보안 이벤트 알림
-- [ ] 감사 로그 중앙화
-- [ ] 정기 보안 리포트
-
----
-
-## 🎯 권장 사항
-
-### 1. 보안 정책 수립
-- 정기적인 보안 감사 일정 수립 (분기별)
-- 보안 인시던트 대응 계획 수립
-- 직원 보안 교육 프로그램 운영
-
-### 2. 기술적 개선
-- WAF (Web Application Firewall) 도입 검토
-- DDoS 방어 시스템 구축
-- 자동화된 취약점 스캔 도구 도입 (Snyk, SonarQube)
-
-### 3. 컴플라이언스
-- GDPR, CCPA 준수 검토
-- SOC 2 Type II 인증 준비
-- 개인정보보호 정책 업데이트
-
-### 4. 추가 보안 기능
-- 사용자 활동 이상 탐지
-- 계정 탈취 방지
-- 콘텐츠 보안 정책 강화
-
----
-
-## 📊 보안 점수
-
-| 카테고리 | 현재 점수 | 목표 점수 |
-|---------|----------|----------|
-| 인증/인가 | 75/100 | 90/100 |
-| 데이터 보호 | 60/100 | 85/100 |
-| API 보안 | 70/100 | 90/100 |
-| 인프라 보안 | 65/100 | 85/100 |
-| 모니터링 | 40/100 | 80/100 |
-| **전체** | **62/100** | **86/100** |
-
----
-
-## 🔄 다음 단계
-
-1. **즉시 조치** (24-48시간)
-   - 토큰 암호화 구현
-   - 환경 변수 검증 추가
-   - 웹훅 서명 검증 수정
-
-2. **단기 계획** (1-2주)
-   - 보안 로깅 시스템 구축
-   - CSP 정책 강화
-   - 자동화된 보안 테스트 설정
-
-3. **장기 계획** (1-3개월)
-   - 전체 보안 아키텍처 검토
-   - 침투 테스트 실시
-   - SOC 2 준비
-
----
-
-## 📞 문의사항
-
-보안 관련 문의사항이나 추가 지원이 필요한 경우 보안 팀에 연락하시기 바랍니다.
-
-**작성자**: Security Audit Team  
-**검토자**: Platform Security Officer  
-**승인자**: CTO
-
----
-
-*이 보고서는 2025년 9월 3일 기준으로 작성되었으며, 정기적인 업데이트가 필요합니다.*
+**다음 감사 예정일**: 2025년 4월 3일  
+**문의사항**: security@hooklabs.io  
+**버그 바운티 프로그램**: https://hooklabs.io/security/bug-bounty
