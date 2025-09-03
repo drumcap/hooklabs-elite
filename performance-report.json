@@ -1,0 +1,104 @@
+{
+  "timestamp": "2025-09-03T03:14:18.803Z",
+  "bundleAnalysis": {
+    "totalSize": 1673836,
+    "breakdown": {
+      "app": 243392,
+      "components": 501982,
+      "lib": 159734,
+      "convex": 229800,
+      "public": 538928
+    },
+    "recommendations": [
+      {
+        "priority": "HIGH",
+        "category": "Bundle Size",
+        "issue": "컴포넌트 디렉토리가 너무 큽니다",
+        "solution": "- 사용하지 않는 컴포넌트 제거\n- 동적 임포트 적용\n- Tree-shaking 최적화",
+        "impact": "번들 크기 20-30% 감소 예상"
+      },
+      {
+        "priority": "MEDIUM",
+        "category": "Bundle Size",
+        "issue": "lib 디렉토리의 유틸리티가 많습니다",
+        "solution": "- 사용하지 않는 유틸리티 함수 제거\n- 라이브러리 대신 네이티브 함수 사용 검토",
+        "impact": "번들 크기 10-15% 감소 예상"
+      }
+    ]
+  },
+  "memoryProfile": {
+    "rss": 48377856,
+    "heapTotal": 5742592,
+    "heapUsed": 4504928,
+    "external": 1646070,
+    "arrayBuffers": 41115,
+    "recommendations": []
+  },
+  "apiMetrics": {},
+  "databaseMetrics": {},
+  "frontendMetrics": {
+    "componentComplexity": {
+      "totalComponents": 95,
+      "totalLines": 20250,
+      "averageLinesPerComponent": 213.1578947368421,
+      "complexComponents": [
+        {
+          "file": "components/react-bits/splash-cursor.tsx",
+          "lines": 1518
+        },
+        {
+          "file": "app/dashboard/data-table.tsx",
+          "lines": 808
+        },
+        {
+          "file": "components/ui/sidebar.tsx",
+          "lines": 727
+        },
+        {
+          "file": "components/social/scheduling/ScheduledPostsList.tsx",
+          "lines": 582
+        },
+        {
+          "file": "components/social/scheduling/PostScheduler.tsx",
+          "lines": 529
+        },
+        {
+          "file": "components/admin-dashboard.tsx",
+          "lines": 522
+        },
+        {
+          "file": "components/social/scheduling/CalendarView.tsx",
+          "lines": 512
+        },
+        {
+          "file": "components/social/accounts/AccountsList.tsx",
+          "lines": 506
+        },
+        {
+          "file": "components/subscription-dashboard.tsx",
+          "lines": 501
+        },
+        {
+          "file": "components/social/accounts/PublishStatus.tsx",
+          "lines": 495
+        }
+      ]
+    },
+    "recommendations": [
+      {
+        "priority": "HIGH",
+        "category": "Frontend",
+        "issue": "컴포넌트 평균 크기가 큽니다",
+        "solution": "- 컴포넌트 분할\n- 커스텀 훅 추출\n- 로직과 UI 분리",
+        "impact": "컴포넌트 재사용성 및 성능 향상"
+      },
+      {
+        "priority": "MEDIUM",
+        "category": "Frontend",
+        "issue": "10개의 복잡한 컴포넌트 발견",
+        "solution": "다음 컴포넌트들을 리팩토링하세요:\n- components/react-bits/splash-cursor.tsx (1518줄)\n- app/dashboard/data-table.tsx (808줄)\n- components/ui/sidebar.tsx (727줄)\n- components/social/scheduling/ScheduledPostsList.tsx (582줄)\n- components/social/scheduling/PostScheduler.tsx (529줄)",
+        "impact": "유지보수성 및 성능 향상"
+      }
+    ]
+  }
+}

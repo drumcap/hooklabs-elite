@@ -1,0 +1,2691 @@
+{
+  "timestamp": "2025-09-03T03:30:25.414Z",
+  "testSummary": {},
+  "coreWebVitals": {
+    "results": [
+      {
+        "page": "Landing Page",
+        "path": "/",
+        "pageType": "landing",
+        "device": "desktop",
+        "deviceName": "Desktop",
+        "measurements": [
+          {
+            "attempt": 1,
+            "lcp": 1330,
+            "fid": 55,
+            "cls": 0.055,
+            "success": true,
+            "timestamp": 1756870225735,
+            "additionalMetrics": {
+              "ttfb": 222,
+              "fcp": 887,
+              "domContentLoaded": 1108,
+              "loadComplete": 1662
+            }
+          },
+          {
+            "attempt": 2,
+            "lcp": 1025,
+            "fid": 43,
+            "cls": 0.043,
+            "success": true,
+            "timestamp": 1756870227003,
+            "additionalMetrics": {
+              "ttfb": 171,
+              "fcp": 683,
+              "domContentLoaded": 854,
+              "loadComplete": 1281
+            }
+          },
+          {
+            "attempt": 3,
+            "lcp": 1175,
+            "fid": 49,
+            "cls": 0.049,
+            "success": true,
+            "timestamp": 1756870228258,
+            "additionalMetrics": {
+              "ttfb": 196,
+              "fcp": 784,
+              "domContentLoaded": 979,
+              "loadComplete": 1469
+            }
+          }
+        ],
+        "statistics": {
+          "lcp": {
+            "avg": 1176.6666666666667,
+            "min": 1025,
+            "max": 1330,
+            "median": 1175,
+            "grade": "Good"
+          },
+          "fid": {
+            "avg": 49,
+            "min": 43,
+            "max": 55,
+            "median": 49,
+            "grade": "Good"
+          },
+          "cls": {
+            "avg": 0.04900000000000001,
+            "min": 0.043,
+            "max": 0.055,
+            "median": 0.049,
+            "grade": "Good"
+          }
+        }
+      },
+      {
+        "page": "Landing Page",
+        "path": "/",
+        "pageType": "landing",
+        "device": "mobile",
+        "deviceName": "Mobile",
+        "measurements": [
+          {
+            "attempt": 1,
+            "lcp": 4750,
+            "fid": 76,
+            "cls": 0.076,
+            "success": true,
+            "timestamp": 1756870229652,
+            "additionalMetrics": {
+              "ttfb": 950,
+              "fcp": 2850,
+              "domContentLoaded": 4275,
+              "loadComplete": 5938
+            }
+          },
+          {
+            "attempt": 2,
+            "lcp": 5803,
+            "fid": 93,
+            "cls": 0.093,
+            "success": true,
+            "timestamp": 1756870231000,
+            "additionalMetrics": {
+              "ttfb": 1161,
+              "fcp": 3482,
+              "domContentLoaded": 5223,
+              "loadComplete": 7254
+            }
+          },
+          {
+            "attempt": 3,
+            "lcp": 5396,
+            "fid": 86,
+            "cls": 0.086,
+            "success": true,
+            "timestamp": 1756870232326,
+            "additionalMetrics": {
+              "ttfb": 1079,
+              "fcp": 3238,
+              "domContentLoaded": 4857,
+              "loadComplete": 6746
+            }
+          }
+        ],
+        "statistics": {
+          "lcp": {
+            "avg": 5316.333333333333,
+            "min": 4750,
+            "max": 5803,
+            "median": 5396,
+            "grade": "Poor"
+          },
+          "fid": {
+            "avg": 85,
+            "min": 76,
+            "max": 93,
+            "median": 86,
+            "grade": "Good"
+          },
+          "cls": {
+            "avg": 0.085,
+            "min": 0.076,
+            "max": 0.093,
+            "median": 0.086,
+            "grade": "Good"
+          }
+        }
+      },
+      {
+        "page": "Landing Page",
+        "path": "/",
+        "pageType": "landing",
+        "device": "tablet",
+        "deviceName": "Tablet",
+        "measurements": [
+          {
+            "attempt": 1,
+            "lcp": 2863,
+            "fid": 78,
+            "cls": 0.072,
+            "success": true,
+            "timestamp": 1756870233607,
+            "additionalMetrics": {
+              "ttfb": 537,
+              "fcp": 1789,
+              "domContentLoaded": 2505,
+              "loadComplete": 3579
+            }
+          },
+          {
+            "attempt": 2,
+            "lcp": 2232,
+            "fid": 60,
+            "cls": 0.056,
+            "success": true,
+            "timestamp": 1756870234967,
+            "additionalMetrics": {
+              "ttfb": 418,
+              "fcp": 1395,
+              "domContentLoaded": 1953,
+              "loadComplete": 2790
+            }
+          },
+          {
+            "attempt": 3,
+            "lcp": 2195,
+            "fid": 59,
+            "cls": 0.055,
+            "success": true,
+            "timestamp": 1756870236281,
+            "additionalMetrics": {
+              "ttfb": 412,
+              "fcp": 1372,
+              "domContentLoaded": 1921,
+              "loadComplete": 2744
+            }
+          }
+        ],
+        "statistics": {
+          "lcp": {
+            "avg": 2430,
+            "min": 2195,
+            "max": 2863,
+            "median": 2232,
+            "grade": "Good"
+          },
+          "fid": {
+            "avg": 65.66666666666667,
+            "min": 59,
+            "max": 78,
+            "median": 60,
+            "grade": "Good"
+          },
+          "cls": {
+            "avg": 0.061,
+            "min": 0.055,
+            "max": 0.072,
+            "median": 0.056,
+            "grade": "Good"
+          }
+        }
+      },
+      {
+        "page": "Dashboard",
+        "path": "/dashboard",
+        "pageType": "authenticated",
+        "device": "desktop",
+        "deviceName": "Desktop",
+        "measurements": [
+          {
+            "attempt": 1,
+            "lcp": 1722,
+            "fid": 67,
+            "cls": 0.077,
+            "success": true,
+            "timestamp": 1756870237561,
+            "additionalMetrics": {
+              "ttfb": 287,
+              "fcp": 1148,
+              "domContentLoaded": 1530,
+              "loadComplete": 2104
+            }
+          },
+          {
+            "attempt": 2,
+            "lcp": 1697,
+            "fid": 66,
+            "cls": 0.075,
+            "success": true,
+            "timestamp": 1756870238808,
+            "additionalMetrics": {
+              "ttfb": 283,
+              "fcp": 1131,
+              "domContentLoaded": 1509,
+              "loadComplete": 2074
+            }
+          },
+          {
+            "attempt": 3,
+            "lcp": 2034,
+            "fid": 79,
+            "cls": 0.09,
+            "success": true,
+            "timestamp": 1756870240262,
+            "additionalMetrics": {
+              "ttfb": 339,
+              "fcp": 1356,
+              "domContentLoaded": 1808,
+              "loadComplete": 2486
+            }
+          }
+        ],
+        "statistics": {
+          "lcp": {
+            "avg": 1817.6666666666667,
+            "min": 1697,
+            "max": 2034,
+            "median": 1722,
+            "grade": "Good"
+          },
+          "fid": {
+            "avg": 70.66666666666667,
+            "min": 66,
+            "max": 79,
+            "median": 67,
+            "grade": "Good"
+          },
+          "cls": {
+            "avg": 0.08066666666666666,
+            "min": 0.075,
+            "max": 0.09,
+            "median": 0.077,
+            "grade": "Good"
+          }
+        }
+      },
+      {
+        "page": "Dashboard",
+        "path": "/dashboard",
+        "pageType": "authenticated",
+        "device": "mobile",
+        "deviceName": "Mobile",
+        "measurements": [
+          {
+            "attempt": 1,
+            "lcp": 7211,
+            "fid": 115,
+            "cls": 0.115,
+            "success": true,
+            "timestamp": 1756870241510,
+            "additionalMetrics": {
+              "ttfb": 1442,
+              "fcp": 4808,
+              "domContentLoaded": 6731,
+              "loadComplete": 8413
+            }
+          },
+          {
+            "attempt": 2,
+            "lcp": 8163,
+            "fid": 131,
+            "cls": 0.131,
+            "success": true,
+            "timestamp": 1756870242715,
+            "additionalMetrics": {
+              "ttfb": 1633,
+              "fcp": 5442,
+              "domContentLoaded": 7619,
+              "loadComplete": 9524
+            }
+          },
+          {
+            "attempt": 3,
+            "lcp": 6879,
+            "fid": 110,
+            "cls": 0.11,
+            "success": true,
+            "timestamp": 1756870244032,
+            "additionalMetrics": {
+              "ttfb": 1376,
+              "fcp": 4586,
+              "domContentLoaded": 6420,
+              "loadComplete": 8025
+            }
+          }
+        ],
+        "statistics": {
+          "lcp": {
+            "avg": 7417.666666666667,
+            "min": 6879,
+            "max": 8163,
+            "median": 7211,
+            "grade": "Poor"
+          },
+          "fid": {
+            "avg": 118.66666666666667,
+            "min": 110,
+            "max": 131,
+            "median": 115,
+            "grade": "Needs Improvement"
+          },
+          "cls": {
+            "avg": 0.11866666666666666,
+            "min": 0.11,
+            "max": 0.131,
+            "median": 0.115,
+            "grade": "Needs Improvement"
+          }
+        }
+      },
+      {
+        "page": "Dashboard",
+        "path": "/dashboard",
+        "pageType": "authenticated",
+        "device": "tablet",
+        "deviceName": "Tablet",
+        "measurements": [
+          {
+            "attempt": 1,
+            "lcp": 3755,
+            "fid": 99,
+            "cls": 0.104,
+            "success": true,
+            "timestamp": 1756870245529,
+            "additionalMetrics": {
+              "ttfb": 704,
+              "fcp": 2503,
+              "domContentLoaded": 3442,
+              "loadComplete": 4380
+            }
+          },
+          {
+            "attempt": 2,
+            "lcp": 3380,
+            "fid": 89,
+            "cls": 0.094,
+            "success": true,
+            "timestamp": 1756870246889,
+            "additionalMetrics": {
+              "ttfb": 634,
+              "fcp": 2253,
+              "domContentLoaded": 3098,
+              "loadComplete": 3943
+            }
+          },
+          {
+            "attempt": 3,
+            "lcp": 4176,
+            "fid": 110,
+            "cls": 0.116,
+            "success": true,
+            "timestamp": 1756870248117,
+            "additionalMetrics": {
+              "ttfb": 783,
+              "fcp": 2784,
+              "domContentLoaded": 3828,
+              "loadComplete": 4873
+            }
+          }
+        ],
+        "statistics": {
+          "lcp": {
+            "avg": 3770.3333333333335,
+            "min": 3380,
+            "max": 4176,
+            "median": 3755,
+            "grade": "Needs Improvement"
+          },
+          "fid": {
+            "avg": 99.33333333333333,
+            "min": 89,
+            "max": 110,
+            "median": 99,
+            "grade": "Good"
+          },
+          "cls": {
+            "avg": 0.10466666666666667,
+            "min": 0.094,
+            "max": 0.116,
+            "median": 0.104,
+            "grade": "Needs Improvement"
+          }
+        }
+      },
+      {
+        "page": "Payment Gated Page",
+        "path": "/dashboard/payment-gated",
+        "pageType": "premium",
+        "device": "desktop",
+        "deviceName": "Desktop",
+        "measurements": [
+          {
+            "attempt": 1,
+            "lcp": 2300,
+            "fid": 89,
+            "cls": 0.105,
+            "success": true,
+            "timestamp": 1756870249506,
+            "additionalMetrics": {
+              "ttfb": 366,
+              "fcp": 1568,
+              "domContentLoaded": 2091,
+              "loadComplete": 2927
+            }
+          },
+          {
+            "attempt": 2,
+            "lcp": 1866,
+            "fid": 72,
+            "cls": 0.085,
+            "success": true,
+            "timestamp": 1756870250848,
+            "additionalMetrics": {
+              "ttfb": 297,
+              "fcp": 1273,
+              "domContentLoaded": 1697,
+              "loadComplete": 2375
+            }
+          },
+          {
+            "attempt": 3,
+            "lcp": 1837,
+            "fid": 71,
+            "cls": 0.083,
+            "success": true,
+            "timestamp": 1756870252223,
+            "additionalMetrics": {
+              "ttfb": 292,
+              "fcp": 1252,
+              "domContentLoaded": 1670,
+              "loadComplete": 2338
+            }
+          }
+        ],
+        "statistics": {
+          "lcp": {
+            "avg": 2001,
+            "min": 1837,
+            "max": 2300,
+            "median": 1866,
+            "grade": "Good"
+          },
+          "fid": {
+            "avg": 77.33333333333333,
+            "min": 71,
+            "max": 89,
+            "median": 72,
+            "grade": "Good"
+          },
+          "cls": {
+            "avg": 0.09100000000000001,
+            "min": 0.083,
+            "max": 0.105,
+            "median": 0.085,
+            "grade": "Good"
+          }
+        }
+      },
+      {
+        "page": "Payment Gated Page",
+        "path": "/dashboard/payment-gated",
+        "pageType": "premium",
+        "device": "mobile",
+        "deviceName": "Mobile",
+        "measurements": [
+          {
+            "attempt": 1,
+            "lcp": 7017,
+            "fid": 112,
+            "cls": 0.12,
+            "success": true,
+            "timestamp": 1756870253472,
+            "additionalMetrics": {
+              "ttfb": 1403,
+              "fcp": 4812,
+              "domContentLoaded": 6416,
+              "loadComplete": 8020
+            }
+          },
+          {
+            "attempt": 2,
+            "lcp": 9783,
+            "fid": 157,
+            "cls": 0.168,
+            "success": true,
+            "timestamp": 1756870254832,
+            "additionalMetrics": {
+              "ttfb": 1957,
+              "fcp": 6709,
+              "domContentLoaded": 8945,
+              "loadComplete": 11181
+            }
+          },
+          {
+            "attempt": 3,
+            "lcp": 8313,
+            "fid": 133,
+            "cls": 0.143,
+            "success": true,
+            "timestamp": 1756870256193,
+            "additionalMetrics": {
+              "ttfb": 1663,
+              "fcp": 5700,
+              "domContentLoaded": 7600,
+              "loadComplete": 9500
+            }
+          }
+        ],
+        "statistics": {
+          "lcp": {
+            "avg": 8371,
+            "min": 7017,
+            "max": 9783,
+            "median": 8313,
+            "grade": "Poor"
+          },
+          "fid": {
+            "avg": 134,
+            "min": 112,
+            "max": 157,
+            "median": 133,
+            "grade": "Needs Improvement"
+          },
+          "cls": {
+            "avg": 0.1436666666666667,
+            "min": 0.12,
+            "max": 0.168,
+            "median": 0.143,
+            "grade": "Needs Improvement"
+          }
+        }
+      },
+      {
+        "page": "Payment Gated Page",
+        "path": "/dashboard/payment-gated",
+        "pageType": "premium",
+        "device": "tablet",
+        "deviceName": "Tablet",
+        "measurements": [
+          {
+            "attempt": 1,
+            "lcp": 4031,
+            "fid": 106,
+            "cls": 0.115,
+            "success": true,
+            "timestamp": 1756870257660,
+            "additionalMetrics": {
+              "ttfb": 756,
+              "fcp": 2807,
+              "domContentLoaded": 3743,
+              "loadComplete": 4895
+            }
+          },
+          {
+            "attempt": 2,
+            "lcp": 4940,
+            "fid": 129,
+            "cls": 0.141,
+            "success": true,
+            "timestamp": 1756870258975,
+            "additionalMetrics": {
+              "ttfb": 926,
+              "fcp": 3440,
+              "domContentLoaded": 4587,
+              "loadComplete": 5999
+            }
+          },
+          {
+            "attempt": 3,
+            "lcp": 4897,
+            "fid": 128,
+            "cls": 0.14,
+            "success": true,
+            "timestamp": 1756870260288,
+            "additionalMetrics": {
+              "ttfb": 918,
+              "fcp": 3410,
+              "domContentLoaded": 4547,
+              "loadComplete": 5946
+            }
+          }
+        ],
+        "statistics": {
+          "lcp": {
+            "avg": 4622.666666666667,
+            "min": 4031,
+            "max": 4940,
+            "median": 4897,
+            "grade": "Poor"
+          },
+          "fid": {
+            "avg": 121,
+            "min": 106,
+            "max": 129,
+            "median": 128,
+            "grade": "Needs Improvement"
+          },
+          "cls": {
+            "avg": 0.132,
+            "min": 0.115,
+            "max": 0.141,
+            "median": 0.14,
+            "grade": "Needs Improvement"
+          }
+        }
+      },
+      {
+        "page": "Pricing Page",
+        "path": "/pricing",
+        "pageType": "marketing",
+        "device": "desktop",
+        "deviceName": "Desktop",
+        "measurements": [
+          {
+            "attempt": 1,
+            "lcp": 1075,
+            "fid": 43,
+            "cls": 0.032,
+            "success": true,
+            "timestamp": 1756870261743,
+            "additionalMetrics": {
+              "ttfb": 161,
+              "fcp": 645,
+              "domContentLoaded": 860,
+              "loadComplete": 1290
+            }
+          },
+          {
+            "attempt": 2,
+            "lcp": 1109,
+            "fid": 44,
+            "cls": 0.033,
+            "success": true,
+            "timestamp": 1756870263120,
+            "additionalMetrics": {
+              "ttfb": 166,
+              "fcp": 665,
+              "domContentLoaded": 887,
+              "loadComplete": 1331
+            }
+          },
+          {
+            "attempt": 3,
+            "lcp": 1094,
+            "fid": 44,
+            "cls": 0.033,
+            "success": true,
+            "timestamp": 1756870264621,
+            "additionalMetrics": {
+              "ttfb": 164,
+              "fcp": 656,
+              "domContentLoaded": 875,
+              "loadComplete": 1313
+            }
+          }
+        ],
+        "statistics": {
+          "lcp": {
+            "avg": 1092.6666666666667,
+            "min": 1075,
+            "max": 1109,
+            "median": 1094,
+            "grade": "Good"
+          },
+          "fid": {
+            "avg": 43.666666666666664,
+            "min": 43,
+            "max": 44,
+            "median": 44,
+            "grade": "Good"
+          },
+          "cls": {
+            "avg": 0.03266666666666667,
+            "min": 0.032,
+            "max": 0.033,
+            "median": 0.033,
+            "grade": "Good"
+          }
+        }
+      },
+      {
+        "page": "Pricing Page",
+        "path": "/pricing",
+        "pageType": "marketing",
+        "device": "mobile",
+        "deviceName": "Mobile",
+        "measurements": [
+          {
+            "attempt": 1,
+            "lcp": 4205,
+            "fid": 63,
+            "cls": 0.053,
+            "success": true,
+            "timestamp": 1756870265875,
+            "additionalMetrics": {
+              "ttfb": 789,
+              "fcp": 2366,
+              "domContentLoaded": 3680,
+              "loadComplete": 4731
+            }
+          },
+          {
+            "attempt": 2,
+            "lcp": 4695,
+            "fid": 70,
+            "cls": 0.059,
+            "success": true,
+            "timestamp": 1756870267357,
+            "additionalMetrics": {
+              "ttfb": 880,
+              "fcp": 2641,
+              "domContentLoaded": 4108,
+              "loadComplete": 5282
+            }
+          },
+          {
+            "attempt": 3,
+            "lcp": 4616,
+            "fid": 69,
+            "cls": 0.058,
+            "success": true,
+            "timestamp": 1756870268799,
+            "additionalMetrics": {
+              "ttfb": 866,
+              "fcp": 2597,
+              "domContentLoaded": 4039,
+              "loadComplete": 5193
+            }
+          }
+        ],
+        "statistics": {
+          "lcp": {
+            "avg": 4505.333333333333,
+            "min": 4205,
+            "max": 4695,
+            "median": 4616,
+            "grade": "Poor"
+          },
+          "fid": {
+            "avg": 67.33333333333333,
+            "min": 63,
+            "max": 70,
+            "median": 69,
+            "grade": "Good"
+          },
+          "cls": {
+            "avg": 0.056666666666666664,
+            "min": 0.053,
+            "max": 0.059,
+            "median": 0.058,
+            "grade": "Good"
+          }
+        }
+      },
+      {
+        "page": "Pricing Page",
+        "path": "/pricing",
+        "pageType": "marketing",
+        "device": "tablet",
+        "deviceName": "Tablet",
+        "measurements": [
+          {
+            "attempt": 1,
+            "lcp": 2335,
+            "fid": 60,
+            "cls": 0.048,
+            "success": true,
+            "timestamp": 1756870270153,
+            "additionalMetrics": {
+              "ttfb": 404,
+              "fcp": 1347,
+              "domContentLoaded": 1976,
+              "loadComplete": 2694
+            }
+          },
+          {
+            "attempt": 2,
+            "lcp": 1744,
+            "fid": 45,
+            "cls": 0.036,
+            "success": true,
+            "timestamp": 1756870271644,
+            "additionalMetrics": {
+              "ttfb": 302,
+              "fcp": 1006,
+              "domContentLoaded": 1475,
+              "loadComplete": 2012
+            }
+          },
+          {
+            "attempt": 3,
+            "lcp": 2289,
+            "fid": 59,
+            "cls": 0.047,
+            "success": true,
+            "timestamp": 1756870273088,
+            "additionalMetrics": {
+              "ttfb": 396,
+              "fcp": 1321,
+              "domContentLoaded": 1937,
+              "loadComplete": 2641
+            }
+          }
+        ],
+        "statistics": {
+          "lcp": {
+            "avg": 2122.6666666666665,
+            "min": 1744,
+            "max": 2335,
+            "median": 2289,
+            "grade": "Good"
+          },
+          "fid": {
+            "avg": 54.666666666666664,
+            "min": 45,
+            "max": 60,
+            "median": 59,
+            "grade": "Good"
+          },
+          "cls": {
+            "avg": 0.043666666666666666,
+            "min": 0.036,
+            "max": 0.048,
+            "median": 0.047,
+            "grade": "Good"
+          }
+        }
+      }
+    ],
+    "summary": {
+      "overall": {
+        "avgLCP": 3720.3333333333326,
+        "avgFID": 82.19444444444444,
+        "avgCLS": 0.08322222222222221
+      },
+      "grading": {
+        "lcpGrade": "Needs Improvement",
+        "fidGrade": "Good",
+        "clsGrade": "Good"
+      },
+      "deviceComparison": {
+        "desktop": {
+          "lcp": 1522.0000000000002,
+          "fid": 60.166666666666664,
+          "cls": 0.06333333333333334
+        },
+        "mobile": {
+          "lcp": 6402.583333333333,
+          "fid": 101.25,
+          "cls": 0.101
+        },
+        "tablet": {
+          "lcp": 3236.4166666666665,
+          "fid": 85.16666666666667,
+          "cls": 0.08533333333333334
+        }
+      }
+    }
+  },
+  "loadingPerformance": {
+    "results": [
+      {
+        "page": "Landing Page",
+        "path": "/",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "stages": {
+              "dns": 56,
+              "tcp": 112,
+              "ssl": 168,
+              "ttfb": 224,
+              "download": 336,
+              "domParsing": 224,
+              "resourceLoading": 560,
+              "rendering": 448
+            },
+            "resources": {
+              "scripts": 9,
+              "stylesheets": 4,
+              "images": 15,
+              "fonts": 4,
+              "others": 8
+            },
+            "sizes": {
+              "html": 63,
+              "css": 184,
+              "js": 942,
+              "images": 592,
+              "total": 0
+            }
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "stages": {
+              "dns": 56,
+              "tcp": 111,
+              "ssl": 167,
+              "ttfb": 222,
+              "download": 333,
+              "domParsing": 222,
+              "resourceLoading": 556,
+              "rendering": 444
+            },
+            "resources": {
+              "scripts": 9,
+              "stylesheets": 4,
+              "images": 16,
+              "fonts": 3,
+              "others": 6
+            },
+            "sizes": {
+              "html": 64,
+              "css": 198,
+              "js": 869,
+              "images": 544,
+              "total": 0
+            }
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "stages": {
+              "dns": 49,
+              "tcp": 98,
+              "ssl": 147,
+              "ttfb": 196,
+              "download": 294,
+              "domParsing": 196,
+              "resourceLoading": 489,
+              "rendering": 391
+            },
+            "resources": {
+              "scripts": 11,
+              "stylesheets": 3,
+              "images": 16,
+              "fonts": 3,
+              "others": 8
+            },
+            "sizes": {
+              "html": 66,
+              "css": 167,
+              "js": 1056,
+              "images": 622,
+              "total": 0
+            }
+          },
+          {
+            "attempt": 4,
+            "success": true,
+            "stages": {
+              "dns": 48,
+              "tcp": 95,
+              "ssl": 143,
+              "ttfb": 191,
+              "download": 286,
+              "domParsing": 191,
+              "resourceLoading": 477,
+              "rendering": 381
+            },
+            "resources": {
+              "scripts": 10,
+              "stylesheets": 4,
+              "images": 19,
+              "fonts": 2,
+              "others": 7
+            },
+            "sizes": {
+              "html": 51,
+              "css": 191,
+              "js": 963,
+              "images": 541,
+              "total": 0
+            }
+          },
+          {
+            "attempt": 5,
+            "success": true,
+            "stages": {
+              "dns": 47,
+              "tcp": 94,
+              "ssl": 142,
+              "ttfb": 189,
+              "download": 283,
+              "domParsing": 189,
+              "resourceLoading": 472,
+              "rendering": 377
+            },
+            "resources": {
+              "scripts": 11,
+              "stylesheets": 5,
+              "images": 20,
+              "fonts": 3,
+              "others": 6
+            },
+            "sizes": {
+              "html": 53,
+              "css": 196,
+              "js": 964,
+              "images": 567,
+              "total": 0
+            }
+          }
+        ],
+        "statistics": {
+          "avgTotalTime": 1940.8,
+          "minTotalTime": 1793,
+          "maxTotalTime": 2128,
+          "avgResourceCount": 41.2,
+          "avgBandwidthUsage": 1500
+        }
+      },
+      {
+        "page": "Dashboard",
+        "path": "/dashboard",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "stages": {
+              "dns": 41,
+              "tcp": 82,
+              "ssl": 124,
+              "ttfb": 247,
+              "download": 247,
+              "domParsing": 165,
+              "resourceLoading": 412,
+              "rendering": 330
+            },
+            "resources": {
+              "scripts": 9,
+              "stylesheets": 5,
+              "images": 15,
+              "fonts": 3,
+              "others": 7
+            },
+            "sizes": {
+              "html": 67,
+              "css": 197,
+              "js": 949,
+              "images": 693,
+              "total": 0
+            }
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "stages": {
+              "dns": 49,
+              "tcp": 97,
+              "ssl": 146,
+              "ttfb": 291,
+              "download": 291,
+              "domParsing": 194,
+              "resourceLoading": 486,
+              "rendering": 389
+            },
+            "resources": {
+              "scripts": 10,
+              "stylesheets": 3,
+              "images": 15,
+              "fonts": 3,
+              "others": 6
+            },
+            "sizes": {
+              "html": 53,
+              "css": 172,
+              "js": 803,
+              "images": 536,
+              "total": 0
+            }
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "stages": {
+              "dns": 56,
+              "tcp": 113,
+              "ssl": 169,
+              "ttfb": 339,
+              "download": 339,
+              "domParsing": 226,
+              "resourceLoading": 564,
+              "rendering": 451
+            },
+            "resources": {
+              "scripts": 9,
+              "stylesheets": 5,
+              "images": 20,
+              "fonts": 3,
+              "others": 7
+            },
+            "sizes": {
+              "html": 58,
+              "css": 168,
+              "js": 1058,
+              "images": 702,
+              "total": 0
+            }
+          },
+          {
+            "attempt": 4,
+            "success": true,
+            "stages": {
+              "dns": 45,
+              "tcp": 91,
+              "ssl": 136,
+              "ttfb": 272,
+              "download": 272,
+              "domParsing": 181,
+              "resourceLoading": 453,
+              "rendering": 362
+            },
+            "resources": {
+              "scripts": 12,
+              "stylesheets": 4,
+              "images": 14,
+              "fonts": 2,
+              "others": 7
+            },
+            "sizes": {
+              "html": 58,
+              "css": 170,
+              "js": 878,
+              "images": 678,
+              "total": 0
+            }
+          },
+          {
+            "attempt": 5,
+            "success": true,
+            "stages": {
+              "dns": 53,
+              "tcp": 105,
+              "ssl": 158,
+              "ttfb": 316,
+              "download": 316,
+              "domParsing": 210,
+              "resourceLoading": 526,
+              "rendering": 421
+            },
+            "resources": {
+              "scripts": 11,
+              "stylesheets": 4,
+              "images": 16,
+              "fonts": 3,
+              "others": 7
+            },
+            "sizes": {
+              "html": 51,
+              "css": 187,
+              "js": 1033,
+              "images": 642,
+              "total": 0
+            }
+          }
+        ],
+        "statistics": {
+          "avgTotalTime": 1953,
+          "minTotalTime": 1648,
+          "maxTotalTime": 2257,
+          "avgResourceCount": 40,
+          "avgBandwidthUsage": 1500
+        }
+      }
+    ],
+    "overallStatistics": {
+      "overallAvgLoadTime": 1946.9,
+      "fastestPage": {
+        "page": "Landing Page",
+        "path": "/",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "stages": {
+              "dns": 56,
+              "tcp": 112,
+              "ssl": 168,
+              "ttfb": 224,
+              "download": 336,
+              "domParsing": 224,
+              "resourceLoading": 560,
+              "rendering": 448
+            },
+            "resources": {
+              "scripts": 9,
+              "stylesheets": 4,
+              "images": 15,
+              "fonts": 4,
+              "others": 8
+            },
+            "sizes": {
+              "html": 63,
+              "css": 184,
+              "js": 942,
+              "images": 592,
+              "total": 0
+            }
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "stages": {
+              "dns": 56,
+              "tcp": 111,
+              "ssl": 167,
+              "ttfb": 222,
+              "download": 333,
+              "domParsing": 222,
+              "resourceLoading": 556,
+              "rendering": 444
+            },
+            "resources": {
+              "scripts": 9,
+              "stylesheets": 4,
+              "images": 16,
+              "fonts": 3,
+              "others": 6
+            },
+            "sizes": {
+              "html": 64,
+              "css": 198,
+              "js": 869,
+              "images": 544,
+              "total": 0
+            }
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "stages": {
+              "dns": 49,
+              "tcp": 98,
+              "ssl": 147,
+              "ttfb": 196,
+              "download": 294,
+              "domParsing": 196,
+              "resourceLoading": 489,
+              "rendering": 391
+            },
+            "resources": {
+              "scripts": 11,
+              "stylesheets": 3,
+              "images": 16,
+              "fonts": 3,
+              "others": 8
+            },
+            "sizes": {
+              "html": 66,
+              "css": 167,
+              "js": 1056,
+              "images": 622,
+              "total": 0
+            }
+          },
+          {
+            "attempt": 4,
+            "success": true,
+            "stages": {
+              "dns": 48,
+              "tcp": 95,
+              "ssl": 143,
+              "ttfb": 191,
+              "download": 286,
+              "domParsing": 191,
+              "resourceLoading": 477,
+              "rendering": 381
+            },
+            "resources": {
+              "scripts": 10,
+              "stylesheets": 4,
+              "images": 19,
+              "fonts": 2,
+              "others": 7
+            },
+            "sizes": {
+              "html": 51,
+              "css": 191,
+              "js": 963,
+              "images": 541,
+              "total": 0
+            }
+          },
+          {
+            "attempt": 5,
+            "success": true,
+            "stages": {
+              "dns": 47,
+              "tcp": 94,
+              "ssl": 142,
+              "ttfb": 189,
+              "download": 283,
+              "domParsing": 189,
+              "resourceLoading": 472,
+              "rendering": 377
+            },
+            "resources": {
+              "scripts": 11,
+              "stylesheets": 5,
+              "images": 20,
+              "fonts": 3,
+              "others": 6
+            },
+            "sizes": {
+              "html": 53,
+              "css": 196,
+              "js": 964,
+              "images": 567,
+              "total": 0
+            }
+          }
+        ],
+        "statistics": {
+          "avgTotalTime": 1940.8,
+          "minTotalTime": 1793,
+          "maxTotalTime": 2128,
+          "avgResourceCount": 41.2,
+          "avgBandwidthUsage": 1500
+        }
+      },
+      "slowestPage": {
+        "page": "Dashboard",
+        "path": "/dashboard",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "stages": {
+              "dns": 41,
+              "tcp": 82,
+              "ssl": 124,
+              "ttfb": 247,
+              "download": 247,
+              "domParsing": 165,
+              "resourceLoading": 412,
+              "rendering": 330
+            },
+            "resources": {
+              "scripts": 9,
+              "stylesheets": 5,
+              "images": 15,
+              "fonts": 3,
+              "others": 7
+            },
+            "sizes": {
+              "html": 67,
+              "css": 197,
+              "js": 949,
+              "images": 693,
+              "total": 0
+            }
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "stages": {
+              "dns": 49,
+              "tcp": 97,
+              "ssl": 146,
+              "ttfb": 291,
+              "download": 291,
+              "domParsing": 194,
+              "resourceLoading": 486,
+              "rendering": 389
+            },
+            "resources": {
+              "scripts": 10,
+              "stylesheets": 3,
+              "images": 15,
+              "fonts": 3,
+              "others": 6
+            },
+            "sizes": {
+              "html": 53,
+              "css": 172,
+              "js": 803,
+              "images": 536,
+              "total": 0
+            }
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "stages": {
+              "dns": 56,
+              "tcp": 113,
+              "ssl": 169,
+              "ttfb": 339,
+              "download": 339,
+              "domParsing": 226,
+              "resourceLoading": 564,
+              "rendering": 451
+            },
+            "resources": {
+              "scripts": 9,
+              "stylesheets": 5,
+              "images": 20,
+              "fonts": 3,
+              "others": 7
+            },
+            "sizes": {
+              "html": 58,
+              "css": 168,
+              "js": 1058,
+              "images": 702,
+              "total": 0
+            }
+          },
+          {
+            "attempt": 4,
+            "success": true,
+            "stages": {
+              "dns": 45,
+              "tcp": 91,
+              "ssl": 136,
+              "ttfb": 272,
+              "download": 272,
+              "domParsing": 181,
+              "resourceLoading": 453,
+              "rendering": 362
+            },
+            "resources": {
+              "scripts": 12,
+              "stylesheets": 4,
+              "images": 14,
+              "fonts": 2,
+              "others": 7
+            },
+            "sizes": {
+              "html": 58,
+              "css": 170,
+              "js": 878,
+              "images": 678,
+              "total": 0
+            }
+          },
+          {
+            "attempt": 5,
+            "success": true,
+            "stages": {
+              "dns": 53,
+              "tcp": 105,
+              "ssl": 158,
+              "ttfb": 316,
+              "download": 316,
+              "domParsing": 210,
+              "resourceLoading": 526,
+              "rendering": 421
+            },
+            "resources": {
+              "scripts": 11,
+              "stylesheets": 4,
+              "images": 16,
+              "fonts": 3,
+              "others": 7
+            },
+            "sizes": {
+              "html": 51,
+              "css": 187,
+              "js": 1033,
+              "images": 642,
+              "total": 0
+            }
+          }
+        ],
+        "statistics": {
+          "avgTotalTime": 1953,
+          "minTotalTime": 1648,
+          "maxTotalTime": 2257,
+          "avgResourceCount": 40,
+          "avgBandwidthUsage": 1500
+        }
+      }
+    }
+  },
+  "renderingPerformance": {
+    "scenarios": [
+      {
+        "scenario": "Initial Render",
+        "type": "initial",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "renderTime": 589,
+            "fps": 44,
+            "memoryUsage": 73,
+            "reflows": 0,
+            "repaints": 9,
+            "layoutShifts": 2
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "renderTime": 787,
+            "fps": 59,
+            "memoryUsage": 130,
+            "reflows": 6,
+            "repaints": 11,
+            "layoutShifts": 2
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "renderTime": 658,
+            "fps": 58,
+            "memoryUsage": 87,
+            "reflows": 7,
+            "repaints": 12,
+            "layoutShifts": 3
+          }
+        ],
+        "statistics": {
+          "avgRenderTime": 678,
+          "minRenderTime": 589,
+          "maxRenderTime": 787,
+          "medianRenderTime": 658,
+          "fps": 53.666666666666664
+        }
+      },
+      {
+        "scenario": "Route Navigation",
+        "type": "navigation",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "renderTime": 305,
+            "fps": 54,
+            "memoryUsage": 144,
+            "reflows": 1,
+            "repaints": 12,
+            "layoutShifts": 0
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "renderTime": 225,
+            "fps": 55,
+            "memoryUsage": 105,
+            "reflows": 9,
+            "repaints": 14,
+            "layoutShifts": 3
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "renderTime": 383,
+            "fps": 53,
+            "memoryUsage": 72,
+            "reflows": 5,
+            "repaints": 1,
+            "layoutShifts": 3
+          }
+        ],
+        "statistics": {
+          "avgRenderTime": 304.3333333333333,
+          "minRenderTime": 225,
+          "maxRenderTime": 383,
+          "medianRenderTime": 305,
+          "fps": 54
+        }
+      },
+      {
+        "scenario": "Component Update",
+        "type": "update",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "renderTime": 57,
+            "fps": 53,
+            "memoryUsage": 99,
+            "reflows": 1,
+            "repaints": 12,
+            "layoutShifts": 2
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "renderTime": 53,
+            "fps": 43,
+            "memoryUsage": 147,
+            "reflows": 6,
+            "repaints": 0,
+            "layoutShifts": 1
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "renderTime": 48,
+            "fps": 51,
+            "memoryUsage": 92,
+            "reflows": 0,
+            "repaints": 0,
+            "layoutShifts": 0
+          }
+        ],
+        "statistics": {
+          "avgRenderTime": 52.666666666666664,
+          "minRenderTime": 48,
+          "maxRenderTime": 57,
+          "medianRenderTime": 53,
+          "fps": 49
+        }
+      },
+      {
+        "scenario": "Large List Rendering",
+        "type": "list",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "renderTime": 129,
+            "fps": 52,
+            "memoryUsage": 132,
+            "reflows": 10,
+            "repaints": 19,
+            "layoutShifts": 0
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "renderTime": 150,
+            "fps": 48,
+            "memoryUsage": 87,
+            "reflows": 2,
+            "repaints": 11,
+            "layoutShifts": 2
+          },
+          {
+            "attempt": 3,
+            "success": false,
+            "error": "Rendering error"
+          }
+        ],
+        "statistics": {
+          "avgRenderTime": 139.5,
+          "minRenderTime": 129,
+          "maxRenderTime": 150,
+          "medianRenderTime": 139.5,
+          "fps": 50
+        }
+      },
+      {
+        "scenario": "Modal Dialog",
+        "type": "modal",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "renderTime": 84,
+            "fps": 51,
+            "memoryUsage": 52,
+            "reflows": 8,
+            "repaints": 2,
+            "layoutShifts": 2
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "renderTime": 122,
+            "fps": 53,
+            "memoryUsage": 75,
+            "reflows": 3,
+            "repaints": 8,
+            "layoutShifts": 1
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "renderTime": 114,
+            "fps": 60,
+            "memoryUsage": 109,
+            "reflows": 9,
+            "repaints": 4,
+            "layoutShifts": 2
+          }
+        ],
+        "statistics": {
+          "avgRenderTime": 106.66666666666667,
+          "minRenderTime": 84,
+          "maxRenderTime": 122,
+          "medianRenderTime": 114,
+          "fps": 54.666666666666664
+        }
+      }
+    ],
+    "overallPerformance": {
+      "overallAvgRenderTime": 256.23333333333335,
+      "fastestScenario": {
+        "scenario": "Component Update",
+        "type": "update",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "renderTime": 57,
+            "fps": 53,
+            "memoryUsage": 99,
+            "reflows": 1,
+            "repaints": 12,
+            "layoutShifts": 2
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "renderTime": 53,
+            "fps": 43,
+            "memoryUsage": 147,
+            "reflows": 6,
+            "repaints": 0,
+            "layoutShifts": 1
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "renderTime": 48,
+            "fps": 51,
+            "memoryUsage": 92,
+            "reflows": 0,
+            "repaints": 0,
+            "layoutShifts": 0
+          }
+        ],
+        "statistics": {
+          "avgRenderTime": 52.666666666666664,
+          "minRenderTime": 48,
+          "maxRenderTime": 57,
+          "medianRenderTime": 53,
+          "fps": 49
+        }
+      },
+      "slowestScenario": {
+        "scenario": "Initial Render",
+        "type": "initial",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "renderTime": 589,
+            "fps": 44,
+            "memoryUsage": 73,
+            "reflows": 0,
+            "repaints": 9,
+            "layoutShifts": 2
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "renderTime": 787,
+            "fps": 59,
+            "memoryUsage": 130,
+            "reflows": 6,
+            "repaints": 11,
+            "layoutShifts": 2
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "renderTime": 658,
+            "fps": 58,
+            "memoryUsage": 87,
+            "reflows": 7,
+            "repaints": 12,
+            "layoutShifts": 3
+          }
+        ],
+        "statistics": {
+          "avgRenderTime": 678,
+          "minRenderTime": 589,
+          "maxRenderTime": 787,
+          "medianRenderTime": 658,
+          "fps": 53.666666666666664
+        }
+      }
+    }
+  },
+  "bundleAnalysis": {
+    "bundles": [
+      {
+        "name": "main",
+        "path": "_next/static/chunks/main.js",
+        "size": 45000,
+        "gzipSize": 15000,
+        "type": "entry",
+        "dependencies": [
+          "react",
+          "next",
+          "webpack-runtime"
+        ]
+      },
+      {
+        "name": "framework",
+        "path": "_next/static/chunks/framework.js",
+        "size": 127000,
+        "gzipSize": 42000,
+        "type": "vendor",
+        "dependencies": [
+          "react",
+          "react-dom",
+          "scheduler"
+        ]
+      },
+      {
+        "name": "pages/index",
+        "path": "_next/static/chunks/pages/index.js",
+        "size": 23000,
+        "gzipSize": 8000,
+        "type": "page",
+        "dependencies": [
+          "landing-components"
+        ]
+      },
+      {
+        "name": "pages/dashboard",
+        "path": "_next/static/chunks/pages/dashboard.js",
+        "size": 87000,
+        "gzipSize": 28000,
+        "type": "page",
+        "dependencies": [
+          "dashboard-components",
+          "charts",
+          "table"
+        ]
+      },
+      {
+        "name": "commons",
+        "path": "_next/static/chunks/commons.js",
+        "size": 156000,
+        "gzipSize": 52000,
+        "type": "shared",
+        "dependencies": [
+          "ui-components",
+          "utils",
+          "hooks"
+        ]
+      }
+    ],
+    "summary": {
+      "totalBundles": 5,
+      "totalSize": 438000,
+      "totalGzipSize": 145000,
+      "compressionRatio": 0.3310502283105023,
+      "largestBundle": {
+        "name": "commons",
+        "path": "_next/static/chunks/commons.js",
+        "size": 156000,
+        "gzipSize": 52000,
+        "type": "shared",
+        "dependencies": [
+          "ui-components",
+          "utils",
+          "hooks"
+        ]
+      },
+      "smallestBundle": {
+        "name": "pages/index",
+        "path": "_next/static/chunks/pages/index.js",
+        "size": 23000,
+        "gzipSize": 8000,
+        "type": "page",
+        "dependencies": [
+          "landing-components"
+        ]
+      }
+    },
+    "analysis": {
+      "duplicatedDependencies": [
+        {
+          "dependency": "react",
+          "bundles": [
+            "main",
+            "framework"
+          ],
+          "count": 2
+        }
+      ],
+      "optimizationOpportunities": [
+        {
+          "bundle": "framework",
+          "type": "size",
+          "message": "framework 번들이 매우 큽니다 (124KB)",
+          "impact": "high"
+        },
+        {
+          "bundle": "commons",
+          "type": "size",
+          "message": "commons 번들이 매우 큽니다 (152KB)",
+          "impact": "high"
+        }
+      ],
+      "treeshakingPotential": 65700,
+      "codesplitting": {
+        "implemented": true,
+        "pageCount": 2,
+        "vendorSeparation": true
+      }
+    }
+  },
+  "mobilePerformance": {
+    "conditions": [
+      {
+        "condition": "High-end Mobile",
+        "specs": {
+          "name": "High-end Mobile",
+          "cpu": "fast",
+          "network": "4g",
+          "memory": "high"
+        },
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": false,
+            "error": "Mobile performance test timeout"
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "metrics": {
+              "loadTime": 1687,
+              "renderTime": 953,
+              "interactionDelay": 127,
+              "batteryUsage": 17,
+              "memoryUsage": 80,
+              "cpuUsage": 21
+            },
+            "networkStats": {
+              "bytesDownloaded": 1265568,
+              "requestCount": 50,
+              "cacheHitRate": 77,
+              "offlineCapability": true
+            }
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "metrics": {
+              "loadTime": 1986,
+              "renderTime": 872,
+              "interactionDelay": 156,
+              "batteryUsage": 18,
+              "memoryUsage": 95,
+              "cpuUsage": 20
+            },
+            "networkStats": {
+              "bytesDownloaded": 1414265,
+              "requestCount": 49,
+              "cacheHitRate": 77,
+              "offlineCapability": false
+            }
+          }
+        ],
+        "statistics": {
+          "avgLoadTime": 1836.5,
+          "avgRenderTime": 912.5,
+          "avgMemoryUsage": 87.5,
+          "avgBatteryUsage": 17.5,
+          "avgCacheHitRate": 77
+        }
+      },
+      {
+        "condition": "Mid-range Mobile",
+        "specs": {
+          "name": "Mid-range Mobile",
+          "cpu": "medium",
+          "network": "3g",
+          "memory": "medium"
+        },
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "metrics": {
+              "loadTime": 4703,
+              "renderTime": 1230,
+              "interactionDelay": 282,
+              "batteryUsage": 25,
+              "memoryUsage": 112,
+              "cpuUsage": 47
+            },
+            "networkStats": {
+              "bytesDownloaded": 1345472,
+              "requestCount": 59,
+              "cacheHitRate": 69,
+              "offlineCapability": true
+            }
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "metrics": {
+              "loadTime": 3854,
+              "renderTime": 1531,
+              "interactionDelay": 291,
+              "batteryUsage": 25,
+              "memoryUsage": 95,
+              "cpuUsage": 42
+            },
+            "networkStats": {
+              "bytesDownloaded": 1383507,
+              "requestCount": 57,
+              "cacheHitRate": 62,
+              "offlineCapability": false
+            }
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "metrics": {
+              "loadTime": 3920,
+              "renderTime": 1323,
+              "interactionDelay": 275,
+              "batteryUsage": 27,
+              "memoryUsage": 109,
+              "cpuUsage": 52
+            },
+            "networkStats": {
+              "bytesDownloaded": 1467982,
+              "requestCount": 51,
+              "cacheHitRate": 73,
+              "offlineCapability": false
+            }
+          }
+        ],
+        "statistics": {
+          "avgLoadTime": 4159,
+          "avgRenderTime": 1361.3333333333333,
+          "avgMemoryUsage": 105.33333333333333,
+          "avgBatteryUsage": 25.666666666666668,
+          "avgCacheHitRate": 68
+        }
+      },
+      {
+        "condition": "Low-end Mobile",
+        "specs": {
+          "name": "Low-end Mobile",
+          "cpu": "slow",
+          "network": "slow-3g",
+          "memory": "low"
+        },
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "metrics": {
+              "loadTime": 8082,
+              "renderTime": 2137,
+              "interactionDelay": 506,
+              "batteryUsage": 50,
+              "memoryUsage": 143,
+              "cpuUsage": 69
+            },
+            "networkStats": {
+              "bytesDownloaded": 1413822,
+              "requestCount": 54,
+              "cacheHitRate": 83,
+              "offlineCapability": false
+            }
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "metrics": {
+              "loadTime": 9260,
+              "renderTime": 2207,
+              "interactionDelay": 447,
+              "batteryUsage": 53,
+              "memoryUsage": 168,
+              "cpuUsage": 86
+            },
+            "networkStats": {
+              "bytesDownloaded": 1212947,
+              "requestCount": 52,
+              "cacheHitRate": 89,
+              "offlineCapability": false
+            }
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "metrics": {
+              "loadTime": 7431,
+              "renderTime": 2517,
+              "interactionDelay": 522,
+              "batteryUsage": 39,
+              "memoryUsage": 120,
+              "cpuUsage": 92
+            },
+            "networkStats": {
+              "bytesDownloaded": 1495710,
+              "requestCount": 47,
+              "cacheHitRate": 82,
+              "offlineCapability": true
+            }
+          }
+        ],
+        "statistics": {
+          "avgLoadTime": 8257.666666666666,
+          "avgRenderTime": 2287,
+          "avgMemoryUsage": 143.66666666666666,
+          "avgBatteryUsage": 47.333333333333336,
+          "avgCacheHitRate": 84.66666666666667
+        }
+      }
+    ],
+    "comparison": {
+      "High-end Mobile": {
+        "loadTime": 1836.5,
+        "renderTime": 912.5,
+        "memoryUsage": 87.5
+      },
+      "Mid-range Mobile": {
+        "loadTime": 4159,
+        "renderTime": 1361.3333333333333,
+        "memoryUsage": 105.33333333333333
+      },
+      "Low-end Mobile": {
+        "loadTime": 8257.666666666666,
+        "renderTime": 2287,
+        "memoryUsage": 143.66666666666666
+      }
+    }
+  },
+  "userExperience": {
+    "interactions": [
+      {
+        "interaction": "Button Click Response",
+        "type": "click",
+        "complexity": "low",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "responseTime": 69,
+            "smoothness": 96,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "responseTime": 44,
+            "smoothness": 96,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "responseTime": 42,
+            "smoothness": 96,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": false,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 4,
+            "success": true,
+            "responseTime": 58,
+            "smoothness": 91,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": false,
+              "screenReaderFriendly": true,
+              "colorContrast": false
+            }
+          },
+          {
+            "attempt": 5,
+            "success": true,
+            "responseTime": 50,
+            "smoothness": 100,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          }
+        ],
+        "statistics": {
+          "avgResponseTime": 52.6,
+          "minResponseTime": 42,
+          "maxResponseTime": 69,
+          "medianResponseTime": 50,
+          "p95ResponseTime": 69,
+          "uxGrade": "Excellent"
+        }
+      },
+      {
+        "interaction": "Form Submission",
+        "type": "form",
+        "complexity": "medium",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "responseTime": 397,
+            "smoothness": 89,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "responseTime": 217,
+            "smoothness": 88,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "responseTime": 339,
+            "smoothness": 94,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 4,
+            "success": true,
+            "responseTime": 280,
+            "smoothness": 86,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 5,
+            "success": true,
+            "responseTime": 237,
+            "smoothness": 87,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          }
+        ],
+        "statistics": {
+          "avgResponseTime": 294,
+          "minResponseTime": 217,
+          "maxResponseTime": 397,
+          "medianResponseTime": 280,
+          "p95ResponseTime": 397,
+          "uxGrade": "Acceptable"
+        }
+      },
+      {
+        "interaction": "Navigation Transition",
+        "type": "navigation",
+        "complexity": "medium",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "responseTime": 392,
+            "smoothness": 96,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "responseTime": 278,
+            "smoothness": 88,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "responseTime": 569,
+            "smoothness": 100,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 4,
+            "success": true,
+            "responseTime": 469,
+            "smoothness": 89,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 5,
+            "success": true,
+            "responseTime": 398,
+            "smoothness": 90,
+            "visualFeedback": false,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          }
+        ],
+        "statistics": {
+          "avgResponseTime": 421.2,
+          "minResponseTime": 278,
+          "maxResponseTime": 569,
+          "medianResponseTime": 398,
+          "p95ResponseTime": 569,
+          "uxGrade": "Acceptable"
+        }
+      },
+      {
+        "interaction": "Modal Open/Close",
+        "type": "modal",
+        "complexity": "low",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "responseTime": 91,
+            "smoothness": 94,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "responseTime": 83,
+            "smoothness": 95,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "responseTime": 106,
+            "smoothness": 87,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 4,
+            "success": true,
+            "responseTime": 104,
+            "smoothness": 100,
+            "visualFeedback": false,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 5,
+            "success": true,
+            "responseTime": 91,
+            "smoothness": 96,
+            "visualFeedback": false,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": false
+            }
+          }
+        ],
+        "statistics": {
+          "avgResponseTime": 95,
+          "minResponseTime": 83,
+          "maxResponseTime": 106,
+          "medianResponseTime": 91,
+          "p95ResponseTime": 106,
+          "uxGrade": "Excellent"
+        }
+      },
+      {
+        "interaction": "Data Filtering",
+        "type": "filter",
+        "complexity": "high",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "responseTime": 328,
+            "smoothness": 99,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 2,
+            "success": true,
+            "responseTime": 395,
+            "smoothness": 87,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "responseTime": 394,
+            "smoothness": 91,
+            "visualFeedback": false,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 4,
+            "success": true,
+            "responseTime": 354,
+            "smoothness": 93,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 5,
+            "success": false,
+            "error": "Interaction timeout"
+          }
+        ],
+        "statistics": {
+          "avgResponseTime": 367.75,
+          "minResponseTime": 328,
+          "maxResponseTime": 395,
+          "medianResponseTime": 374,
+          "p95ResponseTime": 395,
+          "uxGrade": "Acceptable"
+        }
+      },
+      {
+        "interaction": "Infinite Scroll",
+        "type": "scroll",
+        "complexity": "high",
+        "measurements": [
+          {
+            "attempt": 1,
+            "success": true,
+            "responseTime": 44,
+            "smoothness": 93,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 2,
+            "success": false,
+            "error": "Interaction timeout"
+          },
+          {
+            "attempt": 3,
+            "success": true,
+            "responseTime": 89,
+            "smoothness": 94,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 4,
+            "success": true,
+            "responseTime": 89,
+            "smoothness": 96,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          },
+          {
+            "attempt": 5,
+            "success": true,
+            "responseTime": 89,
+            "smoothness": 88,
+            "visualFeedback": true,
+            "accessibility": {
+              "keyboardNavigable": true,
+              "screenReaderFriendly": true,
+              "colorContrast": true
+            }
+          }
+        ],
+        "statistics": {
+          "avgResponseTime": 77.75,
+          "minResponseTime": 44,
+          "maxResponseTime": 89,
+          "medianResponseTime": 89,
+          "p95ResponseTime": 89,
+          "uxGrade": "Excellent"
+        }
+      }
+    ],
+    "overallUXScore": 87
+  },
+  "performanceIssues": [
+    {
+      "type": "slow-lcp",
+      "severity": "MEDIUM",
+      "message": "LCP가 3720ms로 개선이 필요합니다",
+      "impact": "사용자 경험에 부정적 영향",
+      "metric": "LCP",
+      "value": 3720.3333333333326
+    },
+    {
+      "type": "poor-mobile-performance",
+      "severity": "HIGH",
+      "message": "저사양 모바일에서 로딩 시간이 8초로 매우 느립니다",
+      "impact": "모바일 사용자 이탈률 증가",
+      "metric": "Mobile Load Time",
+      "value": 8257.666666666666
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "MEDIUM",
+      "category": "Core Web Vitals",
+      "title": "LCP (Largest Contentful Paint) 개선",
+      "description": "LCP가 3720ms로 개선이 필요합니다",
+      "solutions": [
+        "이미지 최적화 및 WebP 포맷 사용",
+        "중요한 리소스 preload 적용",
+        "Hero 이미지/컴포넌트 우선 로딩",
+        "CDN 사용으로 지리적 최적화",
+        "서버 응답 시간 최적화",
+        "렌더링 블로킹 리소스 제거"
+      ],
+      "estimatedImpact": "LCP 30-50% 개선 예상",
+      "metrics": [
+        "LCP"
+      ]
+    },
+    {
+      "priority": "HIGH",
+      "category": "Mobile Performance",
+      "title": "모바일 성능 최적화",
+      "description": "저사양 모바일에서 로딩 시간이 8초로 매우 느립니다",
+      "solutions": [
+        "Progressive Web App (PWA) 구현",
+        "적응형 이미지 로딩",
+        "모바일 우선 설계",
+        "터치 응답성 최적화",
+        "배터리 사용량 최적화",
+        "오프라인 캐싱 전략"
+      ],
+      "estimatedImpact": "모바일 성능 40-60% 개선 예상",
+      "metrics": [
+        "Mobile Load Time",
+        "Mobile UX"
+      ]
+    }
+  ]
+}

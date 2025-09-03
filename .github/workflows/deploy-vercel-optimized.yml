@@ -1,0 +1,239 @@
+name: 🚀 Vercel 최적화 배포
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20'
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # =============================================================================
+  # 🏗️ 빌드 및 배포 최적화
+  # =============================================================================
+  deploy:
+    name: 🚀 배포
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    strategy:
+      matrix:
+        environment:
+          - name: preview
+            condition: github.event_name == 'pull_request'
+            vercel_env: preview
+          - name: development
+            condition: github.ref == 'refs/heads/develop'
+            vercel_env: development
+          - name: production
+            condition: github.ref == 'refs/heads/main'
+            vercel_env: production
+        exclude:
+          - environment: { name: preview }
+            condition: ${{ github.event_name != 'pull_request' && true || false }}
+          - environment: { name: development }
+            condition: ${{ github.ref != 'refs/heads/develop' && true || false }}
+          - environment: { name: production }
+            condition: ${{ github.ref != 'refs/heads/main' && true || false }}
+    
+    environment:
+      name: ${{ matrix.environment.name }}
+      url: ${{ steps.deploy.outputs.url }}
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: 📦 의존성 캐시
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+            .next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('package-lock.json') }}-
+            ${{ runner.os }}-nextjs-
+      
+      - name: 📦 의존성 설치
+        run: npm ci --prefer-offline --no-audit
+      
+      - name: 🔧 Vercel CLI 설치
+        run: npm i -g vercel@latest
+      
+      - name: 🔗 Vercel 프로젝트 연결
+        run: vercel pull --yes --environment=${{ matrix.environment.vercel_env }} --token=${{ secrets.VERCEL_TOKEN }}
+      
+      - name: 🏗️ 빌드 아티팩트 생성
+        run: vercel build ${{ matrix.environment.name == 'production' && '--prod' || '' }} --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+      
+      - name: 🚀 Vercel 배포
+        id: deploy
+        run: |
+          url=$(vercel deploy ${{ matrix.environment.name == 'production' && '--prod' || '' }} --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$url" >> $GITHUB_OUTPUT
+          echo "deployment-url=$url" >> $GITHUB_ENV
+      
+      - name: 📝 배포 URL 저장
+        run: |
+          echo "배포 URL: ${{ steps.deploy.outputs.url }}"
+          echo "${{ steps.deploy.outputs.url }}" > deployment-url.txt
+      
+      - name: 📤 배포 URL 아티팩트 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-url-${{ matrix.environment.name }}
+          path: deployment-url.txt
+
+  # =============================================================================
+  # 🧪 배포 후 테스트
+  # =============================================================================
+  post-deploy-tests:
+    name: 🧪 배포 후 테스트
+    runs-on: ubuntu-latest
+    needs: deploy
+    timeout-minutes: 10
+    
+    strategy:
+      matrix:
+        test-type:
+          - name: health-check
+            description: "헬스체크"
+          - name: performance
+            description: "성능 테스트" 
+          - name: security
+            description: "보안 테스트"
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+      
+      - name: 📥 배포 URL 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-url-${{ github.ref == 'refs/heads/main' && 'production' || (github.ref == 'refs/heads/develop' && 'development' || 'preview') }}
+      
+      - name: 📖 배포 URL 읽기
+        id: url
+        run: |
+          URL=$(cat deployment-url.txt)
+          echo "deployment-url=$URL" >> $GITHUB_OUTPUT
+          echo "Deployment URL: $URL"
+      
+      - name: ⏳ 배포 완료 대기
+        run: |
+          for i in {1..30}; do
+            if curl -f -s "${{ steps.url.outputs.deployment-url }}/api/health" > /dev/null; then
+              echo "✅ 애플리케이션이 준비되었습니다"
+              exit 0
+            fi
+            echo "⏳ 애플리케이션 시작 대기 중... ($i/30)"
+            sleep 10
+          done
+          echo "❌ 애플리케이션 시작 타임아웃"
+          exit 1
+      
+      - name: 🔍 헬스체크
+        if: matrix.test-type.name == 'health-check'
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" "${{ steps.url.outputs.deployment-url }}/api/health")
+          if [ $response -eq 200 ]; then
+            echo "✅ 헬스체크 통과"
+          else
+            echo "❌ 헬스체크 실패 (HTTP $response)"
+            exit 1
+          fi
+      
+      - name: 📊 Lighthouse 성능 테스트
+        if: matrix.test-type.name == 'performance'
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          urls: ${{ steps.url.outputs.deployment-url }}
+          configPath: './.lighthouserc.json'
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+      
+      - name: 🔒 보안 테스트
+        if: matrix.test-type.name == 'security'
+        run: |
+          # HTTPS 리디렉션 확인
+          response=$(curl -s -o /dev/null -w "%{http_code}" -L "http://$(echo ${{ steps.url.outputs.deployment-url }} | cut -d'/' -f3)")
+          if [ $response -eq 200 ] || [ $response -eq 301 ] || [ $response -eq 302 ]; then
+            echo "✅ HTTPS 리디렉션 정상"
+          else
+            echo "❌ HTTPS 리디렉션 확인 필요"
+          fi
+          
+          # 보안 헤더 확인
+          curl -I "${{ steps.url.outputs.deployment-url }}" | grep -E "(X-Frame-Options|X-XSS-Protection|X-Content-Type-Options)" || echo "⚠️ 일부 보안 헤더 누락"
+
+  # =============================================================================
+  # 📱 알림 및 보고
+  # =============================================================================
+  notify:
+    name: 📱 배포 알림
+    runs-on: ubuntu-latest
+    needs: [deploy, post-deploy-tests]
+    if: always()
+    
+    steps:
+      - name: 📥 배포 URL 다운로드
+        if: needs.deploy.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-url-${{ github.ref == 'refs/heads/main' && 'production' || (github.ref == 'refs/heads/develop' && 'development' || 'preview') }}
+      
+      - name: 📖 배포 URL 읽기
+        id: url
+        if: needs.deploy.result == 'success'
+        run: |
+          URL=$(cat deployment-url.txt || echo "URL not found")
+          echo "deployment-url=$URL" >> $GITHUB_OUTPUT
+      
+      - name: 📱 슬랙 알림 (성공)
+        if: needs.deploy.result == 'success' && needs.post-deploy-tests.result == 'success'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: '#deployments'
+          fields: repo,message,commit,author,took,workflow
+          text: |
+            🚀 배포 성공!
+            
+            📍 환경: ${{ github.ref == 'refs/heads/main' && 'Production' || (github.ref == 'refs/heads/develop' && 'Development' || 'Preview') }}
+            🔗 URL: ${{ steps.url.outputs.deployment-url }}
+            ✅ 모든 테스트 통과
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+      
+      - name: 📱 슬랙 알림 (실패)
+        if: needs.deploy.result == 'failure' || needs.post-deploy-tests.result == 'failure'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#deployments'
+          fields: repo,message,commit,author,workflow
+          text: |
+            ❌ 배포 실패!
+            
+            📍 환경: ${{ github.ref == 'refs/heads/main' && 'Production' || (github.ref == 'refs/heads/develop' && 'Development' || 'Preview') }}
+            🔍 로그를 확인해주세요.
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}

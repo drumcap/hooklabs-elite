@@ -1,0 +1,25 @@
+{
+  "timestamp": "2025-09-03T03:17:49.568Z",
+  "schemaAnalysis": {
+    "totalTables": 1,
+    "totalIndexes": 83,
+    "tables": [
+      {
+        "name": "users",
+        "fieldCount": 3,
+        "indexCount": 83,
+        "complexFields": 0
+      }
+    ],
+    "indexAnalysis": {
+      "totalIndexes": 83,
+      "multiFieldIndexes": 1,
+      "potentialRedundant": [],
+      "missing": []
+    },
+    "potentialIssues": []
+  },
+  "queryAnalysis": [],
+  "performanceIssues": [],
+  "recommendations": []
+}

@@ -1,0 +1,280 @@
+# ==============================================================================
+# HookLabs Elite - 프로덕션 환경 Docker Compose
+# 성능 최적화 및 보안 강화된 설정
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  # =============================================================================
+  # Next.js 애플리케이션 (메인 서비스)
+  # =============================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.optimized
+      target: runner
+      args:
+        NEXT_PUBLIC_APP_ENV: production
+        NEXT_PUBLIC_CONVEX_URL: ${NEXT_PUBLIC_CONVEX_URL}
+        NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      cache_from:
+        - hooklabs/elite:cache
+    
+    image: hooklabs/elite:latest
+    container_name: hooklabs-elite-app
+    
+    restart: unless-stopped
+    
+    ports:
+      - "3000:3000"
+    
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - NEXT_TELEMETRY_DISABLED=1
+    
+    # 리소스 제한 (메모리 사용량 최적화)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    # 헬스체크 설정
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # 보안 설정
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+    
+    # 로그 설정
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    networks:
+      - app-network
+    
+    depends_on:
+      - redis
+      - prometheus
+    
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`hooklabs-elite.com`)"
+      - "traefik.http.routers.app.tls=true"
+      - "traefik.http.routers.app.tls.certresolver=le"
+
+  # =============================================================================
+  # Redis 캐시 (성능 최적화)
+  # =============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: hooklabs-elite-redis
+    
+    restart: unless-stopped
+    
+    command: >
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    
+    ports:
+      - "6379:6379"
+    
+    volumes:
+      - redis-data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    
+    # 리소스 제한
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    
+    # 헬스체크
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+    
+    networks:
+      - app-network
+
+  # =============================================================================
+  # Prometheus 모니터링
+  # =============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: hooklabs-elite-prometheus
+    
+    restart: unless-stopped
+    
+    ports:
+      - "9090:9090"
+    
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    
+    networks:
+      - monitoring-network
+      - app-network
+
+  # =============================================================================
+  # Grafana 대시보드
+  # =============================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: hooklabs-elite-grafana
+    
+    restart: unless-stopped
+    
+    ports:
+      - "3001:3000"
+    
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_DOMAIN=monitoring.hooklabs-elite.com
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_HOST=${SMTP_HOST}
+      - GF_SMTP_USER=${SMTP_USER}
+      - GF_SMTP_PASSWORD=${SMTP_PASSWORD}
+    
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    
+    networks:
+      - monitoring-network
+    
+    depends_on:
+      - prometheus
+
+  # =============================================================================
+  # Node Exporter (시스템 메트릭)
+  # =============================================================================
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: hooklabs-elite-node-exporter
+    
+    restart: unless-stopped
+    
+    ports:
+      - "9100:9100"
+    
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points'
+      - '^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)'
+    
+    networks:
+      - monitoring-network
+
+  # =============================================================================
+  # Cadvisor (컨테이너 메트릭)
+  # =============================================================================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: hooklabs-elite-cadvisor
+    
+    restart: unless-stopped
+    
+    ports:
+      - "8080:8080"
+    
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    
+    privileged: true
+    devices:
+      - /dev/kmsg
+    
+    networks:
+      - monitoring-network
+
+# =============================================================================
+# 볼륨 정의
+# =============================================================================
+volumes:
+  redis-data:
+    driver: local
+    name: hooklabs-elite-redis-data
+  
+  prometheus-data:
+    driver: local
+    name: hooklabs-elite-prometheus-data
+  
+  grafana-data:
+    driver: local
+    name: hooklabs-elite-grafana-data
+
+# =============================================================================
+# 네트워크 정의
+# =============================================================================
+networks:
+  app-network:
+    driver: bridge
+    name: hooklabs-elite-app
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+  
+  monitoring-network:
+    driver: bridge
+    name: hooklabs-elite-monitoring
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+# =============================================================================
+# 사용법:
+# docker-compose -f docker-compose.production.yml up -d
+# docker-compose -f docker-compose.production.yml logs -f app
+# docker-compose -f docker-compose.production.yml down
+# =============================================================================

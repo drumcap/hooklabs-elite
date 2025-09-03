@@ -1,0 +1,931 @@
+{
+  "timestamp": "2025-09-03T03:25:26.978Z",
+  "testSummary": {
+    "totalRequests": 27,
+    "totalSuccesses": 24,
+    "overallSuccessRate": 88.88888888888889,
+    "averageLatency": 830.1269841269841,
+    "platformComparison": {
+      "twitter": {
+        "avgPublishLatency": 0,
+        "successRate": 80,
+        "rateLimitHits": 0
+      },
+      "threads": {
+        "avgPublishLatency": 1289.888888888889,
+        "successRate": 100,
+        "twoStepOverhead": "High"
+      }
+    }
+  },
+  "twitterTests": {
+    "authentication": {
+      "validationTests": [
+        {
+          "test": "token-validation",
+          "attempt": 1,
+          "latency": 221,
+          "success": true,
+          "response": {
+            "authenticated": true,
+            "userId": "1234567890",
+            "username": "test_user"
+          }
+        },
+        {
+          "test": "token-validation",
+          "attempt": 2,
+          "latency": 291,
+          "success": true,
+          "response": {
+            "authenticated": true,
+            "userId": "1234567890",
+            "username": "test_user"
+          }
+        },
+        {
+          "test": "token-validation",
+          "attempt": 3,
+          "latency": 491,
+          "success": true,
+          "response": {
+            "authenticated": true,
+            "userId": "1234567890",
+            "username": "test_user"
+          }
+        },
+        {
+          "test": "token-validation",
+          "attempt": 4,
+          "latency": 384,
+          "success": true,
+          "response": {
+            "authenticated": true,
+            "userId": "1234567890",
+            "username": "test_user"
+          }
+        },
+        {
+          "test": "token-validation",
+          "attempt": 5,
+          "latency": 238,
+          "success": true,
+          "response": {
+            "authenticated": true,
+            "userId": "1234567890",
+            "username": "test_user"
+          }
+        }
+      ],
+      "refreshTest": {
+        "test": "token-refresh",
+        "latency": 1059,
+        "success": true,
+        "response": {
+          "accessToken": "new-access-token",
+          "refreshToken": "new-refresh-token",
+          "expiresIn": 7200
+        }
+      },
+      "statistics": {
+        "avgLatency": 325,
+        "minLatency": 221,
+        "maxLatency": 491,
+        "successRate": 100
+      }
+    },
+    "publishing": {
+      "tests": [
+        {
+          "contentType": "text-only",
+          "contentLength": "short",
+          "attempt": 1,
+          "latency": 476,
+          "success": true,
+          "tweetId": "tweet_1756869932648_8y31dq2qp",
+          "charCount": 18
+        },
+        {
+          "contentType": "text-only",
+          "contentLength": "short",
+          "attempt": 2,
+          "latency": 390,
+          "success": true,
+          "tweetId": "tweet_1756869934039_n3xf02na1",
+          "charCount": 18
+        },
+        {
+          "contentType": "text-only",
+          "contentLength": "short",
+          "attempt": 3,
+          "latency": 367,
+          "success": true,
+          "tweetId": "tweet_1756869935406_41x87v6z2",
+          "charCount": 18
+        },
+        {
+          "contentType": "text-long",
+          "contentLength": "long",
+          "attempt": 1,
+          "latency": 542,
+          "success": true,
+          "tweetId": "tweet_1756869936948_99rrqgin0",
+          "charCount": 264
+        },
+        {
+          "contentType": "text-long",
+          "contentLength": "long",
+          "attempt": 2,
+          "latency": 642,
+          "success": true,
+          "tweetId": "tweet_1756869938592_jrkn9psmg",
+          "charCount": 264
+        },
+        {
+          "contentType": "text-long",
+          "contentLength": "long",
+          "attempt": 3,
+          "latency": 576,
+          "success": false,
+          "error": "Content too long"
+        },
+        {
+          "contentType": "with-hashtags",
+          "contentLength": "medium",
+          "attempt": 1,
+          "latency": 375,
+          "success": true,
+          "tweetId": "tweet_1756869941545_4lm4wvh97",
+          "charCount": 32
+        },
+        {
+          "contentType": "with-hashtags",
+          "contentLength": "medium",
+          "attempt": 2,
+          "latency": 414,
+          "success": true,
+          "tweetId": "tweet_1756869942960_e3l4g776p",
+          "charCount": 32
+        },
+        {
+          "contentType": "with-hashtags",
+          "contentLength": "medium",
+          "attempt": 3,
+          "latency": 416,
+          "success": true,
+          "tweetId": "tweet_1756869944377_gseg9a58b",
+          "charCount": 32
+        },
+        {
+          "contentType": "with-mentions",
+          "contentLength": "medium",
+          "attempt": 1,
+          "latency": 457,
+          "success": true,
+          "tweetId": "tweet_1756869945836_y4c6qmv8y",
+          "charCount": 27
+        },
+        {
+          "contentType": "with-mentions",
+          "contentLength": "medium",
+          "attempt": 2,
+          "latency": 438,
+          "success": true,
+          "tweetId": "tweet_1756869947276_ujyhxww33",
+          "charCount": 27
+        },
+        {
+          "contentType": "with-mentions",
+          "contentLength": "medium",
+          "attempt": 3,
+          "latency": 509,
+          "success": false,
+          "error": "Content too long"
+        },
+        {
+          "contentType": "thread",
+          "contentLength": "thread",
+          "attempt": 1,
+          "latency": 1348,
+          "success": true,
+          "tweetId": "tweet_1756869951137_qzh0q11yd",
+          "charCount": 32
+        },
+        {
+          "contentType": "thread",
+          "contentLength": "thread",
+          "attempt": 2,
+          "latency": 1288,
+          "success": false,
+          "error": "Rate limit exceeded"
+        },
+        {
+          "contentType": "thread",
+          "contentLength": "thread",
+          "attempt": 3,
+          "latency": 1359,
+          "success": true,
+          "tweetId": "tweet_1756869955786_cxnbgk3j2",
+          "charCount": 32
+        }
+      ],
+      "statistics": {
+        "text-only": {
+          "avgLatency": 411,
+          "minLatency": 367,
+          "maxLatency": 476,
+          "testCount": 3
+        },
+        "text-long": {
+          "avgLatency": 592,
+          "minLatency": 542,
+          "maxLatency": 642,
+          "testCount": 2
+        },
+        "with-hashtags": {
+          "avgLatency": 401.6666666666667,
+          "minLatency": 375,
+          "maxLatency": 416,
+          "testCount": 3
+        },
+        "with-mentions": {
+          "avgLatency": 447.5,
+          "minLatency": 438,
+          "maxLatency": 457,
+          "testCount": 2
+        },
+        "thread": {
+          "avgLatency": 1353.5,
+          "minLatency": 1348,
+          "maxLatency": 1359,
+          "testCount": 2
+        }
+      },
+      "overallSuccessRate": 80,
+      "averageLatency": 602
+    },
+    "metrics": {
+      "tests": [
+        {
+          "tweetId": "1234567890",
+          "attempt": 1,
+          "latency": 260,
+          "success": true,
+          "metrics": {
+            "views": 725,
+            "likes": 390,
+            "retweets": 62,
+            "replies": 36,
+            "quotes": 19
+          }
+        },
+        {
+          "tweetId": "1234567890",
+          "attempt": 2,
+          "latency": 392,
+          "success": true,
+          "metrics": {
+            "views": 7286,
+            "likes": 136,
+            "retweets": 63,
+            "replies": 21,
+            "quotes": 5
+          }
+        },
+        {
+          "tweetId": "1234567890",
+          "attempt": 3,
+          "latency": 359,
+          "success": true,
+          "metrics": {
+            "views": 3492,
+            "likes": 235,
+            "retweets": 26,
+            "replies": 22,
+            "quotes": 4
+          }
+        },
+        {
+          "tweetId": "1234567891",
+          "attempt": 1,
+          "latency": 258,
+          "success": false,
+          "error": "Tweet not found"
+        },
+        {
+          "tweetId": "1234567891",
+          "attempt": 2,
+          "latency": 332,
+          "success": true,
+          "metrics": {
+            "views": 757,
+            "likes": 482,
+            "retweets": 66,
+            "replies": 45,
+            "quotes": 2
+          }
+        },
+        {
+          "tweetId": "1234567891",
+          "attempt": 3,
+          "latency": 383,
+          "success": true,
+          "metrics": {
+            "views": 9906,
+            "likes": 118,
+            "retweets": 28,
+            "replies": 9,
+            "quotes": 18
+          }
+        },
+        {
+          "tweetId": "1234567892",
+          "attempt": 1,
+          "latency": 373,
+          "success": true,
+          "metrics": {
+            "views": 1011,
+            "likes": 278,
+            "retweets": 70,
+            "replies": 9,
+            "quotes": 8
+          }
+        },
+        {
+          "tweetId": "1234567892",
+          "attempt": 2,
+          "latency": 261,
+          "success": true,
+          "metrics": {
+            "views": 4772,
+            "likes": 462,
+            "retweets": 98,
+            "replies": 8,
+            "quotes": 18
+          }
+        },
+        {
+          "tweetId": "1234567892",
+          "attempt": 3,
+          "latency": 370,
+          "success": true,
+          "metrics": {
+            "views": 8407,
+            "likes": 159,
+            "retweets": 12,
+            "replies": 41,
+            "quotes": 1
+          }
+        }
+      ],
+      "statistics": {
+        "avgLatency": 341.25,
+        "minLatency": 260,
+        "maxLatency": 392,
+        "successRate": 88.88888888888889
+      }
+    },
+    "rateLimiting": {
+      "tests": [
+        {
+          "requestId": 1,
+          "latency": 270,
+          "success": true,
+          "timestamp": 1756869962482
+        },
+        {
+          "requestId": 2,
+          "latency": 240,
+          "success": true,
+          "timestamp": 1756869962852
+        },
+        {
+          "requestId": 3,
+          "latency": 496,
+          "success": true,
+          "timestamp": 1756869963193
+        },
+        {
+          "requestId": 4,
+          "latency": 205,
+          "success": true,
+          "timestamp": 1756869963790
+        },
+        {
+          "requestId": 5,
+          "latency": 393,
+          "success": true,
+          "timestamp": 1756869964095
+        },
+        {
+          "requestId": 6,
+          "latency": 287,
+          "success": true,
+          "timestamp": 1756869964588
+        },
+        {
+          "requestId": 7,
+          "latency": 480,
+          "success": true,
+          "timestamp": 1756869964975
+        },
+        {
+          "requestId": 8,
+          "latency": 407,
+          "success": true,
+          "timestamp": 1756869965555
+        },
+        {
+          "requestId": 9,
+          "latency": 395,
+          "success": true,
+          "timestamp": 1756869966063
+        },
+        {
+          "requestId": 10,
+          "latency": 482,
+          "success": true,
+          "timestamp": 1756869966559
+        },
+        {
+          "requestId": 11,
+          "latency": 217,
+          "success": true,
+          "timestamp": 1756869967141
+        },
+        {
+          "requestId": 12,
+          "latency": 452,
+          "success": false,
+          "error": "Authentication failed",
+          "timestamp": 1756869967458,
+          "isRateLimit": false
+        },
+        {
+          "requestId": 13,
+          "latency": 283,
+          "success": true,
+          "timestamp": 1756869968010
+        },
+        {
+          "requestId": 14,
+          "latency": 352,
+          "success": true,
+          "timestamp": 1756869968394
+        },
+        {
+          "requestId": 15,
+          "latency": 476,
+          "success": true,
+          "timestamp": 1756869968847
+        },
+        {
+          "requestId": 16,
+          "latency": 495,
+          "success": true,
+          "timestamp": 1756869969424
+        },
+        {
+          "requestId": 17,
+          "latency": 224,
+          "success": true,
+          "timestamp": 1756869970019
+        },
+        {
+          "requestId": 18,
+          "latency": 407,
+          "success": true,
+          "timestamp": 1756869970343
+        },
+        {
+          "requestId": 19,
+          "latency": 430,
+          "success": true,
+          "timestamp": 1756869970850
+        },
+        {
+          "requestId": 20,
+          "latency": 409,
+          "success": true,
+          "timestamp": 1756869971380
+        }
+      ],
+      "totalTime": 9408,
+      "requestsPerSecond": 2.1258503401360547,
+      "successRate": 95,
+      "rateLimitHits": 0,
+      "averageLatency": 365.6842105263158
+    }
+  },
+  "threadsTests": {
+    "authentication": {
+      "tests": [
+        {
+          "attempt": 1,
+          "latency": 382,
+          "success": true,
+          "userId": "threads_user_123"
+        },
+        {
+          "attempt": 2,
+          "latency": 487,
+          "success": true,
+          "userId": "threads_user_123"
+        },
+        {
+          "attempt": 3,
+          "latency": 428,
+          "success": true,
+          "userId": "threads_user_123"
+        },
+        {
+          "attempt": 4,
+          "latency": 338,
+          "success": true,
+          "userId": "threads_user_123"
+        },
+        {
+          "attempt": 5,
+          "latency": 369,
+          "success": true,
+          "userId": "threads_user_123"
+        }
+      ],
+      "statistics": {
+        "avgLatency": 400.8,
+        "minLatency": 338,
+        "maxLatency": 487,
+        "successRate": 100
+      }
+    },
+    "publishing": {
+      "tests": [
+        {
+          "contentType": "text-only",
+          "attempt": 1,
+          "latency": 1266,
+          "success": true,
+          "postId": "threads_1756869977664_nkbupr3bd",
+          "steps": {
+            "createContainer": 505.69966536087435,
+            "publishPost": 759.128901158659
+          }
+        },
+        {
+          "contentType": "text-only",
+          "attempt": 2,
+          "latency": 1463,
+          "success": true,
+          "postId": "threads_1756869981129_8cepw1tfu",
+          "steps": {
+            "createContainer": 592.764414718103,
+            "publishPost": 869.0183490105796
+          }
+        },
+        {
+          "contentType": "text-only",
+          "attempt": 3,
+          "latency": 1295,
+          "success": true,
+          "postId": "threads_1756869984426_a9duyui0l",
+          "steps": {
+            "createContainer": 532.9886434879477,
+            "publishPost": 762.6750056051976
+          }
+        },
+        {
+          "contentType": "with-image",
+          "attempt": 1,
+          "latency": 1380,
+          "success": true,
+          "postId": "threads_1756869987809_xhs8t16s9",
+          "steps": {
+            "createContainer": 655.6226955325681,
+            "publishPost": 724.0309651415995
+          }
+        },
+        {
+          "contentType": "with-image",
+          "attempt": 2,
+          "latency": 1299,
+          "success": true,
+          "postId": "threads_1756869991110_l65aiwuon",
+          "steps": {
+            "createContainer": 453.51184659874616,
+            "publishPost": 844.9543176692513
+          }
+        },
+        {
+          "contentType": "with-image",
+          "attempt": 3,
+          "latency": 1098,
+          "success": true,
+          "postId": "threads_1756869994209_9mhei05o6",
+          "steps": {
+            "createContainer": 406.0510164881088,
+            "publishPost": 690.6958896071199
+          }
+        },
+        {
+          "contentType": "long-text",
+          "attempt": 1,
+          "latency": 1417,
+          "success": true,
+          "postId": "threads_1756869997628_rvvgsx93p",
+          "steps": {
+            "createContainer": 539.7219485435612,
+            "publishPost": 877.3872619126943
+          }
+        },
+        {
+          "contentType": "long-text",
+          "attempt": 2,
+          "latency": 1212,
+          "success": true,
+          "postId": "threads_1756870000842_m3uol5jhu",
+          "steps": {
+            "createContainer": 479.3144260112251,
+            "publishPost": 732.8369052898421
+          }
+        },
+        {
+          "contentType": "long-text",
+          "attempt": 3,
+          "latency": 1179,
+          "success": true,
+          "postId": "threads_1756870004022_dgm7wj4wu",
+          "steps": {
+            "createContainer": 480.51276149646026,
+            "publishPost": 697.2514584173559
+          }
+        }
+      ],
+      "statistics": {
+        "avgLatency": 1289.888888888889,
+        "minLatency": 1098,
+        "maxLatency": 1463,
+        "successRate": 100
+      },
+      "twoStepLatency": {
+        "createContainer": [
+          505.69966536087435,
+          592.764414718103,
+          532.9886434879477,
+          655.6226955325681,
+          453.51184659874616,
+          406.0510164881088,
+          539.7219485435612,
+          479.3144260112251,
+          480.51276149646026
+        ],
+        "publishPost": [
+          759.128901158659,
+          869.0183490105796,
+          762.6750056051976,
+          724.0309651415995,
+          844.9543176692513,
+          690.6958896071199,
+          877.3872619126943,
+          732.8369052898421,
+          697.2514584173559
+        ]
+      }
+    },
+    "metrics": {
+      "tests": [
+        {
+          "postId": "thread_post_1",
+          "attempt": 1,
+          "latency": 337,
+          "success": true,
+          "metrics": {
+            "views": 3846,
+            "likes": 25,
+            "reposts": 66,
+            "replies": 24
+          }
+        },
+        {
+          "postId": "thread_post_1",
+          "attempt": 2,
+          "latency": 308,
+          "success": true,
+          "metrics": {
+            "views": 4472,
+            "likes": 42,
+            "reposts": 72,
+            "replies": 22
+          }
+        },
+        {
+          "postId": "thread_post_2",
+          "attempt": 1,
+          "latency": 467,
+          "success": true,
+          "metrics": {
+            "views": 4165,
+            "likes": 277,
+            "reposts": 27,
+            "replies": 25
+          }
+        },
+        {
+          "postId": "thread_post_2",
+          "attempt": 2,
+          "latency": 327,
+          "success": true,
+          "metrics": {
+            "views": 4303,
+            "likes": 51,
+            "reposts": 46,
+            "replies": 37
+          }
+        },
+        {
+          "postId": "thread_post_3",
+          "attempt": 1,
+          "latency": 496,
+          "success": true,
+          "metrics": {
+            "views": 3151,
+            "likes": 82,
+            "reposts": 43,
+            "replies": 27
+          }
+        },
+        {
+          "postId": "thread_post_3",
+          "attempt": 2,
+          "latency": 345,
+          "success": true,
+          "metrics": {
+            "views": 4353,
+            "likes": 396,
+            "reposts": 63,
+            "replies": 9
+          }
+        }
+      ],
+      "statistics": {
+        "avgLatency": 380,
+        "minLatency": 308,
+        "maxLatency": 496,
+        "successRate": 100
+      }
+    },
+    "rateLimiting": {}
+  },
+  "integrationTests": {
+    "multiPlatform": {
+      "tests": [
+        {
+          "attempt": 1,
+          "totalLatency": 1376,
+          "success": true,
+          "results": {
+            "twitter": {
+              "tweetId": "tweet_1756870014756_b1sezp06f",
+              "url": "https://twitter.com/test_user/status/1234567890",
+              "publishedAt": "2025-09-03T03:26:54.756Z"
+            },
+            "threads": {
+              "postId": "threads_1756870015689_5zq5u9bix",
+              "url": "https://www.threads.net/@test_threads_user/post/abc123",
+              "publishedAt": "2025-09-03T03:26:55.689Z",
+              "steps": {
+                "createContainer": 406.04527038932736,
+                "publishPost": 970.9200770878932
+              }
+            }
+          }
+        },
+        {
+          "attempt": 2,
+          "totalLatency": 1268,
+          "success": true,
+          "results": {
+            "twitter": {
+              "tweetId": "tweet_1756870019101_y4j5fz6j5",
+              "url": "https://twitter.com/test_user/status/1234567890",
+              "publishedAt": "2025-09-03T03:26:59.101Z"
+            },
+            "threads": {
+              "postId": "threads_1756870019958_i9ord8lm0",
+              "url": "https://www.threads.net/@test_threads_user/post/abc123",
+              "publishedAt": "2025-09-03T03:26:59.958Z",
+              "steps": {
+                "createContainer": 623.6566281078192,
+                "publishPost": 644.421432192644
+              }
+            }
+          }
+        },
+        {
+          "attempt": 3,
+          "totalLatency": 1302,
+          "success": true,
+          "results": {
+            "twitter": {
+              "tweetId": "tweet_1756870023370_p04sz0ux3",
+              "url": "https://twitter.com/test_user/status/1234567890",
+              "publishedAt": "2025-09-03T03:27:03.370Z"
+            },
+            "threads": {
+              "postId": "threads_1756870024264_nlyc52gzj",
+              "url": "https://www.threads.net/@test_threads_user/post/abc123",
+              "publishedAt": "2025-09-03T03:27:04.264Z",
+              "steps": {
+                "createContainer": 471.18374292776593,
+                "publishPost": 829.1119881945223
+              }
+            }
+          }
+        }
+      ],
+      "statistics": {
+        "avgLatency": 1315.3333333333333,
+        "minLatency": 1268,
+        "maxLatency": 1376,
+        "successRate": 100
+      }
+    },
+    "errorHandling": {
+      "tests": [
+        {
+          "scenario": "invalid-token",
+          "description": "잘못된 토큰",
+          "latency": 237,
+          "expectedError": true,
+          "actualError": true,
+          "success": true,
+          "errorMessage": "Invalid or expired token",
+          "errorType": "authentication"
+        },
+        {
+          "scenario": "rate-limit",
+          "description": "Rate Limit 초과",
+          "latency": 104,
+          "expectedError": true,
+          "actualError": true,
+          "success": true,
+          "errorMessage": "Rate limit exceeded. Try again later",
+          "errorType": "rate-limit"
+        },
+        {
+          "scenario": "network-error",
+          "description": "네트워크 오류",
+          "latency": 208,
+          "expectedError": true,
+          "actualError": true,
+          "success": true,
+          "errorMessage": "Network timeout occurred",
+          "errorType": "network"
+        },
+        {
+          "scenario": "invalid-content",
+          "description": "잘못된 콘텐츠",
+          "latency": 213,
+          "expectedError": true,
+          "actualError": true,
+          "success": true,
+          "errorMessage": "Content violates platform guidelines",
+          "errorType": "content-policy"
+        }
+      ],
+      "totalScenarios": 4,
+      "properlyHandled": 4,
+      "handlingRate": 100
+    },
+    "tokenRefresh": {}
+  },
+  "performanceIssues": [
+    {
+      "type": "low-success-rate",
+      "severity": "HIGH",
+      "message": "전체 성공률이 88.9%로 낮습니다",
+      "impact": "서비스 신뢰성 문제",
+      "affectedPlatforms": [
+        "twitter"
+      ]
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "category": "Reliability",
+      "title": "에러 처리 및 재시도 로직 개선",
+      "description": "전체 성공률이 88.9%로 낮습니다",
+      "solutions": [
+        "Exponential backoff 재시도 메커니즘",
+        "Circuit breaker 패턴 도입",
+        "상세 에러 로깅 및 모니터링",
+        "Fallback 메커니즘 구현",
+        "토큰 자동 갱신 시스템"
+      ],
+      "estimatedImpact": "성공률 95% 이상 달성 예상",
+      "platforms": [
+        "twitter"
+      ]
+    }
+  ]
+}

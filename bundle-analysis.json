@@ -1,0 +1,27 @@
+{
+  "timestamp": "2025-09-03T02:21:37.676Z",
+  "client": {
+    "js": [],
+    "css": [],
+    "total": 0
+  },
+  "server": {
+    "pages": [],
+    "chunks": [],
+    "total": 0
+  },
+  "metrics": {
+    "totalSize": 0,
+    "clientSize": 0,
+    "serverSize": 0,
+    "jsSize": 0,
+    "cssSize": 0
+  },
+  "performance": {
+    "estimatedLoadTime": {
+      "3g": 0,
+      "4g": 0,
+      "broadband": 0
+    }
+  }
+}

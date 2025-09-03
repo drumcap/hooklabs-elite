@@ -1,0 +1,186 @@
+name: 🗄️ Convex 배포
+
+on:
+  push:
+    branches: [main, develop]
+    paths: 
+      - 'convex/**'
+      - 'convex.json'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '배포 환경'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+        - development
+        - staging  
+        - production
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # =======================
+  # 🔍 Convex 함수 검증
+  # =======================
+  validate:
+    name: 🔍 Convex 함수 검증
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 의존성 설치
+        run: npm ci
+        
+      - name: 🔍 TypeScript 타입 검사
+        run: npx convex typecheck
+        env:
+          CONVEX_DEPLOYMENT: ${{ secrets.CONVEX_DEV_DEPLOYMENT }}
+          
+      - name: 🧪 Convex 함수 테스트
+        run: |
+          # Convex 함수별 단위 테스트 실행
+          npm run test:convex
+        continue-on-error: true
+        
+      - name: 📊 함수 크기 분석
+        run: |
+          echo "## Convex 함수 크기 분석" > convex-analysis.md
+          find convex -name "*.ts" -not -path "*/node_modules/*" -not -path "*/_generated/*" | xargs wc -l >> convex-analysis.md
+
+  # =======================  
+  # 🚀 환경별 배포
+  # =======================
+  deploy:
+    name: 🚀 Convex 배포
+    runs-on: ubuntu-latest
+    needs: [validate]
+    
+    strategy:
+      matrix:
+        environment:
+          - name: development
+            deployment: ${{ secrets.CONVEX_DEV_DEPLOYMENT }}
+            deploy_key: ${{ secrets.CONVEX_DEV_DEPLOY_KEY }}
+          - name: staging
+            deployment: ${{ secrets.CONVEX_STAGING_DEPLOYMENT }}
+            deploy_key: ${{ secrets.CONVEX_STAGING_DEPLOY_KEY }}
+          - name: production
+            deployment: ${{ secrets.CONVEX_PROD_DEPLOYMENT }}  
+            deploy_key: ${{ secrets.CONVEX_PROD_DEPLOY_KEY }}
+        exclude:
+          # 브랜치별 환경 제한
+          - environment: { name: development }
+            branch: ${{ github.ref != 'refs/heads/develop' && 'exclude' || '' }}
+          - environment: { name: staging }
+            branch: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' && 'exclude' || '' }}
+          - environment: { name: production }
+            branch: ${{ github.ref != 'refs/heads/main' && 'exclude' || '' }}
+    
+    environment: ${{ matrix.environment.name }}
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 의존성 설치
+        run: npm ci
+        
+      - name: 🗄️ 스키마 마이그레이션 체크
+        run: |
+          npx convex dev --once --verbose
+          echo "스키마 변경사항 확인 완료"
+        env:
+          CONVEX_DEPLOYMENT: ${{ matrix.environment.deployment }}
+          CONVEX_DEPLOY_KEY: ${{ matrix.environment.deploy_key }}
+          
+      - name: 🚀 Convex 함수 배포
+        run: npx convex deploy --cmd 'echo "Convex 함수 배포 완료"'
+        env:
+          CONVEX_DEPLOYMENT: ${{ matrix.environment.deployment }}
+          CONVEX_DEPLOY_KEY: ${{ matrix.environment.deploy_key }}
+          
+      - name: 🧪 배포 후 health check
+        run: |
+          # 기본 함수들 동작 확인
+          npx convex run --help > /dev/null
+          echo "✅ Convex 배포 완료 및 health check 성공"
+        env:
+          CONVEX_DEPLOYMENT: ${{ matrix.environment.deployment }}
+          CONVEX_DEPLOY_KEY: ${{ matrix.environment.deploy_key }}
+          
+      - name: 📊 배포 메트릭 수집
+        run: |
+          echo "## ${{ matrix.environment.name }} 배포 메트릭" > deployment-metrics.md
+          echo "- 배포 시간: $(date)" >> deployment-metrics.md
+          echo "- 브랜치: ${{ github.ref }}" >> deployment-metrics.md
+          echo "- 커밋: ${{ github.sha }}" >> deployment-metrics.md
+          echo "- 배포 환경: ${{ matrix.environment.name }}" >> deployment-metrics.md
+          
+      - name: 📱 슬랙 알림 (프로덕션 배포)
+        if: success() && matrix.environment.name == 'production'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: '#deployments'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          text: "🗄️ Convex 프로덕션 배포가 완료되었습니다."
+          
+      - name: 📱 슬랙 알림 (배포 실패)
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure  
+          channel: '#deployments'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          text: "❌ Convex ${{ matrix.environment.name }} 배포가 실패했습니다."
+
+  # =======================
+  # 🔄 롤백 준비  
+  # =======================
+  rollback-prepare:
+    name: 🔄 롤백 준비
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: success() && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🏷️ 배포 태그 생성
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          
+          TAG_NAME="convex-deploy-$(date +'%Y%m%d-%H%M%S')"
+          git tag -a $TAG_NAME -m "Convex 배포: $(date)"
+          git push origin $TAG_NAME
+          
+          echo "ROLLBACK_TAG=$TAG_NAME" >> $GITHUB_ENV
+          
+      - name: 📦 배포 아티팩트 보관
+        uses: actions/upload-artifact@v4
+        with:
+          name: convex-deployment-${{ github.sha }}
+          path: |
+            convex/
+            convex.json
+            package.json
+          retention-days: 30

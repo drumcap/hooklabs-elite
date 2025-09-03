@@ -1,0 +1,256 @@
+# ==============================================================================
+# Prometheus 알림 규칙 - HookLabs Elite
+# ==============================================================================
+
+groups:
+  # ============================================================================
+  # 애플리케이션 가용성 알림
+  # ============================================================================
+  - name: application.availability
+    rules:
+      - alert: ApplicationDown
+        expr: up{job="hooklabs-elite-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: hooklabs-elite
+          team: platform
+        annotations:
+          summary: "HookLabs Elite 애플리케이션이 다운되었습니다"
+          description: "{{ $labels.instance }} 애플리케이션이 1분 이상 응답하지 않습니다."
+          runbook: "https://wiki.hooklabs-elite.com/runbooks/app-down"
+
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(http_requests_total{status=~"5.."}[5m]) /
+            rate(http_requests_total[5m])
+          ) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: hooklabs-elite
+          team: platform
+        annotations:
+          summary: "높은 에러율 감지"
+          description: "5분간 에러율이 {{ $value }}%로 5%를 초과했습니다."
+
+      - alert: HighResponseTime
+        expr: |
+          histogram_quantile(0.95, 
+            rate(http_request_duration_seconds_bucket[5m])
+          ) > 2
+        for: 3m
+        labels:
+          severity: warning
+          service: hooklabs-elite
+          team: platform
+        annotations:
+          summary: "응답 시간이 늦어지고 있습니다"
+          description: "95th percentile 응답시간이 {{ $value }}초로 2초를 초과했습니다."
+
+  # ============================================================================
+  # 시스템 리소스 알림
+  # ============================================================================  
+  - name: system.resources
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: infrastructure
+          team: platform
+        annotations:
+          summary: "CPU 사용률이 높습니다"
+          description: "{{ $labels.instance }}의 CPU 사용률이 {{ $value }}%로 80%를 초과했습니다."
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: infrastructure
+          team: platform
+        annotations:
+          summary: "메모리 사용률이 높습니다"
+          description: "{{ $labels.instance }}의 메모리 사용률이 {{ $value }}%로 85%를 초과했습니다."
+
+      - alert: DiskSpaceRunningOut
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 20
+        for: 10m
+        labels:
+          severity: warning
+          service: infrastructure  
+          team: platform
+        annotations:
+          summary: "디스크 공간이 부족합니다"
+          description: "{{ $labels.instance }}의 {{ $labels.mountpoint }} 디스크 여유 공간이 {{ $value }}%로 20% 미만입니다."
+
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+          service: infrastructure
+          team: platform
+        annotations:
+          summary: "디스크 공간이 매우 부족합니다"
+          description: "{{ $labels.instance }}의 {{ $labels.mountpoint }} 디스크 여유 공간이 {{ $value }}%로 10% 미만입니다."
+
+  # ============================================================================
+  # 데이터베이스 (Convex) 알림
+  # ============================================================================
+  - name: database.convex
+    rules:
+      - alert: ConvexHighLatency
+        expr: convex_query_duration_seconds{quantile="0.95"} > 1
+        for: 3m
+        labels:
+          severity: warning
+          service: convex
+          team: backend
+        annotations:
+          summary: "Convex 쿼리 지연시간이 높습니다"
+          description: "Convex 쿼리의 95th percentile 응답시간이 {{ $value }}초입니다."
+
+      - alert: ConvexHighErrorRate
+        expr: rate(convex_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          service: convex
+          team: backend
+        annotations:
+          summary: "Convex 에러율이 높습니다"
+          description: "Convex에서 분당 {{ $value }}개의 에러가 발생하고 있습니다."
+
+      - alert: ConvexFunctionTimeout
+        expr: increase(convex_function_timeouts_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+          service: convex
+          team: backend
+        annotations:
+          summary: "Convex 함수 타임아웃 발생"
+          description: "지난 5분간 {{ $value }}개의 Convex 함수 타임아웃이 발생했습니다."
+
+  # ============================================================================
+  # 결제 시스템 (Lemon Squeezy) 알림
+  # ============================================================================
+  - name: payment.system
+    rules:
+      - alert: PaymentProcessingFailure
+        expr: increase(payment_failures_total[5m]) > 3
+        for: 0m
+        labels:
+          severity: critical
+          service: payments
+          team: business
+        annotations:
+          summary: "결제 처리 실패가 증가하고 있습니다"
+          description: "지난 5분간 {{ $value }}건의 결제 실패가 발생했습니다."
+
+      - alert: WebhookDeliveryFailure
+        expr: increase(webhook_delivery_failures_total{service="lemonsqueezy"}[10m]) > 5
+        for: 0m
+        labels:
+          severity: warning
+          service: payments
+          team: backend
+        annotations:
+          summary: "Lemon Squeezy 웹훅 전달 실패"
+          description: "지난 10분간 {{ $value }}건의 웹훅 전달 실패가 발생했습니다."
+
+  # ============================================================================
+  # 소셜 미디어 자동화 알림
+  # ============================================================================
+  - name: social.automation
+    rules:
+      - alert: SocialMediaAPIRateLimit
+        expr: social_media_api_rate_limit_remaining < 100
+        for: 1m
+        labels:
+          severity: warning
+          service: automation
+          team: product
+        annotations:
+          summary: "소셜 미디어 API 할당량 부족"
+          description: "{{ $labels.platform }} API 할당량이 {{ $value }}개 남았습니다."
+
+      - alert: AutomationJobFailure
+        expr: increase(automation_job_failures_total[15m]) > 5
+        for: 0m
+        labels:
+          severity: warning
+          service: automation
+          team: product
+        annotations:
+          summary: "자동화 작업 실패 증가"
+          description: "지난 15분간 {{ $value }}건의 자동화 작업이 실패했습니다."
+
+      - alert: PostSchedulingDelay
+        expr: post_scheduling_delay_seconds > 300
+        for: 5m
+        labels:
+          severity: warning
+          service: automation
+          team: product
+        annotations:
+          summary: "포스트 예약 지연"
+          description: "포스트 예약이 {{ $value }}초 지연되고 있습니다."
+
+  # ============================================================================
+  # 인증 시스템 (Clerk) 알림  
+  # ============================================================================
+  - name: authentication.system
+    rules:
+      - alert: HighAuthenticationFailureRate
+        expr: rate(authentication_failures_total[5m]) > 0.5
+        for: 3m
+        labels:
+          severity: warning
+          service: authentication
+          team: security
+        annotations:
+          summary: "인증 실패율이 높습니다"
+          description: "분당 {{ $value }}건의 인증 실패가 발생하고 있습니다."
+
+      - alert: UnusualLoginActivity
+        expr: rate(user_logins_total[1h]) > avg_over_time(rate(user_logins_total[1h])[7d]) * 3
+        for: 10m
+        labels:
+          severity: warning
+          service: authentication
+          team: security
+        annotations:
+          summary: "비정상적인 로그인 활동 감지"
+          description: "현재 로그인 비율이 평상시보다 3배 높습니다."
+
+  # ============================================================================
+  # 성능 모니터링 알림
+  # ============================================================================
+  - name: performance.monitoring
+    rules:
+      - alert: HighWebVitalsScore
+        expr: web_vitals_lcp_seconds > 2.5
+        for: 5m
+        labels:
+          severity: warning
+          service: frontend
+          team: frontend
+        annotations:
+          summary: "LCP (Largest Contentful Paint) 성능 저하"
+          description: "LCP가 {{ $value }}초로 2.5초를 초과했습니다."
+
+      - alert: HighCumulativeLayoutShift
+        expr: web_vitals_cls > 0.25
+        for: 3m
+        labels:
+          severity: warning
+          service: frontend
+          team: frontend
+        annotations:
+          summary: "CLS (Cumulative Layout Shift) 성능 저하"
+          description: "CLS가 {{ $value }}로 0.25를 초과했습니다."

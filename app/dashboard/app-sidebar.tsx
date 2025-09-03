@@ -22,12 +22,18 @@ import {
   IconBrandOpenai,
   IconTicket,
   IconShield,
+  IconBrandTwitter,
+  IconCalendarEvent,
+  IconActivity,
+  IconEdit,
+  IconBrain,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/app/dashboard/nav-documents"
 import { NavMain } from "@/app/dashboard/nav-main"
 import { NavSecondary } from "@/app/dashboard/nav-secondary"
 import { NavUser } from "@/app/dashboard/nav-user"
+import { CreditBalance } from "@/components/social/common/CreditBalance"
 import {
   Sidebar,
   SidebarContent,
@@ -49,6 +55,42 @@ const data = {
       title: "Dashboard",
       url: "/dashboard",
       icon: IconDashboard,
+    },
+    {
+      title: "소셜 미디어",
+      url: "/dashboard/social",
+      icon: IconBrandTwitter,
+      items: [
+        {
+          title: "대시보드",
+          url: "/dashboard/social",
+        },
+        {
+          title: "게시물 작성",
+          url: "/dashboard/social/compose",
+          icon: IconEdit,
+        },
+        {
+          title: "페르소나 관리",
+          url: "/dashboard/social/personas", 
+          icon: IconBrain,
+        },
+        {
+          title: "스케줄 관리",
+          url: "/dashboard/social/schedule",
+          icon: IconCalendarEvent,
+        },
+        {
+          title: "계정 관리",
+          url: "/dashboard/social/accounts",
+          icon: IconActivity,
+        },
+        {
+          title: "분석",
+          url: "/dashboard/social/analytics",
+          icon: IconChartBar,
+        },
+      ],
     },
     {
       title: "Payment gated",
@@ -145,6 +187,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={dynamicNavMain} />
         <NavDocuments items={data.documents} />
+        <div className="px-2 py-2">
+          <CreditBalance variant="widget" />
+        </div>
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

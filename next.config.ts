@@ -7,7 +7,6 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 });
 
 const nextConfig: NextConfig = {
-  // 기본 설정
   reactStrictMode: true,
   
   // 성능 최적화
@@ -42,8 +41,8 @@ const nextConfig: NextConfig = {
     // 서버 액션 최적화 (Next.js 15에서는 최상위로 이동)
     // serverComponentsExternalPackages는 serverExternalPackages로 변경됨
     
-    // 메모리 최적화
-    optimizeCss: true,
+    // 메모리 최적화 - Bus error 방지를 위해 false로 설정
+    optimizeCss: false,
     
     // Turbopack 전용 최적화
   },
