@@ -114,6 +114,15 @@ const nextConfig: NextConfig = {
   // 리라이트 설정 (프록시)
   async rewrites() {
     return [
+      // Health check 별칭
+      {
+        source: '/healthz',
+        destination: '/api/health'
+      },
+      {
+        source: '/health',
+        destination: '/api/health'
+      },
       // API 프록시 (개발 환경에서 CORS 우회)
       ...(process.env.NODE_ENV === 'development' ? [
         {
@@ -216,21 +225,7 @@ const nextConfig: NextConfig = {
   },
   
   // 정적 파일 생성 제외
-  staticPageGenerationTimeout: 1000,
-  
-  // API 경로 설정
-  async rewrites() {
-    return [
-      {
-        source: '/healthz',
-        destination: '/api/health'
-      },
-      {
-        source: '/health',
-        destination: '/api/health'
-      }
-    ];
-  }
+  staticPageGenerationTimeout: 1000
 };
 
 // Sentry 설정 적용 (프로덕션에서만)

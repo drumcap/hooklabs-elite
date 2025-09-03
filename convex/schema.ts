@@ -219,4 +219,250 @@ export default defineSchema({
       lastUpdated: v.string(),
     })
       .index("byUserId", ["userId"]),
+
+    // === 소셜 미디어 자동화 테이블들 ===
+    
+    // 페르소나 관리
+    personas: defineTable({
+      userId: v.id("users"),
+      name: v.string(),
+      role: v.string(), // "SaaS 창업자", "마케터", "개발자" 등
+      tone: v.string(), // "전문적", "친근한", "유머러스" 등
+      interests: v.array(v.string()),
+      expertise: v.array(v.string()),
+      avatar: v.optional(v.string()),
+      description: v.optional(v.string()),
+      isActive: v.boolean(),
+      settings: v.optional(v.any()), // 페르소나 관련 추가 설정
+      promptTemplates: v.optional(v.object({
+        system: v.string(),
+        content: v.string(),
+        tone: v.string(),
+      })),
+      createdAt: v.string(),
+      updatedAt: v.string(),
+    })
+      .index("byUserId", ["userId"])
+      .index("byIsActive", ["isActive"])
+      .index("byCreatedAt", ["createdAt"]),
+
+    // 소셜 계정 관리
+    socialAccounts: defineTable({
+      userId: v.id("users"),
+      platform: v.string(), // "twitter", "threads", "linkedin" 등
+      accountId: v.string(),
+      username: v.string(),
+      displayName: v.string(),
+      profileImage: v.optional(v.string()),
+      // 보안상 민감한 토큰들 - 실제로는 암호화해서 저장
+      accessToken: v.string(),
+      refreshToken: v.optional(v.string()),
+      tokenExpiresAt: v.optional(v.string()),
+      // 계정 메타데이터
+      followers: v.optional(v.number()),
+      following: v.optional(v.number()),
+      postsCount: v.optional(v.number()),
+      verificationStatus: v.optional(v.string()),
+      isActive: v.boolean(),
+      lastSyncedAt: v.string(),
+      createdAt: v.string(),
+      updatedAt: v.string(),
+    })
+      .index("byUserId", ["userId"])
+      .index("byPlatform", ["platform"])
+      .index("byIsActive", ["isActive"])
+      .index("byAccountId", ["accountId"]),
+
+    // 소셜 게시물 관리
+    socialPosts: defineTable({
+      userId: v.id("users"),
+      personaId: v.id("personas"),
+      originalContent: v.string(), // 사용자가 입력한 원본 내용
+      finalContent: v.string(), // 최종 선택된 콘텐츠
+      platforms: v.array(v.string()), // ["twitter", "threads"] 등
+      status: v.string(), // "draft", "scheduled", "published", "failed"
+      scheduledFor: v.optional(v.string()),
+      publishedAt: v.optional(v.string()),
+      // 메트릭스 데이터
+      metrics: v.optional(v.object({
+        twitter: v.optional(v.object({
+          views: v.number(),
+          likes: v.number(),
+          retweets: v.number(),
+          replies: v.number(),
+          quotes: v.number(),
+        })),
+        threads: v.optional(v.object({
+          views: v.number(),
+          likes: v.number(),
+          reposts: v.number(),
+          replies: v.number(),
+        })),
+        lastUpdatedAt: v.string(),
+      })),
+      hashtags: v.array(v.string()),
+      mediaUrls: v.optional(v.array(v.string())),
+      threadCount: v.optional(v.number()), // 스레드 게시물 개수
+      errorMessage: v.optional(v.string()),
+      creditsUsed: v.number(),
+      createdAt: v.string(),
+      updatedAt: v.string(),
+    })
+      .index("byUserId", ["userId"])
+      .index("byPersonaId", ["personaId"])
+      .index("byStatus", ["status"])
+      .index("byScheduledFor", ["scheduledFor"])
+      .index("byCreatedAt", ["createdAt"]),
+
+    // AI 생성 변형 게시물
+    postVariants: defineTable({
+      postId: v.id("socialPosts"),
+      content: v.string(),
+      // 점수 시스템
+      overallScore: v.number(), // 0-100 전체 점수
+      scoreBreakdown: v.object({
+        engagement: v.number(), // 참여도 예측 점수
+        virality: v.number(), // 바이럴 가능성 점수
+        personaMatch: v.number(), // 페르소나 일치도 점수
+        readability: v.number(), // 가독성 점수
+        trending: v.number(), // 트렌드 적합도 점수
+      }),
+      isSelected: v.boolean(),
+      // AI 메타데이터
+      aiModel: v.string(), // "gemini-1.5-pro" 등
+      promptUsed: v.string(),
+      generationMetadata: v.optional(v.any()),
+      creditsUsed: v.number(),
+      generatedAt: v.string(),
+    })
+      .index("byPostId", ["postId"])
+      .index("byIsSelected", ["isSelected"])
+      .index("byOverallScore", ["overallScore"])
+      .index("byGeneratedAt", ["generatedAt"]),
+
+    // 스케줄링된 게시물
+    scheduledPosts: defineTable({
+      postId: v.id("socialPosts"),
+      variantId: v.optional(v.id("postVariants")),
+      platform: v.string(), // "twitter", "threads"
+      socialAccountId: v.id("socialAccounts"),
+      scheduledFor: v.string(),
+      status: v.string(), // "pending", "processing", "published", "failed", "cancelled"
+      publishedAt: v.optional(v.string()),
+      publishedPostId: v.optional(v.string()), // 플랫폼에서 반환된 게시물 ID
+      error: v.optional(v.string()),
+      retryCount: v.number(),
+      maxRetries: v.number(),
+      nextRetryAt: v.optional(v.string()),
+      publishMetadata: v.optional(v.any()), // 플랫폼별 발행 메타데이터
+      createdAt: v.string(),
+      updatedAt: v.string(),
+    })
+      .index("byPostId", ["postId"])
+      .index("byPlatform", ["platform"])
+      .index("byStatus", ["status"])
+      .index("byScheduledFor", ["scheduledFor"])
+      .index("bySocialAccountId", ["socialAccountId"])
+      .index("byNextRetryAt", ["nextRetryAt"]),
+
+    // AI 생성 이력
+    aiGenerations: defineTable({
+      userId: v.id("users"),
+      postId: v.optional(v.id("socialPosts")), // 관련 게시물 (없을 수도 있음)
+      personaId: v.optional(v.id("personas")),
+      type: v.string(), // "content_generation", "variant_creation", "optimization", "analysis"
+      prompt: v.string(),
+      response: v.string(),
+      model: v.string(),
+      creditsUsed: v.number(),
+      generationTime: v.number(), // 밀리초 단위
+      inputTokens: v.optional(v.number()),
+      outputTokens: v.optional(v.number()),
+      temperature: v.optional(v.number()),
+      metadata: v.optional(v.any()),
+      success: v.boolean(),
+      errorMessage: v.optional(v.string()),
+      createdAt: v.string(),
+    })
+      .index("byUserId", ["userId"])
+      .index("byPostId", ["postId"])
+      .index("byPersonaId", ["personaId"])
+      .index("byType", ["type"])
+      .index("bySuccess", ["success"])
+      .index("byCreatedAt", ["createdAt"]),
+
+    // 콘텐츠 소스 (향후 자동화용)
+    contentSources: defineTable({
+      userId: v.id("users"),
+      name: v.string(),
+      type: v.string(), // "rss", "twitter_user", "website", "keyword"
+      url: v.optional(v.string()),
+      keywords: v.optional(v.array(v.string())),
+      settings: v.optional(v.any()), // 소스별 설정
+      isActive: v.boolean(),
+      lastFetchedAt: v.optional(v.string()),
+      nextFetchAt: v.optional(v.string()),
+      fetchInterval: v.number(), // 시간 단위 (시간)
+      personaId: v.optional(v.id("personas")), // 연결된 페르소나
+      autoGenerate: v.boolean(), // 자동 콘텐츠 생성 여부
+      createdAt: v.string(),
+      updatedAt: v.string(),
+    })
+      .index("byUserId", ["userId"])
+      .index("byType", ["type"])
+      .index("byIsActive", ["isActive"])
+      .index("byNextFetchAt", ["nextFetchAt"])
+      .index("byPersonaId", ["personaId"]),
+
+    // 수집된 콘텐츠 아이템
+    contentItems: defineTable({
+      sourceId: v.id("contentSources"),
+      userId: v.id("users"),
+      title: v.string(),
+      content: v.string(),
+      url: v.optional(v.string()),
+      author: v.optional(v.string()),
+      publishedAt: v.optional(v.string()),
+      tags: v.optional(v.array(v.string())),
+      status: v.string(), // "new", "processed", "used", "archived"
+      relevanceScore: v.optional(v.number()), // AI가 평가한 관련성 점수
+      generatedPostId: v.optional(v.id("socialPosts")), // 이 아이템으로 생성된 게시물
+      metadata: v.optional(v.any()),
+      createdAt: v.string(),
+      updatedAt: v.string(),
+    })
+      .index("bySourceId", ["sourceId"])
+      .index("byUserId", ["userId"])
+      .index("byStatus", ["status"])
+      .index("byRelevanceScore", ["relevanceScore"])
+      .index("byCreatedAt", ["createdAt"]),
+
+    // 분석 및 인사이트
+    postAnalytics: defineTable({
+      postId: v.id("socialPosts"),
+      userId: v.id("users"),
+      platform: v.string(),
+      metrics: v.object({
+        impressions: v.number(),
+        engagements: v.number(),
+        likes: v.number(),
+        shares: v.number(),
+        comments: v.number(),
+        clicks: v.number(),
+        saves: v.optional(v.number()),
+        profileVisits: v.optional(v.number()),
+      }),
+      engagementRate: v.number(),
+      viralityScore: v.number(), // 바이럴 점수 계산
+      bestPerformingTime: v.optional(v.string()),
+      audienceInsights: v.optional(v.any()),
+      competitorComparison: v.optional(v.any()),
+      recordedAt: v.string(),
+      createdAt: v.string(),
+    })
+      .index("byPostId", ["postId"])
+      .index("byUserId", ["userId"])
+      .index("byPlatform", ["platform"])
+      .index("byEngagementRate", ["engagementRate"])
+      .index("byRecordedAt", ["recordedAt"]),
   });

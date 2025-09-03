@@ -1,0 +1,503 @@
+name: 🧪 소셜 미디어 자동화 테스트 스위트
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # 매일 오전 9시 (KST)에 테스트 실행
+    - cron: '0 0 * * *'
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8'
+
+jobs:
+  # 환경 설정 및 기본 검증
+  setup:
+    name: 🔧 환경 설정
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.cache-keys.outputs.cache-key }}
+      node-modules-cache-hit: ${{ steps.cache-node-modules.outputs.cache-hit }}
+    
+    steps:
+      - name: 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 캐시 키 생성
+        id: cache-keys
+        run: |
+          echo "cache-key=node-modules-${{ hashFiles('**/package-lock.json') }}" >> $GITHUB_OUTPUT
+
+      - name: Node modules 캐시
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ steps.cache-keys.outputs.cache-key }}
+
+      - name: 의존성 설치
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: 환경 검증
+        run: |
+          node --version
+          npm --version
+          echo "✅ Node.js와 npm이 성공적으로 설치되었습니다."
+
+  # 단위 테스트
+  unit-tests:
+    name: 🧪 단위 테스트
+    runs-on: ubuntu-latest
+    needs: setup
+    
+    strategy:
+      matrix:
+        test-group: [convex, utils]
+    
+    steps:
+      - name: 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node modules 복원
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: 의존성 설치 (캐시 미스 시)
+        if: needs.setup.outputs.node-modules-cache-hit != 'true'
+        run: npm ci
+
+      - name: 단위 테스트 실행 (${{ matrix.test-group }})
+        run: npm run test:unit -- __tests__/unit/${{ matrix.test-group }}
+
+      - name: 테스트 결과 업로드
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results-${{ matrix.test-group }}
+          path: |
+            test-results/
+            coverage/
+          retention-days: 30
+
+  # 통합 테스트
+  integration-tests:
+    name: 🔗 통합 테스트
+    runs-on: ubuntu-latest
+    needs: setup
+    
+    services:
+      # Redis (필요한 경우)
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    env:
+      # 테스트용 환경 변수
+      NODE_ENV: test
+      REDIS_URL: redis://localhost:6379
+      CONVEX_DEPLOYMENT: test-deployment
+      NEXT_PUBLIC_CONVEX_URL: https://test-convex-url.convex.cloud
+
+    steps:
+      - name: 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node modules 복원
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: 의존성 설치 (캐시 미스 시)
+        if: needs.setup.outputs.node-modules-cache-hit != 'true'
+        run: npm ci
+
+      - name: 통합 테스트 실행
+        run: npm run test:integration
+
+      - name: 테스트 결과 업로드
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: |
+            test-results/
+            coverage/
+          retention-days: 30
+
+  # 컴포넌트 테스트
+  component-tests:
+    name: 🎭 컴포넌트 테스트
+    runs-on: ubuntu-latest
+    needs: setup
+    
+    steps:
+      - name: 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node modules 복원
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: 의존성 설치 (캐시 미스 시)
+        if: needs.setup.outputs.node-modules-cache-hit != 'true'
+        run: npm ci
+
+      - name: 컴포넌트 테스트 실행
+        run: npm run test:components
+
+      - name: 테스트 결과 업로드
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: component-test-results
+          path: |
+            test-results/
+            coverage/
+          retention-days: 30
+
+  # E2E 테스트 (Playwright)
+  e2e-tests:
+    name: 🎬 E2E 테스트
+    runs-on: ubuntu-latest
+    needs: setup
+    timeout-minutes: 30
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+        
+    steps:
+      - name: 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node modules 복원
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: 의존성 설치 (캐시 미스 시)
+        if: needs.setup.outputs.node-modules-cache-hit != 'true'
+        run: npm ci
+
+      - name: Playwright 브라우저 설치
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: 애플리케이션 빌드
+        run: npm run build
+
+      - name: 애플리케이션 시작 (백그라운드)
+        run: |
+          npm start &
+          sleep 10
+          curl -f http://localhost:3000 || exit 1
+
+      - name: E2E 테스트 실행 (${{ matrix.browser }})
+        run: npx playwright test --project=${{ matrix.browser }}
+
+      - name: 테스트 결과 업로드
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results-${{ matrix.browser }}
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 30
+
+      - name: 실패한 테스트 스크린샷 업로드
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-screenshots-${{ matrix.browser }}
+          path: test-results/screenshots/
+          retention-days: 7
+
+  # 코드 커버리지 수집 및 분석
+  coverage:
+    name: 📊 코드 커버리지
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, component-tests]
+    if: always()
+    
+    steps:
+      - name: 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node modules 복원
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: 의존성 설치 (캐시 미스 시)
+        if: needs.setup.outputs.node-modules-cache-hit != 'true'
+        run: npm ci
+
+      - name: 테스트 결과 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-test-results*'
+          path: downloaded-results
+          merge-multiple: true
+
+      - name: 통합 커버리지 실행
+        run: npm run test:coverage
+
+      - name: 커버리지 임계값 검증
+        run: |
+          COVERAGE=$(node -e "
+            const fs = require('fs');
+            try {
+              const coverage = JSON.parse(fs.readFileSync('coverage/coverage-summary.json', 'utf8'));
+              const avg = Object.values(coverage.total).reduce((sum, metric) => sum + metric.pct, 0) / 4;
+              console.log(avg.toFixed(1));
+            } catch (e) {
+              console.log('0');
+            }
+          ")
+          
+          echo "현재 커버리지: ${COVERAGE}%"
+          
+          if (( $(echo "$COVERAGE >= 80" | bc -l) )); then
+            echo "✅ 커버리지 목표 달성! (${COVERAGE}% >= 80%)"
+          else
+            echo "❌ 커버리지 목표 미달 (${COVERAGE}% < 80%)"
+            exit 1
+          fi
+
+      - name: Codecov에 커버리지 업로드
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+
+      - name: 커버리지 리포트 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+  # 성능 테스트
+  performance-tests:
+    name: ⚡ 성능 테스트
+    runs-on: ubuntu-latest
+    needs: setup
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+    
+    steps:
+      - name: 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node modules 복원
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: 의존성 설치 (캐시 미스 시)
+        if: needs.setup.outputs.node-modules-cache-hit != 'true'
+        run: npm ci
+
+      - name: 애플리케이션 빌드
+        run: npm run build
+
+      - name: 애플리케이션 시작 (백그라운드)
+        run: |
+          npm start &
+          sleep 10
+
+      - name: Lighthouse CI 실행
+        run: npm run lighthouse
+        continue-on-error: true
+
+      - name: 성능 리포트 업로드
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-report
+          path: reports/
+          retention-days: 30
+
+  # 보안 검사
+  security-audit:
+    name: 🔒 보안 검사
+    runs-on: ubuntu-latest
+    needs: setup
+    
+    steps:
+      - name: 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 보안 감사 실행
+        run: npm audit --audit-level high
+        continue-on-error: true
+
+      - name: 의존성 업데이트 검사
+        run: npm run deps:check
+        continue-on-error: true
+
+  # 최종 결과 집계
+  test-summary:
+    name: 📋 테스트 결과 요약
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, component-tests, e2e-tests, coverage, security-audit]
+    if: always()
+    
+    steps:
+      - name: 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 모든 테스트 결과 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          path: all-results
+
+      - name: 테스트 요약 생성
+        run: |
+          echo "## 🧪 테스트 실행 결과" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # 각 테스트 타입별 결과 표시
+          echo "### 테스트 스위트 결과" >> $GITHUB_STEP_SUMMARY
+          echo "| 테스트 타입 | 상태 | 비고 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|------|------|" >> $GITHUB_STEP_SUMMARY
+          
+          # Job 결과에 따라 상태 표시
+          echo "| 단위 테스트 | ${{ needs.unit-tests.result == 'success' && '✅ 통과' || '❌ 실패' }} | Convex 함수, 유틸리티 |" >> $GITHUB_STEP_SUMMARY
+          echo "| 통합 테스트 | ${{ needs.integration-tests.result == 'success' && '✅ 통과' || '❌ 실패' }} | API 통합, 데이터 플로우 |" >> $GITHUB_STEP_SUMMARY
+          echo "| 컴포넌트 테스트 | ${{ needs.component-tests.result == 'success' && '✅ 통과' || '❌ 실패' }} | React 컴포넌트 |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E 테스트 | ${{ needs.e2e-tests.result == 'success' && '✅ 통과' || '❌ 실패' }} | 전체 워크플로우 |" >> $GITHUB_STEP_SUMMARY
+          echo "| 코드 커버리지 | ${{ needs.coverage.result == 'success' && '✅ 통과' || '❌ 실패' }} | 80% 목표 |" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 추가 정보" >> $GITHUB_STEP_SUMMARY
+          echo "- 전체 테스트 아티팩트는 Actions 페이지에서 다운로드 가능" >> $GITHUB_STEP_SUMMARY
+          echo "- 커버리지 리포트는 별도 아티팩트로 제공" >> $GITHUB_STEP_SUMMARY
+          echo "- 실패한 E2E 테스트의 스크린샷 포함" >> $GITHUB_STEP_SUMMARY
+
+      - name: 전체 결과 판정
+        run: |
+          UNIT_STATUS="${{ needs.unit-tests.result }}"
+          INTEGRATION_STATUS="${{ needs.integration-tests.result }}"
+          COMPONENT_STATUS="${{ needs.component-tests.result }}"
+          E2E_STATUS="${{ needs.e2e-tests.result }}"
+          COVERAGE_STATUS="${{ needs.coverage.result }}"
+          
+          echo "=== 테스트 결과 요약 ==="
+          echo "단위 테스트: $UNIT_STATUS"
+          echo "통합 테스트: $INTEGRATION_STATUS"  
+          echo "컴포넌트 테스트: $COMPONENT_STATUS"
+          echo "E2E 테스트: $E2E_STATUS"
+          echo "커버리지: $COVERAGE_STATUS"
+          
+          # 핵심 테스트들이 모두 성공했는지 확인
+          if [[ "$UNIT_STATUS" == "success" && "$INTEGRATION_STATUS" == "success" && "$COMPONENT_STATUS" == "success" && "$COVERAGE_STATUS" == "success" ]]; then
+            echo "✅ 모든 핵심 테스트가 통과했습니다!"
+            exit 0
+          else
+            echo "❌ 일부 핵심 테스트가 실패했습니다."
+            exit 1
+          fi
+
+  # Slack 알림 (선택사항)
+  notify:
+    name: 📢 알림
+    runs-on: ubuntu-latest
+    needs: [test-summary]
+    if: always() && (github.ref == 'refs/heads/main' || github.event_name == 'schedule')
+    
+    steps:
+      - name: Slack 알림 발송
+        if: env.SLACK_WEBHOOK_URL
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          STATUS="${{ needs.test-summary.result == 'success' && '성공' || '실패' }}"
+          COLOR="${{ needs.test-summary.result == 'success' && 'good' || 'danger' }}"
+          
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{
+              \"attachments\": [{
+                \"color\": \"$COLOR\",
+                \"title\": \"소셜 미디어 자동화 테스트 결과\",
+                \"text\": \"테스트 실행이 $STATUS 했습니다.\",
+                \"fields\": [{
+                  \"title\": \"브랜치\",
+                  \"value\": \"${{ github.ref_name }}\",
+                  \"short\": true
+                }, {
+                  \"title\": \"커밋\",
+                  \"value\": \"${{ github.sha }}\",
+                  \"short\": true
+                }],
+                \"footer\": \"GitHub Actions\",
+                \"ts\": $(date +%s)
+              }]
+            }" \
+            $SLACK_WEBHOOK_URL

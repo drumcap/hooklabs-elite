@@ -1,0 +1,282 @@
+name: 🚀 CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+  CONVEX_DEPLOYMENT: dev:${{ secrets.CONVEX_DEPLOYMENT_NAME }}
+  
+jobs:
+  # =======================
+  # 📋 코드 품질 검사
+  # =======================
+  quality:
+    name: 🔍 코드 품질 검사
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 의존성 설치
+        run: npm ci
+        
+      - name: 🧹 코드 포맷팅 검사
+        run: npm run lint
+        
+      - name: 🔍 타입 검사
+        run: npm run type-check
+        
+      - name: 🔒 보안 검사
+        run: npm run security-audit
+        
+      - name: 📊 의존성 검사
+        run: npm run deps:check
+
+  # =======================
+  # 🧪 테스트 실행
+  # =======================
+  test:
+    name: 🧪 테스트 실행
+    runs-on: ubuntu-latest
+    needs: [quality]
+    
+    strategy:
+      matrix:
+        test-type: [unit, integration, components]
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 의존성 설치
+        run: npm ci
+        
+      - name: 🧪 ${{ matrix.test-type }} 테스트 실행
+        run: npm run test:${{ matrix.test-type }}
+        
+      - name: 📊 테스트 커버리지 업로드 (unit 테스트만)
+        if: matrix.test-type == 'unit'
+        run: npm run test:coverage
+        
+      - name: 📈 커버리지 결과 업로드
+        if: matrix.test-type == 'unit'
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+
+  # =======================
+  # 🎭 E2E 테스트
+  # =======================
+  e2e:
+    name: 🎭 E2E 테스트
+    runs-on: ubuntu-latest
+    needs: [test]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 의존성 설치
+        run: npm ci
+        
+      - name: 🎭 Playwright 설치
+        run: npx playwright install --with-deps
+        
+      - name: 🏗️ 프로덕션 빌드
+        run: npm run build
+        env:
+          NODE_ENV: production
+          
+      - name: 🚀 애플리케이션 시작
+        run: npm start &
+        
+      - name: ⏳ 애플리케이션 준비 대기
+        run: npx wait-on http://localhost:3000 --timeout 60000
+        
+      - name: 🧪 E2E 테스트 실행
+        run: npm run test:e2e
+        
+      - name: 📸 실패 시 스크린샷 업로드
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-screenshots
+          path: test-results/
+
+  # =======================
+  # 🏗️ 빌드 및 배포
+  # =======================
+  build-and-deploy:
+    name: 🏗️ 빌드 및 배포
+    runs-on: ubuntu-latest
+    needs: [quality, test]
+    if: github.event_name == 'push'
+    
+    strategy:
+      matrix:
+        environment: 
+          - name: development
+            branch: develop
+            url: https://dev-hooklabs-elite.vercel.app
+          - name: production
+            branch: main  
+            url: https://hooklabs-elite.vercel.app
+        exclude:
+          - environment: { name: development }
+            branch: ${{ github.ref != 'refs/heads/develop' && 'exclude' || '' }}
+          - environment: { name: production }
+            branch: ${{ github.ref != 'refs/heads/main' && 'exclude' || '' }}
+    
+    environment:
+      name: ${{ matrix.environment.name }}
+      url: ${{ matrix.environment.url }}
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 의존성 설치
+        run: npm ci
+        
+      - name: 🗄️ Convex 함수 배포
+        run: npx convex deploy --cmd 'npm run build'
+        env:
+          CONVEX_DEPLOYMENT: ${{ secrets.CONVEX_DEPLOYMENT }}
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+          
+      - name: 🏗️ Next.js 빌드
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_APP_ENV: ${{ matrix.environment.name }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          LEMONSQUEEZY_API_KEY: ${{ secrets.LEMONSQUEEZY_API_KEY }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          
+      - name: 📊 번들 분석
+        if: matrix.environment.name == 'production'
+        run: npm run build:analyze
+        
+      - name: 📈 Lighthouse 성능 점수
+        if: matrix.environment.name == 'production'
+        run: |
+          npm start &
+          sleep 10
+          npm run lighthouse
+          
+      - name: 🚀 Vercel 배포
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: ${{ matrix.environment.name == 'production' && '--prod' || '' }}
+          working-directory: ./
+          
+      - name: 🔍 Health Check
+        run: |
+          sleep 30
+          curl -f ${{ matrix.environment.url }}/api/health
+          
+      - name: 📱 슬랙 알림 (실패시)
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#deployments'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          
+      - name: 📱 슬랙 알림 (성공시)
+        if: success() && matrix.environment.name == 'production'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: '#deployments'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # =======================
+  # 🔒 보안 스캔
+  # =======================
+  security:
+    name: 🔒 보안 스캔
+    runs-on: ubuntu-latest
+    needs: [quality]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🔍 CodeQL 분석
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript,typescript
+          
+      - name: 🔨 자동 빌드
+        uses: github/codeql-action/autobuild@v3
+        
+      - name: 📊 CodeQL 분석 완료
+        uses: github/codeql-action/analyze@v3
+
+  # =======================
+  # 📊 성능 모니터링
+  # =======================
+  performance:
+    name: 📊 성능 모니터링
+    runs-on: ubuntu-latest
+    needs: [build-and-deploy]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: 📊 Lighthouse CI 실행
+        run: |
+          npm install -g @lhci/cli@0.12.x
+          lhci autorun
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+          
+      - name: 📈 Web Vitals 체크
+        run: |
+          curl -s "https://hooklabs-elite.vercel.app/api/vitals" | jq '.'
