@@ -184,13 +184,19 @@ export const getAllCoupons = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { isActive, limit = 100 }) => {
-    let query = ctx.db.query("coupons");
-
     if (isActive !== undefined) {
-      query = query.withIndex("byIsActive", (q) => q.eq("isActive", isActive));
+      const coupons = await ctx.db
+        .query("coupons")
+        .withIndex("byIsActive", (q) => q.eq("isActive", isActive))
+        .order("desc")
+        .take(limit);
+      return coupons;
     }
 
-    const coupons = await query.order("desc").take(limit);
+    const coupons = await ctx.db
+      .query("coupons")
+      .order("desc")
+      .take(limit);
     return coupons;
   },
 });

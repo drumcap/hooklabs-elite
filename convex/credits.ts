@@ -8,7 +8,7 @@ export const getUserCreditBalance = query({
     // 집계 테이블에서 잔액 조회
     const balance = await ctx.db
       .query("userCreditBalances")
-      .withIndex("byUserId", (q) => q.eq("userId", userId))
+      .withIndex("byUserId", (q: any) => q.eq("userId", userId))
       .first();
 
     if (balance) {
@@ -18,39 +18,29 @@ export const getUserCreditBalance = query({
     // 집계 테이블이 없으면 실시간 계산
     const credits = await ctx.db
       .query("credits")
-      .withIndex("byUserId", (q) => q.eq("userId", userId))
+      .withIndex("byUserId", (q: any) => q.eq("userId", userId))
       .collect();
 
     const now = new Date().toISOString();
     
     const totalCredits = credits
-      .filter(c => c.type !== "expired")
-      .reduce((sum, credit) => sum + credit.amount, 0);
+      .filter((c: any) => c.type !== "expired")
+      .reduce((sum: number, credit: any) => sum + credit.amount, 0);
 
     const availableCredits = credits
-      .filter(c => 
+      .filter((c: any) => 
         c.type !== "expired" && 
         (!c.expiresAt || c.expiresAt > now)
       )
-      .reduce((sum, credit) => sum + credit.amount, 0);
+      .reduce((sum: number, credit: any) => sum + credit.amount, 0);
 
     const usedCredits = credits
-      .filter(c => c.type === "used")
-      .reduce((sum, credit) => sum + Math.abs(credit.amount), 0);
+      .filter((c: any) => c.type === "used")
+      .reduce((sum: number, credit: any) => sum + Math.abs(credit.amount), 0);
 
     const expiredCredits = credits
-      .filter(c => c.type === "expired" || (c.expiresAt && c.expiresAt <= now))
-      .reduce((sum, credit) => sum + Math.abs(credit.amount), 0);
-
-    // 집계 테이블 업데이트
-    await ctx.db.insert("userCreditBalances", {
-      userId,
-      totalCredits,
-      availableCredits: Math.max(0, availableCredits),
-      usedCredits,
-      expiredCredits,
-      lastUpdated: now,
-    });
+      .filter((c: any) => c.type === "expired" || (c.expiresAt && c.expiresAt <= now))
+      .reduce((sum: number, credit: any) => sum + Math.abs(credit.amount), 0);
 
     return {
       userId,
@@ -144,7 +134,7 @@ export const getCreditHistory = query({
   handler: async (ctx, { userId, limit = 50 }) => {
     const credits = await ctx.db
       .query("credits")
-      .withIndex("byUserId", (q) => q.eq("userId", userId))
+      .withIndex("byUserId", (q: any) => q.eq("userId", userId))
       .order("desc")
       .take(limit);
 
@@ -164,7 +154,7 @@ export const getExpiringCredits = query({
 
     const expiringCredits = await ctx.db
       .query("credits")
-      .withIndex("byUserId", (q) => q.eq("userId", userId))
+      .withIndex("byUserId", (q: any) => q.eq("userId", userId))
       .filter((q) => 
         q.and(
           q.neq(q.field("type"), "used"),
@@ -228,35 +218,35 @@ export const expireCredits = mutation({
 async function updateCreditBalance(ctx: any, userId: any) {
   const credits = await ctx.db
     .query("credits")
-    .withIndex("byUserId", (q) => q.eq("userId", userId))
+    .withIndex("byUserId", (q: any) => q.eq("userId", userId))
     .collect();
 
   const now = new Date().toISOString();
   
   const totalCredits = credits
-    .filter(c => c.type !== "expired")
-    .reduce((sum, credit) => sum + credit.amount, 0);
+    .filter((c: any) => c.type !== "expired")
+    .reduce((sum: number, credit: any) => sum + credit.amount, 0);
 
   const availableCredits = credits
-    .filter(c => 
+    .filter((c: any) => 
       c.type !== "expired" && 
       c.amount > 0 &&
       (!c.expiresAt || c.expiresAt > now)
     )
-    .reduce((sum, credit) => sum + credit.amount, 0);
+    .reduce((sum: number, credit: any) => sum + credit.amount, 0);
 
   const usedCredits = credits
-    .filter(c => c.type === "used")
-    .reduce((sum, credit) => sum + Math.abs(credit.amount), 0);
+    .filter((c: any) => c.type === "used")
+    .reduce((sum: number, credit: any) => sum + Math.abs(credit.amount), 0);
 
   const expiredCredits = credits
-    .filter(c => c.type === "expired")
-    .reduce((sum, credit) => sum + Math.abs(credit.amount), 0);
+    .filter((c: any) => c.type === "expired")
+    .reduce((sum: number, credit: any) => sum + Math.abs(credit.amount), 0);
 
   // 기존 잔액 레코드 확인
   const existingBalance = await ctx.db
     .query("userCreditBalances")
-    .withIndex("byUserId", (q) => q.eq("userId", userId))
+    .withIndex("byUserId", (q: any) => q.eq("userId", userId))
     .first();
 
   const balanceData = {
