@@ -1,10 +1,14 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+// Next.js 공식 번들 분석기 (webpack-bundle-analyzer 대신)
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 const nextConfig: NextConfig = {
   // 기본 설정
   reactStrictMode: true,
-  swcMinify: true,
   
   // 성능 최적화
   compiler: {
@@ -35,58 +39,18 @@ const nextConfig: NextConfig = {
       'framer-motion',
     ],
     
-    // 서버 액션 최적화
-    serverComponentsExternalPackages: ['@lemonsqueezy/lemonsqueezy.js'],
+    // 서버 액션 최적화 (Next.js 15에서는 최상위로 이동)
+    // serverComponentsExternalPackages는 serverExternalPackages로 변경됨
     
     // 메모리 최적화
     optimizeCss: true,
     
-    // 번들 분석 (환경 변수로 제어)
-    ...(process.env.ANALYZE === 'true' && {
-      bundlePagesRouterDependencies: true,
-    }),
+    // Turbopack 전용 최적화
   },
   
-  // 웹팩 설정
-  webpack: (config, { dev, isServer }) => {
-    // 프로덕션에서 소스맵 최적화
-    if (!dev && !isServer) {
-      config.devtool = 'source-map';
-    }
-    
-    // 번들 크기 최적화
-    config.optimization.splitChunks = {
-      chunks: 'all',
-      cacheGroups: {
-        vendor: {
-          test: /[\\/]node_modules[\\/]/,
-          name: 'vendors',
-          priority: 10,
-          reuseExistingChunk: true,
-        },
-        common: {
-          name: 'common',
-          minChunks: 2,
-          priority: 5,
-          reuseExistingChunk: true,
-        },
-      },
-    };
-    
-    // 번들 분석기 설정
-    if (process.env.ANALYZE === 'true') {
-      const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
-      config.plugins.push(
-        new BundleAnalyzerPlugin({
-          analyzerMode: 'static',
-          openAnalyzer: false,
-          reportFilename: isServer ? '../analyze/server.html' : './analyze/client.html',
-        })
-      );
-    }
-    
-    return config;
-  },
+  // Next.js 15에서 serverExternalPackages로 변경
+  serverExternalPackages: ['@lemonsqueezy/lemonsqueezy.js'],
+  
   
   // 환경 변수
   env: {
@@ -121,6 +85,15 @@ const nextConfig: NextConfig = {
           destination: 'http://localhost:3001/api/:path*',
         },
       ] : []),
+      // Health check 경로
+      {
+        source: '/healthz',
+        destination: '/api/health'
+      },
+      {
+        source: '/health',
+        destination: '/api/health'
+      }
     ];
   },
   
@@ -158,24 +131,26 @@ const nextConfig: NextConfig = {
               value: 'max-age=31536000; includeSubDomains'
             }
           ] : []),
-          // CSP (Content Security Policy)
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.clerk.dev https://www.googletagmanager.com https://cdn.mixpanel.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: https: blob:",
-              "connect-src 'self' https://*.convex.cloud https://api.lemonsqueezy.com https://clerk.dev https://www.google-analytics.com https://api.mixpanel.com wss://*.convex.cloud",
-              "frame-src 'self' https://js.clerk.dev https://checkout.lemonsqueezy.com",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "frame-ancestors 'none'",
-              "upgrade-insecure-requests"
-            ].join('; ')
-          },
+          // CSP (Content Security Policy) - 개발 환경에서는 완화
+          ...(process.env.NODE_ENV === 'development' ? [] : [
+            {
+              key: 'Content-Security-Policy',
+              value: [
+                "default-src 'self'",
+                "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.clerk.dev https://*.clerk.accounts.dev https://www.googletagmanager.com https://cdn.mixpanel.com",
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+                "font-src 'self' https://fonts.gstatic.com",
+                "img-src 'self' data: https: blob:",
+                "connect-src 'self' https://*.convex.cloud https://api.lemonsqueezy.com https://clerk.dev https://*.clerk.accounts.dev https://www.google-analytics.com https://api.mixpanel.com wss://*.convex.cloud",
+                "frame-src 'self' https://js.clerk.dev https://*.clerk.accounts.dev https://checkout.lemonsqueezy.com",
+                "object-src 'none'",
+                "base-uri 'self'",
+                "form-action 'self'",
+                "frame-ancestors 'none'",
+                "upgrade-insecure-requests"
+              ].join('; ')
+            }
+          ]),
           // Permissions Policy
           {
             key: 'Permissions-Policy',
@@ -216,21 +191,7 @@ const nextConfig: NextConfig = {
   },
   
   // 정적 파일 생성 제외
-  staticPageGenerationTimeout: 1000,
-  
-  // API 경로 설정
-  async rewrites() {
-    return [
-      {
-        source: '/healthz',
-        destination: '/api/health'
-      },
-      {
-        source: '/health',
-        destination: '/api/health'
-      }
-    ];
-  }
+  staticPageGenerationTimeout: 1000
 };
 
 // Sentry 설정 적용 (프로덕션에서만)
@@ -247,6 +208,11 @@ const sentryWebpackPluginOptions = {
   automaticVercelMonitors: true,
 };
 
-export default process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_SENTRY_DSN
-  ? withSentryConfig(nextConfig, sentryWebpackPluginOptions)
-  : nextConfig;
+// 설정 체인: 번들 분석기 -> Sentry (프로덕션에서만)
+let finalConfig = withBundleAnalyzer(nextConfig);
+
+if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_SENTRY_DSN) {
+  finalConfig = withSentryConfig(finalConfig, sentryWebpackPluginOptions);
+}
+
+export default finalConfig;

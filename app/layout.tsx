@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 
 import { ClerkProvider } from '@clerk/nextjs'
 import ConvexClientProvider from '@/components/ConvexClientProvider'
+import { ClerkErrorBoundary } from '@/components/ClerkErrorBoundary'
 
 
 const geistSans = Geist({
@@ -38,11 +39,24 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ClerkProvider>
-            <ConvexClientProvider>
-              {children}
-            </ConvexClientProvider>
-          </ClerkProvider>
+          <ClerkErrorBoundary>
+            <ClerkProvider 
+              publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!}
+              appearance={{
+                elements: {
+                  rootBox: "font-sans"
+                }
+              }}
+              initialState={{
+                signInRedirectUrl: '/dashboard',
+                signUpRedirectUrl: '/dashboard',
+              }}
+            >
+              <ConvexClientProvider>
+                {children}
+              </ConvexClientProvider>
+            </ClerkProvider>
+          </ClerkErrorBoundary>
         </ThemeProvider>
       </body>
     </html>

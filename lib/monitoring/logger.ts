@@ -98,12 +98,20 @@ class Logger {
       entry.error = error
     }
 
-    // 성능 정보 추가
-    if (typeof process !== 'undefined') {
-      const memUsage = process.memoryUsage()
-      entry.performance = {
-        duration: process.hrtime.bigint() ? Number(process.hrtime.bigint()) / 1000000 : 0,
-        memory: Math.round(memUsage.heapUsed / 1024 / 1024) // MB
+    // 성능 정보 추가 (Edge Runtime 호환)
+    if (typeof process !== 'undefined' && typeof process.memoryUsage === 'function') {
+      try {
+        const memUsage = process.memoryUsage()
+        entry.performance = {
+          duration: 0, // Edge Runtime에서는 hrtime 사용 불가
+          memory: Math.round(memUsage.heapUsed / 1024 / 1024) // MB
+        }
+      } catch (error) {
+        // Edge Runtime에서는 memoryUsage 사용 불가능할 수 있음
+        entry.performance = {
+          duration: 0,
+          memory: 0
+        }
       }
     }
 
