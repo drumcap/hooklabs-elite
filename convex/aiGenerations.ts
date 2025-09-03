@@ -49,7 +49,10 @@ export const list = query({
     if (paginationOpts) {
       return await query
         .order("desc")
-        .paginate(paginationOpts);
+        .paginate({
+          cursor: paginationOpts.cursor ?? null,
+          numItems: paginationOpts.numItems
+        });
     }
 
     return {

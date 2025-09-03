@@ -74,7 +74,7 @@ export const listOptimized = query({
     // 페이지네이션 적용
     const result = await query
       .order("desc")
-      .paginate({ cursor, numItems: limit });
+      .paginate({ cursor: cursor ?? null, numItems: limit });
 
     // 메트릭이 필요한 경우에만 추가 데이터 로드
     if (includeMetrics && result.page.length > 0) {

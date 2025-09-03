@@ -1,3 +1,5 @@
+"use node";
+
 import { v } from "convex/values";
 import { action } from "../_generated/server";
 import { api } from "../_generated/api";
@@ -282,7 +284,7 @@ export const publishToMultiplePlatforms = action({
         if (result.success) {
           // 스케줄 상태 업데이트
           const schedules = await ctx.runQuery(api.scheduledPosts.getByPost, { postId });
-          const schedule = schedules.find(s => 
+          const schedule = schedules.find((s: any) => 
             s.platform === platform && s.socialAccountId === accountId
           );
 
@@ -310,7 +312,7 @@ export const publishToMultiplePlatforms = action({
 
         // 스케줄 상태를 실패로 업데이트
         const schedules = await ctx.runQuery(api.scheduledPosts.getByPost, { postId });
-        const schedule = schedules.find(s => 
+        const schedule = schedules.find((s: any) => 
           s.platform === platform && s.socialAccountId === accountId
         );
 

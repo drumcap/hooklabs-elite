@@ -1,6 +1,9 @@
+"use node";
+
 import { v } from "convex/values";
-import { action } from "../_generated/server";
+import { action, ActionBuilder } from "../_generated/server";
 import { api } from "../_generated/api";
+import { Id } from "../_generated/dataModel";
 
 // Gemini API 클라이언트 설정
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent";
@@ -210,7 +213,21 @@ function calculateTrendingScore(content: string): number {
 }
 
 // AI 콘텐츠 변형 생성
-export const generateVariants = action({
+export const generateVariants: ActionBuilder<
+  {
+    postId: string;
+    personaId: string;
+    originalContent: string;
+    platforms: string[];
+    variantCount?: number;
+  },
+  Promise<{
+    success: boolean;
+    variantIds: string[];
+    creditsUsed: number;
+    totalVariants: number;
+  }>
+> = action({
   args: {
     postId: v.id("socialPosts"),
     personaId: v.id("personas"),
@@ -218,7 +235,12 @@ export const generateVariants = action({
     platforms: v.array(v.string()),
     variantCount: v.optional(v.number()),
   },
-  handler: async (ctx, { postId, personaId, originalContent, platforms, variantCount = 5 }) => {
+  handler: async (ctx, { postId, personaId, originalContent, platforms, variantCount = 5 }): Promise<{
+    success: boolean;
+    variantIds: string[];
+    creditsUsed: number;
+    totalVariants: number;
+  }> => {
     // 사용자 인증 확인은 호출하는 쪽에서 처리
     
     // 페르소나 정보 가져오기
@@ -338,7 +360,7 @@ ${systemPrompt}
         const content = variants[i];
         const scores = calculateContentScores(content, persona);
         
-        const variantId = await ctx.runMutation(api.postVariants.create, {
+        const variantId: Id<"postVariants"> = await ctx.runMutation(api.postVariants.create, {
           postId,
           content,
           overallScore: scores.overallScore,
