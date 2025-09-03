@@ -8,25 +8,25 @@ This is a Next.js 15 SaaS starter template with integrated authentication (Clerk
 ## Development Commands
 
 ### Core Development
-- `npm run dev` - Start development server with Turbopack on http://localhost:3000
-- `npm run build` - Build production bundle
-- `npm start` - Start production server
-- `npm run lint` - Run Next.js linting
-- `npm run type-check` - TypeScript type checking
+- `bun dev` - Start development server with Turbopack on http://localhost:3000
+- `bun build` - Build production bundle
+- `bun start` - Start production server
+- `bun lint` - Run Next.js linting
+- `bun type-check` - TypeScript type checking
 
 ### Testing Commands
-- `npm test` - Run all tests with Vitest
-- `npm run test:unit` - Run unit tests (Convex functions)
-- `npm run test:integration` - Run integration tests (API endpoints)
-- `npm run test:components` - Run component tests (React components)
-- `npm run test:e2e` - Run end-to-end tests with Playwright
-- `npm run test:coverage` - Run tests with coverage report
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:ui` - Run tests with Vitest UI
+- `bun test` - Run all tests with Vitest
+- `bun test:unit` - Run unit tests (Convex functions)
+- `bun test:integration` - Run integration tests (API endpoints)
+- `bun test:components` - Run component tests (React components)
+- `bun test:e2e` - Run end-to-end tests with Playwright
+- `bun test:coverage` - Run tests with coverage report
+- `bun test:watch` - Run tests in watch mode
+- `bun test:ui` - Run tests with Vitest UI
 
 ### Convex Development
-- `npx convex dev` - Start Convex development server (required for database)
-- Run this in a separate terminal alongside `npm run dev`
+- `bunx convex dev` - Start Convex development server (required for database)
+- Run this in a separate terminal alongside `bun dev`
 
 ## Architecture Overview
 

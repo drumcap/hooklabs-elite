@@ -20,6 +20,8 @@ import {
   IconUsers,
   IconSparkles,
   IconBrandOpenai,
+  IconTicket,
+  IconShield,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/app/dashboard/nav-documents"
@@ -38,6 +40,8 @@ import {
 import { ChatMaxingIconColoured } from "@/components/logo"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import { useUser } from "@clerk/nextjs"
+import { useEffect, useState } from "react"
 
 const data = {
   navMain: [
@@ -50,6 +54,11 @@ const data = {
       title: "Payment gated",
       url: "/dashboard/payment-gated",
       icon: IconSparkles,
+    },
+    {
+      title: "Coupons",
+      url: "/dashboard/coupons",
+      icon: IconTicket,
     },
   ],
   navSecondary: [
@@ -89,6 +98,32 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user, isLoaded } = useUser();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Only determine admin status after component is mounted and user is loaded
+  const isAdmin = mounted && isLoaded && user?.publicMetadata?.role === 'admin';
+
+  // Create dynamic navigation with admin-only items
+  const dynamicNavMain = React.useMemo(() => {
+    const baseNav = [...data.navMain];
+    
+    // Only add admin items if we're sure about the user state
+    if (isAdmin) {
+      baseNav.push({
+        title: "Admin Coupons",
+        url: "/dashboard/admin/coupons",
+        icon: IconShield,
+      });
+    }
+    
+    return baseNav;
+  }, [isAdmin]);
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -100,15 +135,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <Link href="/">
                 <ChatMaxingIconColoured className="!size-6" />
-                <span className="text-base font-semibold">Starter DIY</span>
-                <Badge variant="outline" className="text-muted-foreground  text-xs">Demo</Badge>
+                <span className="text-base font-semibold">HookLabs Elite</span>
+                <Badge variant="outline" className="text-muted-foreground  text-xs">Beta</Badge>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={dynamicNavMain} />
         <NavDocuments items={data.documents} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>

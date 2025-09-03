@@ -57,7 +57,7 @@ export default function CreditManager() {
   // 쿠폰 사용 내역 조회
   const couponUsages = useQuery(
     api.coupons.getUserCouponUsages,
-    user ? { userId: user.id as any } : "skip"
+    user ? { limit: 10 } : "skip"
   );
 
   // 쿠폰 검증

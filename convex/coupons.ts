@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { getCurrentUser } from "./users";
 
 // 쿠폰 코드로 쿠폰 조회 및 유효성 검증
 export const validateCoupon = query({
@@ -148,13 +149,17 @@ export const useCoupon = mutation({
 // 사용자의 쿠폰 사용 내역 조회
 export const getUserCouponUsages = query({
   args: { 
-    userId: v.id("users"),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, { userId, limit = 20 }) => {
+  handler: async (ctx, { limit = 20 }) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      return []; // Return empty array instead of throwing error
+    }
+
     const usages = await ctx.db
       .query("couponUsages")
-      .withIndex("byUserId", (q) => q.eq("userId", userId))
+      .withIndex("byUserId", (q) => q.eq("userId", user._id))
       .order("desc")
       .take(limit);
 
