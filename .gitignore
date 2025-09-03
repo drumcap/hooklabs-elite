@@ -46,3 +46,7 @@ next-env.d.ts
 # .windsurf/
 .vscode/
 .idea/
+
+# Convex
+.convex/
+convex/_generated/
