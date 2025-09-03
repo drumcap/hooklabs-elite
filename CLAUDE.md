@@ -171,3 +171,8 @@ When installing shadcn/ui components:
 - Check components.json for existing configuration before installing
 - Verify package.json after installation to ensure dependencies were added
 - Multiple components can be installed at once: `bunx --bun shadcn@latest add button card drawer`
+
+## Final Build Verification
+Always verify both frontend and backend builds when work is completed:
+- **Frontend**: `bun build` - Verify Next.js production build succeeds
+- **Backend**: `bunx convex dev` - Verify Convex functions compile and deploy successfully
