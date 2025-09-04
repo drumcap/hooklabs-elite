@@ -1,6 +1,7 @@
 # Analyze Changes and Create Logical Git Commits
 
 Follow these instructions from top to bottom.
+Always communicate with the user in Korean.
 
 ## Create a TODO with EXACTLY these 6 items
 
