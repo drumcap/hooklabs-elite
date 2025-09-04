@@ -278,10 +278,7 @@ function CalendarGrid({
                   key={post._id}
                   post={post}
                   size="small"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onPostClick(post)
-                  }}
+                  onClick={() => onPostClick(post)}
                 />
               ))}
               {posts.length > 2 && (

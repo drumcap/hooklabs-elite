@@ -132,10 +132,6 @@ export default function RootLayout({
                   rootBox: "font-sans"
                 }
               }}
-              initialState={{
-                signInRedirectUrl: '/dashboard',
-                signUpRedirectUrl: '/dashboard',
-              }}
             >
               <ConvexClientProvider>
                 <ServiceWorkerRegister />

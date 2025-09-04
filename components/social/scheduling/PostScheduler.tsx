@@ -25,7 +25,8 @@ import {
   Zap,
   Target,
   Clock3,
-  Globe
+  Globe,
+  Eye
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -239,7 +240,7 @@ export function PostScheduler({
   const canSchedule = () => {
     return post.platforms.every(platform => {
       const schedule = platformSchedules[platform]
-      const accounts = socialAccounts?.filter(acc => acc.platform === platform) || []
+      const accounts = socialAccounts?.filter((acc: any) => acc.platform === platform) || []
       return schedule?.accountId && schedule?.time && accounts.length > 0
     })
   }
@@ -443,7 +444,7 @@ export function PostScheduler({
             <h4 className="text-lg font-semibold">플랫폼별 설정</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {post.platforms.map((platform) => {
-                const accounts = socialAccounts.filter(acc => acc.platform === platform)
+                const accounts = socialAccounts.filter((acc: any) => acc.platform === platform)
                 const suggestions = SUGGESTED_TIMES[platform as keyof typeof SUGGESTED_TIMES] || []
                 
                 return (
@@ -478,7 +479,7 @@ export function PostScheduler({
               <div className="space-y-2">
                 {post.platforms.map((platform) => {
                   const schedule = platformSchedules[platform]
-                  const account = socialAccounts.find(acc => acc._id === schedule?.accountId)
+                  const account = socialAccounts.find((acc: any) => acc._id === schedule?.accountId)
                   const dateTime = getScheduleDateTime(platform)
                   
                   return (

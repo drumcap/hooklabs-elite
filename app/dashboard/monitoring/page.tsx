@@ -149,11 +149,11 @@ export default function MonitoringDashboard() {
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-yellow-500" />
                 <span className="text-2xl font-bold">
-                  {alertHistory?.filter(a => a.status === "triggered").length || 0}
+                  {alertHistory?.filter((a: any) => a.status === "triggered").length || 0}
                 </span>
               </div>
               <Badge variant="outline" className="bg-yellow-50">
-                {alertHistory?.filter(a => a.severity === "critical").length || 0} 심각
+                {alertHistory?.filter((a: any) => a.severity === "critical").length || 0} 심각
               </Badge>
             </div>
           </CardContent>
@@ -268,7 +268,7 @@ export default function MonitoringDashboard() {
                           outerRadius={80}
                           label
                         >
-                          {webVitalsSummary.deviceBreakdown.map((entry, index) => (
+                          {webVitalsSummary.deviceBreakdown.map((entry: any, index: any) => (
                             <Cell key={`cell-${index}`} fill={["#0088FE", "#00C49F", "#FFBB28"][index]} />
                           ))}
                         </Pie>
@@ -312,7 +312,7 @@ export default function MonitoringDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {apiPerformance.endpoints.slice(0, 10).map((endpoint, index) => (
+                    {apiPerformance.endpoints.slice(0, 10).map((endpoint: any, index: any) => (
                       <div key={index} className="flex items-center justify-between py-2 border-b last:border-0">
                         <div className="flex-1">
                           <div className="font-medium">
@@ -328,7 +328,7 @@ export default function MonitoringDashboard() {
                             <Badge variant="destructive">성능 저하</Badge>
                           )}
                           {endpoint.avgResponseTime > 1000 && (
-                            <Badge variant="warning">느림</Badge>
+                            <Badge variant="destructive">느림</Badge>
                           )}
                         </div>
                       </div>
@@ -402,10 +402,10 @@ export default function MonitoringDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {recentErrors?.map((error, index) => (
+                {recentErrors?.map((error: any, index: any) => (
                   <div key={index} className="flex items-start gap-3 p-3 border rounded-lg">
                     <Badge 
-                      variant={error.level === "error" ? "destructive" : "warning"}
+                      variant={error.level === "error" ? "destructive" : "secondary"}
                       className="mt-0.5"
                     >
                       {error.level}
@@ -440,7 +440,7 @@ export default function MonitoringDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {alertHistory?.map((alert, index) => (
+                {alertHistory?.map((alert: any, index: any) => (
                   <div key={index} className="flex items-start gap-3 p-3 border rounded-lg">
                     <div className={`w-2 h-2 rounded-full mt-2 ${getSeverityColor(alert.severity)}`} />
                     <div className="flex-1">

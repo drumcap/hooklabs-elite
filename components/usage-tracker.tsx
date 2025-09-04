@@ -174,7 +174,7 @@ export default function UsageTracker({ showHeader = true, compact = false }: Usa
       {/* 사용량 경고 */}
       {usageAlerts && usageAlerts.length > 0 && (
         <div className="space-y-3">
-          {usageAlerts.map((alert, index) => (
+          {usageAlerts.map((alert: any, index: number) => (
             <Alert key={index} variant={alert.severity === "error" ? "destructive" : "default"}>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
@@ -357,7 +357,7 @@ export default function UsageTracker({ showHeader = true, compact = false }: Usa
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
                       dataKey="hour"
-                      formatter={(value) => `${value}시`}
+                      tickFormatter={(value) => `${value}시`}
                       fontSize={12}
                     />
                     <YAxis fontSize={12} />
@@ -397,7 +397,7 @@ export default function UsageTracker({ showHeader = true, compact = false }: Usa
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                           outerRadius={80}
                           fill="#8884d8"
                           dataKey="value"

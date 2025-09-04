@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { api } from '@/convex/_generated/api';
-import { withApiMonitoring } from '@/lib/monitoring/apiMonitoring';
 
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL!;
 const convexClient = new ConvexHttpClient(convexUrl);
 
-export const POST = withApiMonitoring(
-  async (req: NextRequest) => {
+export async function POST(req: NextRequest) {
     try {
       const body = await req.json();
 
@@ -22,6 +20,4 @@ export const POST = withApiMonitoring(
         { status: 500 }
       );
     }
-  },
-  { endpoint: '/api/monitoring/web-vitals' }
-);
+}

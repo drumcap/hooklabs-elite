@@ -24,7 +24,9 @@ import {
   Award,
   RefreshCw,
   Download,
-  Filter
+  Filter,
+  Clock,
+  Twitter
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -168,7 +170,7 @@ export default function AnalyticsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">모든 페르소나</SelectItem>
-                  {personas?.map((persona) => (
+                  {personas?.map((persona: any) => (
                     <SelectItem key={persona._id} value={persona._id}>
                       {persona.name}
                     </SelectItem>

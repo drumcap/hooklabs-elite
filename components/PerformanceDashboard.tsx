@@ -236,51 +236,51 @@ export function PerformanceDashboard() {
 
   if (isLoading) {
     return (
-      <div className=\"flex items-center justify-center h-64\">
-        <div className=\"animate-spin rounded-full h-8 w-8 border-b-2 border-primary\"></div>
-        <span className=\"ml-2\">성능 데이터 로딩 중...</span>
+      <div className={"flex items-center justify-center h-64"}>
+        <div className={"animate-spin rounded-full h-8 w-8 border-b-2 border-primary"}></div>
+        <span className={"ml-2"}>성능 데이터 로딩 중...</span>
       </div>
     );
   }
 
   return (
-    <div className=\"space-y-6\">
+    <div className={"space-y-6"}>
       {/* 헤더 */}
-      <div className=\"flex items-center justify-between\">
+      <div className={"flex items-center justify-between"}>
         <div>
-          <h1 className=\"text-3xl font-bold\">성능 모니터링 대시보드</h1>
-          <p className=\"text-muted-foreground\">
+          <h1 className="text-3xl font-bold">성능 모니터링 대시보드</h1>
+          <p className="text-muted-foreground">
             실시간 성능 메트릭 및 시스템 상태 모니터링
           </p>
         </div>
         
-        <div className=\"flex items-center space-x-4\">
-          <div className=\"flex items-center space-x-2\">
-            <span className=\"text-sm\">실시간 업데이트</span>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm">실시간 업데이트</span>
             <Switch 
               checked={isRealTimeEnabled} 
               onCheckedChange={setIsRealTimeEnabled} 
             />
           </div>
           
-          <div className=\"flex items-center space-x-2\">
+          <div className="flex items-center space-x-2">
             <Button
               variant={selectedTimeRange === '1h' ? 'default' : 'outline'}
-              size=\"sm\"
+              size="sm"
               onClick={() => setSelectedTimeRange('1h')}
             >
               1시간
             </Button>
             <Button
               variant={selectedTimeRange === '24h' ? 'default' : 'outline'}
-              size=\"sm\"
+              size="sm"
               onClick={() => setSelectedTimeRange('24h')}
             >
               24시간
             </Button>
             <Button
               variant={selectedTimeRange === '7d' ? 'default' : 'outline'}
-              size=\"sm\"
+              size="sm"
               onClick={() => setSelectedTimeRange('7d')}
             >
               7일
@@ -292,31 +292,31 @@ export function PerformanceDashboard() {
       {/* 전체 성능 점수 */}
       <Card>
         <CardHeader>
-          <CardTitle className=\"flex items-center gap-2\">
-            <Gauge className=\"h-5 w-5\" />
+          <CardTitle className="flex items-center gap-2">
+            <Gauge className="h-5 w-5" />
             전체 성능 점수
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className=\"flex items-center justify-between\">
-            <div className=\"flex items-center space-x-4\">
-              <div className=\"text-4xl font-bold text-primary\">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="text-4xl font-bold text-primary">
                 {overallPerformanceScore}
               </div>
-              <div className=\"text-lg text-muted-foreground\">/100</div>
+              <div className="text-lg text-muted-foreground">/100</div>
             </div>
             
             <Badge 
               variant={overallPerformanceScore >= 80 ? 'default' : 
                       overallPerformanceScore >= 60 ? 'secondary' : 'destructive'}
-              className=\"text-lg px-4 py-2\"
+              className="text-lg px-4 py-2"
             >
               {overallPerformanceScore >= 80 ? '우수' : 
                overallPerformanceScore >= 60 ? '보통' : '개선 필요'}
             </Badge>
           </div>
           
-          <div className=\"mt-4 w-full bg-muted h-2 rounded\">
+          <div className="mt-4 w-full bg-muted h-2 rounded">
             <div 
               className={`h-2 rounded transition-all duration-300 ${ 
                 overallPerformanceScore >= 80 ? 'bg-green-500' : 
@@ -330,32 +330,32 @@ export function PerformanceDashboard() {
 
       {/* 알림 패널 */}
       {alerts.length > 0 && (
-        <Card className=\"border-orange-200 bg-orange-50\">
+        <Card className="border-orange-200 bg-orange-50">
           <CardHeader>
-            <CardTitle className=\"flex items-center gap-2 text-orange-800\">
-              <AlertTriangle className=\"h-5 w-5\" />
+            <CardTitle className="flex items-center gap-2 text-orange-800">
+              <AlertTriangle className="h-5 w-5" />
               성능 알림 ({alerts.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className=\"space-y-2\">
+            <div className="space-y-2">
               {alerts.slice(0, 3).map((alert) => (
-                <div key={alert.id} className=\"flex items-center justify-between p-2 bg-white rounded border\">
-                  <div className=\"flex items-center space-x-2\">
+                <div key={alert.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                  <div className="flex items-center space-x-2">
                     <Badge variant={alert.type === 'error' ? 'destructive' : 'secondary'}>
                       {alert.type}
                     </Badge>
-                    <span className=\"text-sm\">{alert.message}</span>
+                    <span className="text-sm">{alert.message}</span>
                   </div>
-                  <span className=\"text-xs text-muted-foreground\">
+                  <span className="text-xs text-muted-foreground">
                     {new Date(alert.timestamp).toLocaleTimeString()}
                   </span>
                 </div>
               ))}
               
               {alerts.length > 3 && (
-                <div className=\"text-center pt-2\">
-                  <Button variant=\"outline\" size=\"sm\">
+                <div className="text-center pt-2">
+                  <Button variant="outline" size="sm">
                     {alerts.length - 3}개 더 보기
                   </Button>
                 </div>
@@ -366,32 +366,32 @@ export function PerformanceDashboard() {
       )}
 
       {/* 메인 메트릭 탭 */}
-      <Tabs defaultValue=\"core-web-vitals\" className=\"space-y-4\">
-        <TabsList className=\"grid w-full grid-cols-5\">
-          <TabsTrigger value=\"core-web-vitals\">Core Web Vitals</TabsTrigger>
-          <TabsTrigger value=\"api-performance\">API 성능</TabsTrigger>
-          <TabsTrigger value=\"system-metrics\">시스템 메트릭</TabsTrigger>
-          <TabsTrigger value=\"user-experience\">사용자 경험</TabsTrigger>
-          <TabsTrigger value=\"real-time-sync\">실시간 동기화</TabsTrigger>
+      <Tabs defaultValue="core-web-vitals" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="core-web-vitals">Core Web Vitals</TabsTrigger>
+          <TabsTrigger value="api-performance">API 성능</TabsTrigger>
+          <TabsTrigger value="system-metrics">시스템 메트릭</TabsTrigger>
+          <TabsTrigger value="user-experience">사용자 경험</TabsTrigger>
+          <TabsTrigger value="real-time-sync">실시간 동기화</TabsTrigger>
         </TabsList>
 
         {/* Core Web Vitals 탭 */}
-        <TabsContent value=\"core-web-vitals\" className=\"space-y-4\">
-          <div className=\"grid gap-4 md:grid-cols-3\">
+        <TabsContent value="core-web-vitals" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-3">
             <Card>
-              <CardHeader className=\"flex flex-row items-center justify-between space-y-0 pb-2\">
-                <CardTitle className=\"text-sm font-medium\">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
                   LCP (Largest Contentful Paint)
                 </CardTitle>
-                <Activity className=\"h-4 w-4 text-muted-foreground\" />
+                <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className=\"text-2xl font-bold\">{Math.round(coreWebVitals.lcp)}ms</div>
+                <div className="text-2xl font-bold">{Math.round(coreWebVitals.lcp)}ms</div>
                 <div className={`text-xs ${getMetricColor(getLCPGrade(coreWebVitals.lcp))}`}>
                   {getLCPGrade(coreWebVitals.lcp) === 'good' ? '우수' :
                    getLCPGrade(coreWebVitals.lcp) === 'needs-improvement' ? '개선 필요' : '불량'}
                 </div>
-                <div className=\"mt-2 w-full bg-muted h-1 rounded\">
+                <div className="mt-2 w-full bg-muted h-1 rounded">
                   <div 
                     className={`h-1 rounded transition-all duration-300 ${
                       getLCPGrade(coreWebVitals.lcp) === 'good' ? 'bg-green-500' :
@@ -404,19 +404,19 @@ export function PerformanceDashboard() {
             </Card>
 
             <Card>
-              <CardHeader className=\"flex flex-row items-center justify-between space-y-0 pb-2\">
-                <CardTitle className=\"text-sm font-medium\">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
                   FID (First Input Delay)
                 </CardTitle>
-                <Zap className=\"h-4 w-4 text-muted-foreground\" />
+                <Zap className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className=\"text-2xl font-bold\">{Math.round(coreWebVitals.fid)}ms</div>
+                <div className="text-2xl font-bold">{Math.round(coreWebVitals.fid)}ms</div>
                 <div className={`text-xs ${getMetricColor(getFIDGrade(coreWebVitals.fid))}`}>
                   {getFIDGrade(coreWebVitals.fid) === 'good' ? '우수' :
                    getFIDGrade(coreWebVitals.fid) === 'needs-improvement' ? '개선 필요' : '불량'}
                 </div>
-                <div className=\"mt-2 w-full bg-muted h-1 rounded\">
+                <div className="mt-2 w-full bg-muted h-1 rounded">
                   <div 
                     className={`h-1 rounded transition-all duration-300 ${
                       getFIDGrade(coreWebVitals.fid) === 'good' ? 'bg-green-500' :
@@ -429,19 +429,19 @@ export function PerformanceDashboard() {
             </Card>
 
             <Card>
-              <CardHeader className=\"flex flex-row items-center justify-between space-y-0 pb-2\">
-                <CardTitle className=\"text-sm font-medium\">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
                   CLS (Cumulative Layout Shift)
                 </CardTitle>
-                <Monitor className=\"h-4 w-4 text-muted-foreground\" />
+                <Monitor className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className=\"text-2xl font-bold\">{coreWebVitals.cls.toFixed(3)}</div>
+                <div className="text-2xl font-bold">{coreWebVitals.cls.toFixed(3)}</div>
                 <div className={`text-xs ${getMetricColor(getCLSGrade(coreWebVitals.cls))}`}>
                   {getCLSGrade(coreWebVitals.cls) === 'good' ? '우수' :
                    getCLSGrade(coreWebVitals.cls) === 'needs-improvement' ? '개선 필요' : '불량'}
                 </div>
-                <div className=\"mt-2 w-full bg-muted h-1 rounded\">
+                <div className="mt-2 w-full bg-muted h-1 rounded">
                   <div 
                     className={`h-1 rounded transition-all duration-300 ${
                       getCLSGrade(coreWebVitals.cls) === 'good' ? 'bg-green-500' :
@@ -456,45 +456,45 @@ export function PerformanceDashboard() {
         </TabsContent>
 
         {/* API 성능 탭 */}
-        <TabsContent value=\"api-performance\" className=\"space-y-4\">
-          <div className=\"grid gap-4\">
+        <TabsContent value="api-performance" className="space-y-4">
+          <div className="grid gap-4">
             {apiMetrics.map((api) => (
               <Card key={api.endpoint}>
                 <CardHeader>
-                  <CardTitle className=\"flex items-center gap-2\">
-                    {api.endpoint.includes('ai') ? <Brain className=\"h-5 w-5\" /> :
-                     api.endpoint.includes('social') ? <Share2 className=\"h-5 w-5\" /> :
-                     <Database className=\"h-5 w-5\" />}
+                  <CardTitle className="flex items-center gap-2">
+                    {api.endpoint.includes('ai') ? <Brain className="h-5 w-5" /> :
+                     api.endpoint.includes('social') ? <Share2 className="h-5 w-5" /> :
+                     <Database className="h-5 w-5" />}
                     {api.endpoint}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className=\"grid grid-cols-4 gap-4\">
+                  <div className="grid grid-cols-4 gap-4">
                     <div>
-                      <div className=\"text-sm text-muted-foreground\">평균 응답 시간</div>
-                      <div className=\"text-2xl font-bold\">{Math.round(api.averageResponseTime)}ms</div>
+                      <div className="text-sm text-muted-foreground">평균 응답 시간</div>
+                      <div className="text-2xl font-bold">{Math.round(api.averageResponseTime)}ms</div>
                     </div>
                     <div>
-                      <div className=\"text-sm text-muted-foreground\">성공률</div>
-                      <div className=\"text-2xl font-bold text-green-600\">{api.successRate.toFixed(1)}%</div>
+                      <div className="text-sm text-muted-foreground">성공률</div>
+                      <div className="text-2xl font-bold text-green-600">{api.successRate.toFixed(1)}%</div>
                     </div>
                     <div>
-                      <div className=\"text-sm text-muted-foreground\">에러율</div>
-                      <div className=\"text-2xl font-bold text-red-600\">{api.errorRate.toFixed(1)}%</div>
+                      <div className="text-sm text-muted-foreground">에러율</div>
+                      <div className="text-2xl font-bold text-red-600">{api.errorRate.toFixed(1)}%</div>
                     </div>
                     <div>
-                      <div className=\"text-sm text-muted-foreground\">요청 수</div>
-                      <div className=\"text-2xl font-bold\">{api.requestCount}</div>
+                      <div className="text-sm text-muted-foreground">요청 수</div>
+                      <div className="text-2xl font-bold">{api.requestCount}</div>
                     </div>
                   </div>
                   
                   {/* 응답 시간 바 차트 */}
-                  <div className=\"mt-4\">
-                    <div className=\"flex justify-between text-xs text-muted-foreground mb-1\">
+                  <div className="mt-4">
+                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
                       <span>응답 시간</span>
                       <span>{Math.round(api.averageResponseTime)}ms</span>
                     </div>
-                    <div className=\"w-full bg-muted h-2 rounded\">
+                    <div className="w-full bg-muted h-2 rounded">
                       <div 
                         className={`h-2 rounded transition-all duration-300 ${
                           api.averageResponseTime < 500 ? 'bg-green-500' :
@@ -511,16 +511,16 @@ export function PerformanceDashboard() {
         </TabsContent>
 
         {/* 시스템 메트릭 탭 */}
-        <TabsContent value=\"system-metrics\" className=\"space-y-4\">
-          <div className=\"grid gap-4 md:grid-cols-2 lg:grid-cols-4\">
+        <TabsContent value="system-metrics" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
-              <CardHeader className=\"flex flex-row items-center justify-between space-y-0 pb-2\">
-                <CardTitle className=\"text-sm font-medium\">CPU 사용률</CardTitle>
-                <Monitor className=\"h-4 w-4 text-muted-foreground\" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">CPU 사용률</CardTitle>
+                <Monitor className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className=\"text-2xl font-bold\">{Math.round(systemMetrics.cpuUsage)}%</div>
-                <div className=\"mt-2 w-full bg-muted h-2 rounded\">
+                <div className="text-2xl font-bold">{Math.round(systemMetrics.cpuUsage)}%</div>
+                <div className="mt-2 w-full bg-muted h-2 rounded">
                   <div 
                     className={`h-2 rounded transition-all duration-300 ${
                       systemMetrics.cpuUsage < 50 ? 'bg-green-500' :
@@ -533,13 +533,13 @@ export function PerformanceDashboard() {
             </Card>
 
             <Card>
-              <CardHeader className=\"flex flex-row items-center justify-between space-y-0 pb-2\">
-                <CardTitle className=\"text-sm font-medium\">메모리 사용률</CardTitle>
-                <Database className=\"h-4 w-4 text-muted-foreground\" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">메모리 사용률</CardTitle>
+                <Database className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className=\"text-2xl font-bold\">{Math.round(systemMetrics.memoryUsage)}%</div>
-                <div className=\"mt-2 w-full bg-muted h-2 rounded\">
+                <div className="text-2xl font-bold">{Math.round(systemMetrics.memoryUsage)}%</div>
+                <div className="mt-2 w-full bg-muted h-2 rounded">
                   <div 
                     className={`h-2 rounded transition-all duration-300 ${
                       systemMetrics.memoryUsage < 60 ? 'bg-green-500' :
@@ -552,65 +552,65 @@ export function PerformanceDashboard() {
             </Card>
 
             <Card>
-              <CardHeader className=\"flex flex-row items-center justify-between space-y-0 pb-2\">
-                <CardTitle className=\"text-sm font-medium\">활성 사용자</CardTitle>
-                <Activity className=\"h-4 w-4 text-muted-foreground\" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">활성 사용자</CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className=\"text-2xl font-bold\">{systemMetrics.activeUsers}</div>
-                <p className=\"text-xs text-muted-foreground\">현재 접속 중</p>
+                <div className="text-2xl font-bold">{systemMetrics.activeUsers}</div>
+                <p className="text-xs text-muted-foreground">현재 접속 중</p>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className=\"flex flex-row items-center justify-between space-y-0 pb-2\">
-                <CardTitle className=\"text-sm font-medium\">RPS</CardTitle>
-                <Zap className=\"h-4 w-4 text-muted-foreground\" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">RPS</CardTitle>
+                <Zap className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className=\"text-2xl font-bold\">{systemMetrics.requestsPerSecond}</div>
-                <p className=\"text-xs text-muted-foreground\">초당 요청 수</p>
+                <div className="text-2xl font-bold">{systemMetrics.requestsPerSecond}</div>
+                <p className="text-xs text-muted-foreground">초당 요청 수</p>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
         {/* 실시간 동기화 탭 */}
-        <TabsContent value=\"real-time-sync\" className=\"space-y-4\">
+        <TabsContent value="real-time-sync" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Convex 실시간 동기화 성능</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className=\"grid gap-4 md:grid-cols-3\">
-                <div className=\"text-center\">
-                  <div className=\"text-2xl font-bold text-green-600\">99.9%</div>
-                  <div className=\"text-sm text-muted-foreground\">동기화 성공률</div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">99.9%</div>
+                  <div className="text-sm text-muted-foreground">동기화 성공률</div>
                 </div>
-                <div className=\"text-center\">
-                  <div className=\"text-2xl font-bold\">45ms</div>
-                  <div className=\"text-sm text-muted-foreground\">평균 동기화 지연</div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">45ms</div>
+                  <div className="text-sm text-muted-foreground">평균 동기화 지연</div>
                 </div>
-                <div className=\"text-center\">
-                  <div className=\"text-2xl font-bold text-blue-600\">1,247</div>
-                  <div className=\"text-sm text-muted-foreground\">활성 구독</div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">1,247</div>
+                  <div className="text-sm text-muted-foreground">활성 구독</div>
                 </div>
               </div>
               
-              <div className=\"mt-6 p-4 bg-muted rounded-lg\">
-                <h4 className=\"font-semibold mb-2\">실시간 동기화 상태</h4>
-                <div className=\"space-y-2 text-sm\">
-                  <div className=\"flex justify-between\">
+              <div className="mt-6 p-4 bg-muted rounded-lg">
+                <h4 className="font-semibold mb-2">실시간 동기화 상태</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
                     <span>WebSocket 연결:</span>
-                    <Badge variant=\"default\">활성</Badge>
+                    <Badge variant="default">활성</Badge>
                   </div>
-                  <div className=\"flex justify-between\">
+                  <div className="flex justify-between">
                     <span>데이터베이스 동기화:</span>
-                    <Badge variant=\"default\">정상</Badge>
+                    <Badge variant="default">정상</Badge>
                   </div>
-                  <div className=\"flex justify-between\">
+                  <div className="flex justify-between">
                     <span>마지막 하트비트:</span>
-                    <span className=\"text-muted-foreground\">방금 전</span>
+                    <span className="text-muted-foreground">방금 전</span>
                   </div>
                 </div>
               </div>

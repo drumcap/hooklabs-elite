@@ -1,7 +1,7 @@
 "use node";
 
 import { v } from "convex/values";
-import { action, ActionBuilder } from "../_generated/server";
+import { action } from "../_generated/server";
 import { api } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 
@@ -213,21 +213,7 @@ function calculateTrendingScore(content: string): number {
 }
 
 // AI 콘텐츠 변형 생성
-export const generateVariants: ActionBuilder<
-  {
-    postId: string;
-    personaId: string;
-    originalContent: string;
-    platforms: string[];
-    variantCount?: number;
-  },
-  Promise<{
-    success: boolean;
-    variantIds: string[];
-    creditsUsed: number;
-    totalVariants: number;
-  }>
-> = action({
+export const generateVariants = action({
   args: {
     postId: v.id("socialPosts"),
     personaId: v.id("personas"),
@@ -389,8 +375,8 @@ ${systemPrompt}
       return {
         success: true,
         variantIds,
-        totalCreditsUsed: totalCreditsNeeded,
-        generatedCount: variantIds.length,
+        creditsUsed: totalCreditsNeeded,
+        totalVariants: variantIds.length,
       };
 
     } catch (error) {

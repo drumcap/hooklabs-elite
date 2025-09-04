@@ -4,11 +4,11 @@ import { CheckCircle, AlertCircle, Loader2, Gift, Percent, DollarSign } from "lu
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, getCouponValueText } from "@/lib/coupon-utils";
-import type { CouponValidationResult } from "@/types/coupon";
+import type { CouponValidationResult as CouponValidationType } from "@/types/coupon";
 import { cn } from "@/lib/utils";
 
 interface CouponValidationResultProps {
-  validation?: CouponValidationResult;
+  validation?: CouponValidationType;
   isLoading: boolean;
   isApplied: boolean;
   className?: string;

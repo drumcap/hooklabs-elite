@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, action } from "../_generated/server";
+import { mutation, action, query } from "../_generated/server";
 
 // 📈 데이터베이스 최적화 마이그레이션 스크립트
 

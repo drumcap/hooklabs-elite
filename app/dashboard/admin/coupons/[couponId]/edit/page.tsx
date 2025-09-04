@@ -17,7 +17,7 @@ export default function EditCouponPage() {
 
   // Fetch coupon data - using getAllCoupons as a workaround
   const allCoupons = useQuery(api.coupons.getAllCoupons, { limit: 1000 });
-  const coupon = allCoupons?.find(c => c._id === couponId);
+  const coupon = allCoupons?.find((c: any) => c._id === couponId);
 
   const handleSuccess = () => {
     router.push(`/dashboard/admin/coupons/${couponId}`);

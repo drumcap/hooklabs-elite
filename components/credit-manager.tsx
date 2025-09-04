@@ -92,11 +92,11 @@ export default function CreditManager() {
       await useCoupon({
         userId: user.id as any,
         couponCode: couponCode.trim(),
-        discountAmount: validation.coupon.discountAmount || validation.coupon.value,
-        currency: validation.coupon.currency,
+        discountAmount: validation.coupon?.discountAmount || validation.coupon?.value,
+        currency: validation.coupon?.currency,
       });
 
-      setCouponSuccess(`쿠폰이 성공적으로 적용되었습니다! (${validation.coupon.name})`);
+      setCouponSuccess(`쿠폰이 성공적으로 적용되었습니다! (${validation.coupon?.name})`);
       setCouponCode("");
     } catch (error) {
       console.error("Coupon error:", error);
@@ -209,7 +209,7 @@ export default function CreditManager() {
               <div>
                 <strong>30일 내 만료 예정 크레딧이 있습니다</strong>
                 <p className="text-sm mt-1">
-                  {expiringCredits.reduce((sum, credit) => sum + credit.amount, 0).toLocaleString()} 
+                  {expiringCredits.reduce((sum: number, credit: any) => sum + credit.amount, 0).toLocaleString()} 
                   크레딧이 만료 예정입니다. 빠른 시일 내에 사용해주세요.
                 </p>
               </div>
@@ -264,11 +264,11 @@ export default function CreditManager() {
                 <div className="flex items-center text-green-700">
                   <CheckCircle className="mr-2 h-4 w-4" />
                   <div>
-                    <div className="font-medium">{validateCoupon.coupon.name}</div>
+                    <div className="font-medium">{validateCoupon.coupon?.name}</div>
                     <div className="text-sm">
-                      {validateCoupon.coupon.description}
-                      {validateCoupon.coupon.type === "credits" && 
-                        ` (+${validateCoupon.coupon.value} 크레딧)`
+                      {validateCoupon.coupon?.description}
+                      {validateCoupon.coupon?.type === "credits" && 
+                        ` (+${validateCoupon.coupon?.value} 크레딧)`
                       }
                     </div>
                   </div>
@@ -318,7 +318,7 @@ export default function CreditManager() {
             <CardContent>
               {creditHistory && creditHistory.length > 0 ? (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {creditHistory.map((credit) => (
+                  {creditHistory.map((credit: any) => (
                     <div key={credit._id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center space-x-3">
                         {getCreditTypeIcon(credit.type)}
@@ -363,7 +363,7 @@ export default function CreditManager() {
             <CardContent>
               {couponUsages && couponUsages.length > 0 ? (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {couponUsages.map((usage) => (
+                  {couponUsages.map((usage: any) => (
                     <div key={usage._id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center space-x-3">
                         <Tag className="h-4 w-4 text-blue-600" />
@@ -411,7 +411,7 @@ export default function CreditManager() {
             <CardContent>
               {expiringCredits && expiringCredits.length > 0 ? (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {expiringCredits.map((credit) => (
+                  {expiringCredits.map((credit: any) => (
                     <div key={credit._id} className="flex items-center justify-between p-3 border rounded-lg border-orange-200 bg-orange-50">
                       <div className="flex items-center space-x-3">
                         <Clock className="h-4 w-4 text-orange-600" />

@@ -43,7 +43,7 @@ export default function CouponDetailPage() {
 
   // Fetch coupon data - using getAllCoupons as a workaround since we don't have getCoupon
   const allCoupons = useQuery(api.coupons.getAllCoupons, { limit: 1000 });
-  const coupon = allCoupons?.find(c => c._id === couponId);
+  const coupon = allCoupons?.find((c: any) => c._id === couponId);
 
   const handleToggleStatus = async () => {
     if (!coupon) return;
@@ -191,11 +191,11 @@ export default function CouponDetailPage() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">타입:</span>
                 <span>
-                  {{
+                  {({
                     percentage: '퍼센트 할인',
                     fixed_amount: '고정 금액',
                     credits: '크레딧 지급'
-                  }[coupon.type]}
+                  } as any)[coupon.type]}
                 </span>
               </div>
               

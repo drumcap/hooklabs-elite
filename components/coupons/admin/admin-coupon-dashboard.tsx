@@ -379,10 +379,6 @@ export function AdminCouponDashboard({
                   selectedCoupons.has(coupon._id) && "ring-2 ring-primary ring-offset-2",
                   showActions && "ml-8"
                 )}
-                onClick={() => {
-                  onCouponSelect?.(coupon._id);
-                  router.push(`/dashboard/admin/coupons/${coupon._id}`);
-                }}
               />
             </div>
           ))}

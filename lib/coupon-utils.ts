@@ -1,6 +1,16 @@
 import type { Coupon, CouponStatus } from "@/types/coupon";
 
 /**
+ * 쿠폰 상태별 색상 정의
+ */
+export const COUPON_STATUS_COLORS = {
+  active: '#10b981',      // green-500
+  inactive: '#6b7280',    // gray-500  
+  expired: '#ef4444',     // red-500
+  depleted: '#f59e0b',    // amber-500
+} as const;
+
+/**
  * 쿠폰 상태를 계산하는 유틸리티 함수
  */
 export const getCouponStatus = (coupon: Coupon): CouponStatus => {

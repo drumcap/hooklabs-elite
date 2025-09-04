@@ -37,11 +37,11 @@ export default function SocialDashboard() {
   const personas = useQuery(api.personas.list)
   const socialPosts = useQuery(api.socialPosts.getRecent, { limit: 10 })
   const scheduledPosts = useQuery(api.scheduledPosts.getUpcoming, { limit: 5 })
-  const socialAccounts = useQuery(api.socialAccounts.list)
-  const analytics = useQuery(api.analytics.getDashboardStats)
+  const socialAccounts = useQuery(api.socialAccounts.list, {})
+  const analytics = useQuery(api.analytics.getDashboardStats, {})
 
-  const activePersonas = personas?.filter(p => p.isActive) || []
-  const activeAccounts = socialAccounts?.filter(acc => acc.isActive) || []
+  const activePersonas = personas?.filter((p: any) => p.isActive) || []
+  const activeAccounts = socialAccounts?.filter((acc: any) => acc.isActive) || []
   const recentPosts = socialPosts?.slice(0, 5) || []
   const upcomingPosts = scheduledPosts || []
 
@@ -229,7 +229,7 @@ export default function SocialDashboard() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {activePersonas.slice(0, 4).map((persona) => (
+                      {activePersonas.slice(0, 4).map((persona: any) => (
                         <Card key={persona._id} className="p-4">
                           <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">

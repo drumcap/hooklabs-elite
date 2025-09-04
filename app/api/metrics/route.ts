@@ -165,7 +165,9 @@ class MetricsCollector {
 }
 
 // HTTP 요청 메트릭 미들웨어에서 사용할 전역 인스턴스
-export const metricsCollector = MetricsCollector.getInstance();
+// Next.js API Route에서는 named export 사용 불가
+// 대신 GET 핸들러에서 직접 사용하거나 별도 파일로 분리
+const metricsCollector = MetricsCollector.getInstance();
 
 // API Route Handler
 export async function GET(request: NextRequest) {

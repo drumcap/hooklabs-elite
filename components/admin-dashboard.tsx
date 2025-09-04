@@ -288,7 +288,7 @@ export default function AdminDashboard({ isAdmin = false }: AdminDashboardProps)
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }: any) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                         outerRadius={80}
                         fill="#8884d8"
                         dataKey="value"
@@ -431,7 +431,7 @@ export default function AdminDashboard({ isAdmin = false }: AdminDashboardProps)
                           <span className="font-medium">{type}</span>
                         </div>
                         <Badge variant="outline">
-                          {usage.toLocaleString()}
+                          {(usage as number).toLocaleString()}
                         </Badge>
                       </div>
                     ))}
@@ -456,7 +456,7 @@ export default function AdminDashboard({ isAdmin = false }: AdminDashboardProps)
             <CardContent className="p-6">
               {allCoupons && allCoupons.length > 0 ? (
                 <div className="space-y-3">
-                  {allCoupons.map((coupon) => (
+                  {allCoupons.map((coupon: any) => (
                     <div key={coupon._id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="space-y-1">
                         <div className="font-medium">{coupon.name}</div>

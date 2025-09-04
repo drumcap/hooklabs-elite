@@ -58,7 +58,7 @@ export const PersonaManager = memo(function PersonaManager({ className }: Person
   const filteredPersonas = useMemo(() => {
     if (!personas) return []
     
-    return personas.filter(persona => {
+    return personas.filter((persona: any) => {
       const matchesSearch = persona.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            persona.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            persona.interests.some(interest => 
@@ -86,7 +86,7 @@ export const PersonaManager = memo(function PersonaManager({ className }: Person
 
   // 메모이제이션된 게시물 수 계산 함수
   const getPostCount = useCallback((personaId: Id<"personas">) => {
-    return postCounts?.find(count => count.personaId === personaId)?.postCount || 0
+    return postCounts?.find((count: any) => count.personaId === personaId)?.postCount || 0
   }, [postCounts])
 
   // 메모이제이션된 이벤트 핸들러들

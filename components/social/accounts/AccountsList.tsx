@@ -120,7 +120,7 @@ function AccountCard({
   const getVerificationBadge = () => {
     if (account.verificationStatus === "verified") {
       return (
-        <CheckCircle className="h-4 w-4 text-blue-500" title="인증된 계정" />
+        <CheckCircle className="h-4 w-4 text-blue-500" />
       )
     }
     return null
@@ -290,7 +290,7 @@ export function AccountsList({ onAddAccount, className }: AccountsListProps) {
   const [actionLoading, setActionLoading] = useState<Id<"socialAccounts"> | null>(null)
 
   // Query social accounts
-  const socialAccounts = useQuery(api.socialAccounts.list) as SocialAccount[] | undefined
+  const socialAccounts = useQuery(api.socialAccounts.list, {}) as SocialAccount[] | undefined
 
   // Mutations
   const toggleActive = useMutation(api.socialAccounts.toggleActive)

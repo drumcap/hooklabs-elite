@@ -266,7 +266,7 @@ export default function SubscriptionManager() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {userPayments.map((payment) => (
+              {userPayments.map((payment: any) => (
                 <div 
                   key={payment._id} 
                   className="flex items-center justify-between p-3 rounded-lg border"

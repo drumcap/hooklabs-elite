@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useCallback, useRef } from 'react'
-import { getCLS, getFID, getFCP, getLCP, getTTFB, onTTFB, onCLS, onFID, onLCP, onINP, onFCP } from 'web-vitals'
+import { onTTFB, onCLS, onFID, onLCP, onINP, onFCP } from 'web-vitals'
 
 interface MetricData {
   name: string

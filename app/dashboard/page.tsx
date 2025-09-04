@@ -11,8 +11,7 @@ const ChartAreaInteractive = dynamic(
       <div className="px-4 lg:px-6">
         <Skeleton className="h-[400px] w-full" />
       </div>
-    ),
-    ssr: false // 차트는 클라이언트 사이드에서만 렌더링
+    )
   }
 )
 

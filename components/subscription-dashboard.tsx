@@ -185,7 +185,7 @@ export default function SubscriptionDashboard() {
       {/* 사용량 경고 */}
       {usageAlerts && usageAlerts.length > 0 && (
         <div className="space-y-3">
-          {usageAlerts.map((alert, index) => (
+          {usageAlerts.map((alert: any, index: number) => (
             <Alert key={index} variant={alert.severity === "error" ? "destructive" : "default"}>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>{alert.message}</AlertDescription>
@@ -432,7 +432,7 @@ export default function SubscriptionDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {userPayments.map((payment) => (
+                  {userPayments.map((payment: any) => (
                     <div 
                       key={payment._id} 
                       className="flex items-center justify-between p-3 rounded-lg border"

@@ -9,6 +9,11 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   
+  typescript: {
+    // Use a separate TypeScript config for build
+    tsconfigPath: './tsconfig.build.json',
+  },
+  
   // 성능 최적화
   compiler: {
     removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,

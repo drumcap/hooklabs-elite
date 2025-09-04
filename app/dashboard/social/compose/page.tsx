@@ -9,15 +9,14 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 // 동적 임포트로 큰 컴포넌트들을 레이지 로딩
 const ContentEditor = dynamic(
-  () => import("@/components/social/content/ContentEditor"),
+  () => import("@/components/social/content/ContentEditor").then(mod => ({ default: mod.ContentEditor })),
   {
-    loading: () => <Skeleton className="h-96 w-full" />,
-    ssr: false
+    loading: () => <Skeleton className="h-96 w-full" />
   }
 )
 
 const VariantGenerator = dynamic(
-  () => import("@/components/social/content/VariantGenerator"),
+  () => import("@/components/social/content/VariantGenerator").then(mod => ({ default: mod.VariantGenerator })),
   {
     loading: () => (
       <div className="space-y-4">
@@ -28,29 +27,26 @@ const VariantGenerator = dynamic(
           ))}
         </div>
       </div>
-    ),
-    ssr: false
+    )
   }
 )
 
 const ContentPreview = dynamic(
-  () => import("@/components/social/content/ContentPreview"),
+  () => import("@/components/social/content/ContentPreview").then(mod => ({ default: mod.ContentPreview })),
   {
     loading: () => (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Skeleton className="h-64 w-full" />
         <Skeleton className="h-64 w-full" />
       </div>
-    ),
-    ssr: false
+    )
   }
 )
 
 const PostScheduler = dynamic(
-  () => import("@/components/social/scheduling/PostScheduler"),
+  () => import("@/components/social/scheduling/PostScheduler").then(mod => ({ default: mod.PostScheduler })),
   {
-    loading: () => <Skeleton className="h-80 w-full" />,
-    ssr: false
+    loading: () => <Skeleton className="h-80 w-full" />
   }
 )
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -99,8 +95,8 @@ export default function ComposePage() {
   const [isSaving, setIsSaving] = useState(false)
 
   // Query data
-  const personas = useQuery(api.personas.getActive)
-  const socialAccounts = useQuery(api.socialAccounts.list)
+  const personas = useQuery(api.personas.getActive, {})
+  const socialAccounts = useQuery(api.socialAccounts.list, {})
 
   // Mutations
   const createPost = useMutation(api.socialPosts.create)
@@ -109,7 +105,7 @@ export default function ComposePage() {
   const schedulePost = useMutation(api.scheduledPosts.schedule)
 
   const handlePersonaChange = (personaId: Id<"personas">) => {
-    const persona = personas?.find(p => p._id === personaId)
+    const persona = personas?.find((p: any) => p._id === personaId)
     if (persona) {
       setState(prev => ({ ...prev, selectedPersona: persona }))
     }
