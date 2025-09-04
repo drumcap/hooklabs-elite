@@ -46,7 +46,7 @@ interface ApiResponse {
 }
 
 interface ApiSchema {
-  type: string;
+  type?: string;
   format?: string;
   properties?: Record<string, ApiSchema>;
   items?: ApiSchema;
@@ -57,6 +57,10 @@ interface ApiSchema {
   minimum?: number;
   maximum?: number;
   pattern?: string;
+  $ref?: string;
+  default?: any;
+  // Allow any additional properties
+  [key: string]: any;
 }
 
 interface ApiHeader {
@@ -65,11 +69,13 @@ interface ApiHeader {
 }
 
 interface ApiSecurity {
-  type: 'apiKey' | 'http' | 'oauth2' | 'openIdConnect';
+  type?: 'apiKey' | 'http' | 'oauth2' | 'openIdConnect';
   scheme?: string;
   bearerFormat?: string;
   in?: 'query' | 'header' | 'cookie';
   name?: string;
+  // Allow any additional properties for flexibility
+  [key: string]: any;
 }
 
 interface OpenApiSpec {
@@ -641,8 +647,8 @@ export const generateApiDocumentation = action({
           throw new Error('지원하지 않는 문서 형식입니다');
       }
 
-    } catch (error) {
-      throw new Error(`API 문서 생성 실패: ${error.message}`);
+    } catch (error: any) {
+      throw new Error(`API 문서 생성 실패: ${error.message || error}`);
     }
   },
 });
@@ -697,9 +703,9 @@ function generateMarkdownDocs(spec: OpenApiSpec, includeExamples: boolean): stri
             markdown += `#### Request Body\n\n`;
             markdown += `**Required:** ${endpoint.requestBody.required ? 'Yes' : 'No'}\n\n`;
             
-            Object.entries(endpoint.requestBody.content).forEach(([contentType, content]) => {
+            Object.entries(endpoint.requestBody.content).forEach(([contentType, content]: [string, any]) => {
               markdown += `**Content-Type:** \`${contentType}\`\n\n`;
-              if (includeExamples && content.example) {
+              if (includeExamples && content?.example) {
                 markdown += `**Example:**\n\n`;
                 markdown += `\`\`\`json\n${JSON.stringify(content.example, null, 2)}\n\`\`\`\n\n`;
               }
@@ -713,7 +719,7 @@ function generateMarkdownDocs(spec: OpenApiSpec, includeExamples: boolean): stri
             
             if (response.content && includeExamples) {
               Object.entries(response.content).forEach(([contentType, content]: [string, any]) => {
-                if (content.example) {
+                if (content?.example) {
                   markdown += `\`\`\`json\n${JSON.stringify(content.example, null, 2)}\n\`\`\`\n\n`;
                 }
               });

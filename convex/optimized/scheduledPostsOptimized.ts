@@ -27,21 +27,26 @@ export const listOptimized = query({
     const postLookup = new Map(userPosts.map(post => [post._id, post]));
 
     // 2. 인덱스를 활용한 효율적인 쿼리 구성
-    let baseQuery = ctx.db.query("scheduledPosts");
-
-    // 날짜 범위로 먼저 필터링하여 검색 범위 축소
+    // 다양한 인덱스 조건에 따른 쿼리 최적화
+    let baseQuery;
     if (startDate && endDate) {
-      baseQuery = baseQuery.withIndex("byScheduledFor", (q) => 
-        q.gte("scheduledFor", startDate).lte("scheduledFor", endDate)
-      );
+      baseQuery = ctx.db.query("scheduledPosts")
+        .withIndex("byScheduledFor", (q) => 
+          q.gte("scheduledFor", startDate).lte("scheduledFor", endDate)
+        );
     } else if (startDate) {
-      baseQuery = baseQuery.withIndex("byScheduledFor", (q) => 
-        q.gte("scheduledFor", startDate)
-      );
+      baseQuery = ctx.db.query("scheduledPosts")
+        .withIndex("byScheduledFor", (q) => 
+          q.gte("scheduledFor", startDate)
+        );
     } else if (status) {
-      baseQuery = baseQuery.withIndex("byStatus", (q) => q.eq("status", status));
+      baseQuery = ctx.db.query("scheduledPosts")
+        .withIndex("byStatus", (q) => q.eq("status", status));
     } else if (platform) {
-      baseQuery = baseQuery.withIndex("byPlatform", (q) => q.eq("platform", platform));
+      baseQuery = ctx.db.query("scheduledPosts")
+        .withIndex("byPlatform", (q) => q.eq("platform", platform));
+    } else {
+      baseQuery = ctx.db.query("scheduledPosts");
     }
 
     // 3. 배치로 스케줄 조회
@@ -82,7 +87,7 @@ export const listOptimized = query({
         .filter(Boolean) as Array<string>
     );
     const variants = await Promise.all(
-      Array.from(variantIds).map(id => ctx.db.get(id))
+      Array.from(variantIds).map(id => ctx.db.get(id as any))
     );
     const variantLookup = new Map(
       variants.filter(Boolean).map(variant => [variant!._id, variant])

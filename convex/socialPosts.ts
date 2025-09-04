@@ -303,10 +303,11 @@ export const updateMetrics = mutation({
     const currentMetrics = post.metrics || {};
 
     // 플랫폼별 메트릭 업데이트
+    const platformMetrics = currentMetrics?.[platform as keyof typeof currentMetrics] || {};
     const updatedMetrics = {
       ...currentMetrics,
       [platform]: {
-        ...currentMetrics[platform as keyof typeof currentMetrics],
+        ...platformMetrics,
         ...metrics,
       },
       lastUpdatedAt: now,

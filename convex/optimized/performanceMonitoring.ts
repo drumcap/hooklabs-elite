@@ -390,7 +390,7 @@ export const getOptimizationRecommendations = query({
       score: overallScore,
       recommendations: recommendations.sort((a, b) => {
         const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
-        return severityOrder[b.severity] - severityOrder[a.severity];
+        return severityOrder[b.severity as keyof typeof severityOrder] - severityOrder[a.severity as keyof typeof severityOrder];
       }),
       summary: {
         totalIssues: recommendations.length,
@@ -455,8 +455,8 @@ export const comparePerformancePeriods = query({
       '30d': 30 * 24 * 60 * 60 * 1000,
     };
 
-    const currentPeriodMs = periodMs[currentPeriod];
-    const comparisonPeriodMs = periodMs[comparisonPeriod];
+    const currentPeriodMs = periodMs[currentPeriod as keyof typeof periodMs];
+    const comparisonPeriodMs = periodMs[comparisonPeriod as keyof typeof periodMs];
 
     const currentMetrics = [...performanceMetrics, ...metricsBuffer].filter(
       m => now - m.timestamp <= currentPeriodMs
@@ -642,7 +642,7 @@ function calculatePerformanceScore(metrics: PerformanceMetric[]): number {
 function calculateImprovementPotential(recommendations: any[]): number {
   const weights = { critical: 40, high: 30, medium: 20, low: 10 };
   const totalPotential = recommendations.reduce((sum, rec) => {
-    return sum + weights[rec.severity];
+    return sum + weights[rec.severity as keyof typeof weights];
   }, 0);
   
   return Math.min(100, totalPotential);

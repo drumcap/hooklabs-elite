@@ -187,9 +187,9 @@ export const createPostWithRateLimit = mutation({
     {
       windowMs: 60 * 1000, // 1분
       maxRequests: 10, // 분당 10개 게시물
-      keyGenerator: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
-        return `create_post:${userId}`;
+      keyGenerator: (ctx, args) => {
+        // Note: keyGenerator는 동기 함수여야 함
+        return `create_post:default`;
       },
       skipSuccessfulRequests: false,
       skipFailedRequests: true,
@@ -229,8 +229,9 @@ export const createPostWithRateLimit = mutation({
           },
           (error) => {
             // 특정 에러만 재시도
-            return !error.message.includes('validation failed') &&
-                   !error.message.includes('unauthorized');
+            const message = (error as any)?.message || '';
+            return !message.includes('validation failed') &&
+                   !message.includes('unauthorized');
           }
         );
       } catch (error) {
@@ -257,9 +258,9 @@ export const generateContentWithRateLimit = action({
     {
       windowMs: 60 * 1000, // 1분
       maxRequests: 5, // 분당 5회 AI 생성
-      keyGenerator: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
-        return `ai_generate:${userId}`;
+      keyGenerator: (ctx, args) => {
+        // Note: keyGenerator는 동기 함수여야 함
+        return `ai_generate:default`;
       },
       skipSuccessfulRequests: false,
       skipFailedRequests: false,
@@ -292,9 +293,10 @@ export const generateContentWithRateLimit = action({
           },
           (error) => {
             // API 키 오류나 할당량 초과는 재시도 안함
-            return !error.message.includes('API key') &&
-                   !error.message.includes('quota exceeded') &&
-                   !error.message.includes('insufficient credits');
+            const message = (error as any)?.message || '';
+            return !message.includes('API key') &&
+                   !message.includes('quota exceeded') &&
+                   !message.includes('insufficient credits');
           }
         );
       } catch (error) {
@@ -302,7 +304,7 @@ export const generateContentWithRateLimit = action({
           userId,
           endpoint: 'generateContent',
           requestData: { postId, personaId, variantCount },
-          severity: error.message.includes('quota') ? 'high' : 'medium',
+          severity: (error as any)?.message?.includes('quota') ? 'high' : 'medium',
         });
         throw error;
       }

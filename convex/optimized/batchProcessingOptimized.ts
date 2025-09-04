@@ -36,7 +36,7 @@ export const batchCreatePosts = mutation({
     const validPersonaIds = new Set(
       personas
         .filter(p => p && p.userId === userId)
-        .map(p => p._id)
+        .map(p => p!._id)
     );
 
     // 유효한 게시물들만 필터링
@@ -185,10 +185,10 @@ export const batchCreateSchedules = mutation({
     ]);
 
     const validPostIds = new Set(
-      posts.filter(p => p && p.userId === userId).map(p => p._id)
+      posts.filter(p => p && p.userId === userId).map(p => p!._id)
     );
     const validAccountIds = new Set(
-      accounts.filter(a => a && a.userId === userId).map(a => a._id)
+      accounts.filter(a => a && a.userId === userId).map(a => a!._id)
     );
 
     // 유효한 스케줄들만 필터링
@@ -264,27 +264,21 @@ export const aggregateMetricsBatch = mutation({
         // 사용자별 메트릭 계산
         const [posts, generations, analytics] = await Promise.all([
           ctx.db.query("socialPosts")
-            .withIndex("byUserIdAndCreatedAt", q =>
-              q.eq("userId", user._id)
-               .gte("createdAt", startTimeStr)
-               .lte("createdAt", endTimeStr)
-            )
+            .withIndex("byUserId", q => q.eq("userId", user._id))
+            .filter(q => q.gte(q.field("createdAt"), startTimeStr))
+            .filter(q => q.lte(q.field("createdAt"), endTimeStr))
             .collect(),
           
           ctx.db.query("aiGenerations")
-            .withIndex("byUserIdAndCreatedAt", q =>
-              q.eq("userId", user._id)
-               .gte("createdAt", startTimeStr)
-               .lte("createdAt", endTimeStr)
-            )
+            .withIndex("byUserId", q => q.eq("userId", user._id))
+            .filter(q => q.gte(q.field("createdAt"), startTimeStr))
+            .filter(q => q.lte(q.field("createdAt"), endTimeStr))
             .collect(),
           
           ctx.db.query("postAnalytics")
-            .withIndex("byUserIdAndRecordedAt", q =>
-              q.eq("userId", user._id)
-               .gte("recordedAt", startTimeStr)
-               .lte("recordedAt", endTimeStr)
-            )
+            .withIndex("byUserId", q => q.eq("userId", user._id))
+            .filter(q => q.gte(q.field("recordedAt"), startTimeStr))
+            .filter(q => q.lte(q.field("recordedAt"), endTimeStr))
             .collect()
         ]);
 

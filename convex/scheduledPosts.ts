@@ -156,7 +156,7 @@ export const getCalendarSchedules = query({
       calendarEvents.push({
         id: schedule._id,
         title: `${socialAccount?.displayName || socialAccount?.username} (${schedule.platform})`,
-        content: post?.finalContent.substring(0, 100) + (post?.finalContent.length > 100 ? "..." : ""),
+        content: post?.finalContent ? post.finalContent.substring(0, 100) + (post.finalContent.length > 100 ? "..." : "") : "",
         scheduledFor: schedule.scheduledFor,
         status: schedule.status,
         platform: schedule.platform,

@@ -406,26 +406,26 @@ export const getAdvancedPostList = query({
           };
 
           // 변형 정보 추가
-          if (Array.isArray(variants[0]) || 'variants' in variants[0]) {
-            const variantData = variants.find((v: any) => v.postId === post._id);
-            if ('variants' in variantData) {
+          if (Array.isArray(variants[0]) || ('variants' in (variants[0] || {}))) {
+            const variantData = variants.find((v: any) => v && v.postId === post._id);
+            if (variantData && 'variants' in variantData) {
               enriched.variants = variantData.variants;
               enriched.variantCount = variantData.variants.length;
               enriched.bestVariant = variantData.variants.reduce((best: any, current: any) => 
                 current.overallScore > (best?.overallScore || 0) ? current : best, null
               );
-            } else {
+            } else if (variantData) {
               enriched.hasVariants = variantData.hasVariants;
               enriched.variantCount = variantData.count;
             }
           }
 
           // 스케줄 정보 추가
-          if (Array.isArray(schedules[0]) || 'schedules' in schedules[0]) {
-            const scheduleData = schedules.find((s: any) => s.postId === post._id);
-            if ('schedules' in scheduleData) {
+          if (Array.isArray(schedules[0]) || ('schedules' in (schedules[0] || {}))) {
+            const scheduleData = schedules.find((s: any) => s && s.postId === post._id);
+            if (scheduleData && 'schedules' in scheduleData) {
               enriched.schedules = scheduleData.schedules;
-            } else {
+            } else if (scheduleData) {
               enriched.hasSchedules = scheduleData.hasSchedules;
               enriched.scheduleCount = scheduleData.count;
             }
@@ -502,21 +502,14 @@ export const getAdvancedPostList = query({
 
       // 캐시에 저장
       if (cacheKey && useCache) {
-        await ctx.runAction('optimized/cacheManager:cacheSet', {
-          key: cacheKey,
-          data: result,
-          config: {
-            ttl: 300, // 5분 캐시
-            tags: ['posts', `user:${userId}`],
-            compress: true,
-          },
-        });
+        // Note: 캐시 저장은 mutation에서 처리되어야 함
+        // 여기서는 query이므로 캐시 저장을 생략함
       }
 
       return result;
 
-    } catch (error) {
-      throw new Error(`고급 페이징 조회 오류: ${error.message} (실행 시간: ${Date.now() - startTime}ms)`);
+    } catch (error: any) {
+      throw new Error(`고급 페이징 조회 오류: ${error.message || error} (실행 시간: ${Date.now() - startTime}ms)`);
     }
   },
 });
@@ -649,8 +642,8 @@ export const searchPostsOptimized = query({
         },
       };
 
-    } catch (error) {
-      throw new Error(`검색 오류: ${error.message} (실행 시간: ${Date.now() - startTime}ms)`);
+    } catch (error: any) {
+      throw new Error(`검색 오류: ${error.message || error} (실행 시간: ${Date.now() - startTime}ms)`);
     }
   },
 });

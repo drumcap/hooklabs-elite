@@ -236,17 +236,17 @@ export function PerformanceDashboard() {
 
   if (isLoading) {
     return (
-      <div className={"flex items-center justify-center h-64"}>
-        <div className={"animate-spin rounded-full h-8 w-8 border-b-2 border-primary"}></div>
-        <span className={"ml-2"}>성능 데이터 로딩 중...</span>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="ml-2">성능 데이터 로딩 중...</span>
       </div>
     );
   }
 
   return (
-    <div className={"space-y-6"}>
+    <div className="space-y-6">
       {/* 헤더 */}
-      <div className={"flex items-center justify-between"}>
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">성능 모니터링 대시보드</h1>
           <p className="text-muted-foreground">

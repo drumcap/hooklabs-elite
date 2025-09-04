@@ -90,24 +90,9 @@ export const getOptimizedPostList = query({
     });
 
     try {
-      // 캐시된 데이터 조회
-      const cachedResult = await ctx.runAction('optimized/cacheManager:cacheGet', {
-        key: cacheKey,
-      });
-
-      if (cachedResult.hit) {
-        const executionTime = Date.now() - startTime;
-        return {
-          ...cachedResult.data,
-          _metadata: {
-            compressed: false,
-            cacheHit: true,
-            executionTime,
-            dataSize: JSON.stringify(cachedResult.data).length,
-            version: '1.0',
-          } as ResponseMetadata,
-        };
-      }
+      // Note: 캐시 조회는 query에서 직접 처리할 수 없음
+      // 여기서는 직접 데이터 조회를 진행
+      const cacheHit = false; // 캐시 기능을 비활성화
 
       // 실제 데이터 조회 (최적화된 쿼리)
       let query = ctx.db
@@ -172,10 +157,10 @@ export const getOptimizedPostList = query({
           variants: variantMap.get(post._id) || [],
           variantCount: (variantMap.get(post._id) || []).length,
           schedules: scheduleMap.get(post._id) || [],
-          bestVariant: (variantMap.get(post._id) || [])
-            .reduce((best, current) => 
-              current.overallScore > (best?.overallScore || 0) ? current : best, null
-            ),
+          bestVariant: (variantMap.get(post._id) || []).length > 0 ?
+            (variantMap.get(post._id) || []).reduce((best: any, current: any) => 
+              current.overallScore > (best?.overallScore || 0) ? current : best
+            ) : null,
         }));
       }
 
@@ -192,16 +177,8 @@ export const getOptimizedPostList = query({
         filters: { status, personaId, sortBy, sortOrder },
       };
 
-      // 캐시에 저장
-      await ctx.runAction('optimized/cacheManager:cacheSet', {
-        key: cacheKey,
-        data: result,
-        config: {
-          ttl: 300, // 5분 캐시
-          tags: ['posts', `user:${userId}`],
-          compress: true,
-        },
-      });
+      // Note: 캐시 저장은 query에서 처리할 수 없음
+      // 여기서는 생략
 
       const executionTime = Date.now() - startTime;
       const responseData = compress ? await compressResponse(result) : { data: result, compressed: false, originalSize: 0 };
@@ -246,24 +223,8 @@ export const getOptimizedDashboardStats = query({
     });
 
     try {
-      // 캐시 조회
-      const cachedResult = await ctx.runAction('optimized/cacheManager:cacheGet', {
-        key: cacheKey,
-      });
-
-      if (cachedResult.hit) {
-        const executionTime = Date.now() - startTime;
-        return {
-          ...cachedResult.data,
-          _metadata: {
-            compressed: false,
-            cacheHit: true,
-            executionTime,
-            dataSize: JSON.stringify(cachedResult.data).length,
-            version: '1.0',
-          } as ResponseMetadata,
-        };
-      }
+      // Note: 캐시 기능은 query에서 사용할 수 없음
+      const cacheHit = false;
 
       // 날짜 범위 계산
       const endDate = new Date();
@@ -387,22 +348,13 @@ export const getOptimizedDashboardStats = query({
           .sort((a, b) => b.count - a.count);
       }
 
-      // 캐시에 저장
-      await ctx.runAction('optimized/cacheManager:cacheSet', {
-        key: cacheKey,
-        data: stats,
-        config: {
-          ttl: 600, // 10분 캐시
-          tags: ['dashboard', `user:${userId}`],
-          compress: true,
-        },
-      });
+      // Note: 캐시 저장은 query에서 처리할 수 없음
 
       const executionTime = Date.now() - startTime;
-      const responseData = compress ? await compressResponse(stats) : { data: stats, compressed: false, originalSize: 0 };
+      const responseData = compress ? await compressResponse(stats) : { data: JSON.stringify(stats), compressed: false, originalSize: 0 };
 
       return {
-        ...(compress ? JSON.parse(responseData.data) : stats),
+        ...(compress ? JSON.parse(responseData.data as string) : stats),
         _metadata: {
           compressed: responseData.compressed,
           cacheHit: false,
@@ -412,9 +364,9 @@ export const getOptimizedDashboardStats = query({
         } as ResponseMetadata,
       };
 
-    } catch (error) {
+    } catch (error: any) {
       const executionTime = Date.now() - startTime;
-      throw new Error(`대시보드 통계 조회 오류: ${error.message} (실행 시간: ${executionTime}ms)`);
+      throw new Error(`대시보드 통계 조회 오류: ${error.message || error} (실행 시간: ${executionTime}ms)`);
     }
   },
 });

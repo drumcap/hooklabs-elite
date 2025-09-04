@@ -115,7 +115,9 @@ export const cacheSet = action({
       if (memoryCache.size >= MEMORY_CACHE_MAX_SIZE) {
         // LRU 방식으로 오래된 항목 제거
         const oldestKey = memoryCache.keys().next().value;
-        memoryCache.delete(oldestKey);
+        if (oldestKey) {
+          memoryCache.delete(oldestKey);
+        }
       }
       memoryCache.set(key, entry);
 
@@ -137,7 +139,7 @@ export const cacheSet = action({
       return { success: true };
     } catch (error) {
       console.error('Cache set error:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: (error as any)?.message || error };
     }
   },
 });
@@ -172,7 +174,7 @@ export const invalidateByTags = action({
       return { success: true, invalidatedCount };
     } catch (error) {
       console.error('Cache invalidation error:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: (error as any)?.message || error };
     }
   },
 });
@@ -263,31 +265,31 @@ export const preloadUserData = action({
     const preloadTasks = [];
 
     if (patterns.includes('posts')) {
-      preloadTasks.push(
-        ctx.runQuery(api.socialPostsOptimized.listOptimized, {
-          limit: 20,
-          includeMetrics: true,
-        })
-      );
+      // preloadTasks.push(
+      //   ctx.runQuery(api.socialPostsOptimized.listOptimized, {
+      //     limit: 20,
+      //     includeMetrics: true,
+      //   })
+      // );
     }
 
     if (patterns.includes('personas')) {
-      preloadTasks.push(
-        ctx.runQuery(api.personas.list, {})
-      );
+      // preloadTasks.push(
+      //   ctx.runQuery(api.personas.list, {})
+      // );
     }
 
     if (patterns.includes('stats')) {
-      preloadTasks.push(
-        ctx.runQuery(api.socialPostsOptimized.getDashboardStatsOptimized, {})
-      );
+      // preloadTasks.push(
+      //   ctx.runQuery(api.socialPostsOptimized.getDashboardStatsOptimized, {})
+      // );
     }
 
     try {
       await Promise.all(preloadTasks);
       return { success: true, preloadedPatterns: patterns };
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: (error as any)?.message || error };
     }
   },
 });
