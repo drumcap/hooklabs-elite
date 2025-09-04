@@ -184,7 +184,7 @@ export const getOptimizedPostList = query({
       const responseData = compress ? await compressResponse(result) : { data: result, compressed: false, originalSize: 0 };
 
       return {
-        ...(compress ? JSON.parse(responseData.data) : result),
+        ...(compress && typeof responseData.data === 'string' ? JSON.parse(responseData.data) : result),
         _metadata: {
           compressed: responseData.compressed,
           cacheHit: false,

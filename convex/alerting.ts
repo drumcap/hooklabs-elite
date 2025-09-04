@@ -163,9 +163,9 @@ export const resolveAlert = mutation({
 // 메트릭 체크 및 알림 트리거 (Action)
 export const checkMetricsAndTriggerAlerts = action({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx): Promise<{ alertsTriggered: number; errors: string[]; rulesChecked?: number; alerts?: any[] }> => {
     // 활성 알림 규칙 가져오기
-    const activeRules = await ctx.runQuery(api.alerting.getAlertRules, {
+    const activeRules: any[] = await ctx.runQuery(api.alerting.getAlertRules, {
       isActive: true,
     });
 
@@ -208,7 +208,7 @@ export const checkMetricsAndTriggerAlerts = action({
               ruleId: rule._id,
             });
 
-            const todayCount = todayAlerts.filter(a => 
+            const todayCount = todayAlerts.filter((a: any) => 
               new Date(a.triggeredAt) >= todayStart
             ).length;
 
@@ -242,6 +242,7 @@ export const checkMetricsAndTriggerAlerts = action({
       rulesChecked: activeRules.length,
       alertsTriggered: alertsTriggered.length,
       alerts: alertsTriggered,
+      errors: [], // Add missing errors array
     };
   },
 });
@@ -352,16 +353,17 @@ function checkCondition(value: number, condition: string, threshold: number): bo
 }
 
 function formatAlertMessage(rule: any, metricValue: number): string {
-  const conditionText = {
+  const conditionText: Record<string, string> = {
     gt: '초과',
     lt: '미만',
     gte: '이상',
     lte: '이하',
     eq: '일치',
     neq: '불일치',
-  }[rule.condition] || rule.condition;
+  };
+  const text = conditionText[rule.condition] || rule.condition;
 
-  return `⚠️ ${rule.name}: ${rule.metricName} 값(${metricValue.toFixed(2)})이 임계값 ${rule.threshold} ${conditionText}입니다.`;
+  return `⚠️ ${rule.name}: ${rule.metricName} 값(${metricValue.toFixed(2)})이 임계값 ${rule.threshold} ${text}입니다.`;
 }
 
 async function sendAlerts(channels: any[], alert: any) {

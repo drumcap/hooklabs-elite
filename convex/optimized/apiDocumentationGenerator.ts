@@ -119,8 +119,9 @@ export const generateApiDocumentation = action({
     format: v.optional(v.string()), // 'openapi' | 'markdown' | 'html'
   },
   handler: async (ctx, { includeExamples = true, includeDeprecated = false, format = 'openapi' }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
+    // Action에서는 직접 authentication 체크 (실제 구현에서는 proper auth check 필요)
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
       throw new Error("인증이 필요합니다");
     }
 
@@ -799,14 +800,14 @@ function generateHtmlDocs(spec: OpenApiSpec, includeExamples: boolean): string {
                           
                           ${endpoint.requestBody && includeExamples ? `
                           <h4>Request Example</h4>
-                          <pre><code>${JSON.stringify(Object.values(endpoint.requestBody.content)[0]?.example || {}, null, 2)}</code></pre>
+                          <pre><code>${JSON.stringify((Object.values(endpoint.requestBody.content)[0] as any)?.example || {}, null, 2)}</code></pre>
                           ` : ''}
                           
                           <h4>Responses</h4>
                           ${Object.entries(endpoint.responses).map(([status, response]: [string, any]) => `
                           <p><strong>${status}</strong> - ${response.description}</p>
                           ${response.content && includeExamples ? `
-                          <pre><code>${JSON.stringify(Object.values(response.content)[0]?.example || {}, null, 2)}</code></pre>
+                          <pre><code>${JSON.stringify((Object.values(response.content)[0] as any)?.example || {}, null, 2)}</code></pre>
                           ` : ''}
                           `).join('')}
                       </div>
