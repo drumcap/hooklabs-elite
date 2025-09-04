@@ -1,10 +1,11 @@
 import { Auth } from "convex/server";
 import { Id } from "./_generated/dataModel";
+import { GenericDatabaseReader } from "convex/server";
 
 /**
  * 인증된 사용자의 ID를 가져오는 헬퍼 함수
  */
-export async function getAuthUserId(ctx: { auth: Auth }): Promise<Id<"users">> {
+export async function getAuthUserId(ctx: { auth: Auth; db: GenericDatabaseReader<any> }): Promise<Id<"users">> {
   const identity = await ctx.auth.getUserIdentity();
   
   if (!identity) {
@@ -14,7 +15,7 @@ export async function getAuthUserId(ctx: { auth: Auth }): Promise<Id<"users">> {
   // Clerk의 external ID를 사용하여 사용자 찾기
   const user = await ctx.db
     .query("users")
-    .withIndex("by_external_id", (q) => q.eq("externalId", identity.subject))
+    .withIndex("by_external_id", (q: any) => q.eq("externalId", identity.subject))
     .unique();
 
   if (!user) {
@@ -36,7 +37,7 @@ export async function getAuthUser(ctx: { auth: Auth; db: any }) {
 
   const user = await ctx.db
     .query("users")
-    .withIndex("by_external_id", (q) => q.eq("externalId", identity.subject))
+    .withIndex("by_external_id", (q: any) => q.eq("externalId", identity.subject))
     .unique();
 
   if (!user) {
@@ -58,7 +59,7 @@ export async function getOptionalAuthUserId(ctx: { auth: Auth; db: any }): Promi
 
   const user = await ctx.db
     .query("users")
-    .withIndex("by_external_id", (q) => q.eq("externalId", identity.subject))
+    .withIndex("by_external_id", (q: any) => q.eq("externalId", identity.subject))
     .unique();
 
   return user?._id ?? null;

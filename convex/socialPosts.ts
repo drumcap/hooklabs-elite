@@ -307,7 +307,7 @@ export const updateMetrics = mutation({
     const updatedMetrics = {
       ...currentMetrics,
       [platform]: {
-        ...platformMetrics,
+        ...(typeof platformMetrics === 'object' && platformMetrics !== null ? platformMetrics : {}),
         ...metrics,
       },
       lastUpdatedAt: now,

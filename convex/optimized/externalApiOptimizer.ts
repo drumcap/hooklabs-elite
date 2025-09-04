@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { action, mutation, query } from "../_generated/server";
-import { api } from "../_generated/api";
+// import { api } from "../_generated/api"; // 순환 참조 방지
 
 // 🚀 외부 API 호출 최적화 및 배치 처리 시스템
 
@@ -211,9 +211,11 @@ export const callGeminiOptimized = action({
     // 캐시 확인
     if (useCache) {
       const cacheKey = `gemini:${Buffer.from(prompt).toString('base64')}:${temperature}:${maxTokens}`;
-      const cached = await ctx.runAction('optimized/cacheManager:cacheGet', {
-        key: cacheKey,
-      });
+      // TODO: 순환 참조 방지를 위해 임시 비활성화
+      const cached = { hit: false, data: null } as any; // 임시로 기본값
+      // const cached = await ctx.runAction('optimized/cacheManager:cacheGet', {
+      //   key: cacheKey,
+      // });
       
       if (cached.hit) {
         return {
@@ -241,7 +243,7 @@ export const callGeminiOptimized = action({
       batchProcessor.addToQueue('gemini', batchRequest);
       
       // 배치 처리 트리거 (논블로킹)
-      ctx.runAction('optimized/externalApiOptimizer:processBatch', { type: 'gemini' });
+      // ctx.runAction('optimized/externalApiOptimizer:processBatch', { type: 'gemini' });
       
       return {
         success: true,
@@ -461,14 +463,15 @@ export const processBatch = action({
       // 배치 결과를 캐시에 저장
       for (const result of results) {
         if (result.success && result.requestId) {
-          await ctx.runAction('optimized/cacheManager:cacheSet', {
-            key: `batch_result:${result.requestId}`,
-            data: result,
-            config: {
-              ttl: 300, // 5분
-              tags: ['batch-results'],
-            },
-          });
+          // TODO: 순환 참조 방지를 위해 임시 비활성화
+          // await ctx.runAction('optimized/cacheManager:cacheSet', {
+          //   key: `batch_result:${result.requestId}`,
+          //   data: result,
+          //   config: {
+          //     ttl: 300, // 5분
+          //     tags: ['batch-results'],
+          //   },
+          // });
         }
       }
 
@@ -582,9 +585,11 @@ export const getBatchResult = query({
     requestId: v.string(),
   },
   handler: async (ctx, { requestId }) => {
-    const cached = await ctx.runAction('optimized/cacheManager:cacheGet', {
-      key: `batch_result:${requestId}`,
-    });
+    // TODO: 순환 참조 방지를 위해 임시 비활성화
+    const cached = { hit: false, data: null } as any;
+    // const cached = await ctx.runAction('optimized/cacheManager:cacheGet', {
+    //   key: `batch_result:${requestId}`,
+    // });
 
     if (cached.hit) {
       return cached.data;
@@ -608,20 +613,22 @@ export const smartPrefetch = action({
     const startTime = Date.now();
     
     try {
-      // 사용자의 최근 활동 패턴 분석
-      const recentPosts = await ctx.runQuery(api.socialPosts.listByUser, {
-        userId,
-        limit: 10,
-      });
+      // TODO: 사용자의 최근 활동 패턴 분석 - 순환 참조 방지를 위해 임시 비활성화
+      const recentPosts = [] as any;
+      // const recentPosts = await ctx.runQuery(api.socialPosts.listByUser, {
+      //   userId,
+      //   limit: 10,
+      // });
 
-      const prefetchTasks = [];
+      const prefetchTasks: Promise<any>[] = [];
 
       // 자주 사용하는 페르소나 데이터 프리페치
-      const frequentPersonas = [...new Set(recentPosts.map(p => p.personaId))];
+      const frequentPersonas = [...new Set(recentPosts.map((p: any) => p.personaId))];
       for (const personaId of frequentPersonas.slice(0, 3)) {
-        prefetchTasks.push(
-          ctx.runQuery(api.personas.get, { id: personaId })
-        );
+        // TODO: 순환 참조 방지를 위해 임시 비활성화
+        // prefetchTasks.push(
+        //   ctx.runQuery(api.personas.get, { id: personaId })
+        // );
       }
 
       // AI 생성 패턴 기반 프롬프트 캐싱
@@ -633,12 +640,13 @@ export const smartPrefetch = action({
         ];
         
         for (const prompt of commonPrompts) {
-          prefetchTasks.push(
-            ctx.runAction('optimized/externalApiOptimizer:callGeminiOptimized', {
-              prompt,
-              config: { priority: 'low', batchable: true },
-            })
-          );
+          // TODO: 순환 참조 방지를 위해 임시 비활성화
+          // prefetchTasks.push(
+          //   ctx.runAction('optimized/externalApiOptimizer:callGeminiOptimized', {
+          //     prompt,
+          //     config: { priority: 'low', batchable: true },
+          //   })
+          // );
         }
       }
 

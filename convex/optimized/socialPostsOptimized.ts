@@ -97,7 +97,7 @@ export const listOptimized = query({
         )
       ]);
 
-      const personaMap = new Map(personas.filter(Boolean).map(p => [p._id, p]));
+      const personaMap = new Map(personas.filter(Boolean).map(p => [p!._id, p]));
       const variantCountMap = new Map(variantCounts.map(vc => [vc.postId, vc.count]));
 
       return {
@@ -233,8 +233,8 @@ export const updateMultipleStatus = mutation({
 
     // 배치 업데이트
     await Promise.all(
-      validPosts.map(post =>
-        ctx.db.patch(post._id, {
+      validPosts.filter(Boolean).map(post =>
+        ctx.db.patch(post!._id, {
           status,
           publishedAt,
           updatedAt: now,
@@ -242,6 +242,6 @@ export const updateMultipleStatus = mutation({
       )
     );
 
-    return validPosts.map(p => p._id);
+    return validPosts.filter(Boolean).map(p => p!._id);
   },
 });

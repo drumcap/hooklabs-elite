@@ -262,7 +262,7 @@ export const preloadUserData = action({
     patterns: v.optional(v.array(v.string())), // 캐시할 데이터 패턴
   },
   handler: async (ctx, { userId, patterns = ['posts', 'personas', 'stats'] }) => {
-    const preloadTasks = [];
+    const preloadTasks: Promise<any>[] = [];
 
     if (patterns.includes('posts')) {
       // preloadTasks.push(

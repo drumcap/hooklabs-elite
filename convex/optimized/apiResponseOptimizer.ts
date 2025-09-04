@@ -196,7 +196,7 @@ export const getOptimizedPostList = query({
 
     } catch (error) {
       const executionTime = Date.now() - startTime;
-      throw new Error(`API 최적화 오류: ${error.message} (실행 시간: ${executionTime}ms)`);
+      throw new Error(`API 최적화 오류: ${error instanceof Error ? error.message : 'Unknown error'} (실행 시간: ${executionTime}ms)`);
     }
   },
 });

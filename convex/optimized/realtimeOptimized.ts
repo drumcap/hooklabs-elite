@@ -174,7 +174,7 @@ export const getPostsRealtime = query({
       console.error('Realtime query error:', error);
       return {
         type: 'error',
-        error: error.message,
+        error: (error as any)?.message || error,
         timestamp: now,
       };
     }

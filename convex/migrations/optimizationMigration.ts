@@ -75,7 +75,7 @@ export const benchmarkCurrentPerformance = action({
           times.push(endTime - startTime);
           successCount++;
         } catch (error) {
-          console.log(`쿼리 실패 (예상됨): ${test.name} - ${error.message}`);
+          console.log(`쿼리 실패 (예상됨): ${test.name} - ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
 
@@ -252,7 +252,7 @@ export const migrateDataStructure = mutation({
           table: tableName,
           operation: "structure_migration",
           status: "failed",
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Unknown error',
           timestamp: new Date().toISOString(),
         });
       }

@@ -365,12 +365,14 @@ ${systemPrompt}
         variantIds.push(variantId);
       }
 
-      // 게시물 상태 및 크레딧 사용량 업데이트
+      // 게시물 상태 업데이트 (creditsUsed는 별도 처리)
       await ctx.runMutation(api.socialPosts.update, {
         id: postId,
         status: "generated",
-        creditsUsed: totalCreditsNeeded,
       });
+      
+      // TODO: 크레딧 사용량은 별도 테이블에서 관리 필요
+      // creditsUsed: totalCreditsNeeded는 socialPosts 스키마에 없음
 
       return {
         success: true,

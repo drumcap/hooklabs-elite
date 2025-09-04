@@ -149,7 +149,7 @@ export const getCalendarSchedulesOptimized = query({
       return [];
     }
 
-    const userPostLookup = new Map(userPosts.map(post => [post._id, post]));
+    const userPostLookup = new Map(userPosts.filter(Boolean).map(post => [post!._id, post]));
     const validSchedules = schedules.filter(s => userPostLookup.has(s.postId));
 
     // 3. 소셜 계정들을 배치로 조회
@@ -162,7 +162,7 @@ export const getCalendarSchedulesOptimized = query({
     );
 
     // 4. 페르소나들을 배치로 조회
-    const personaIds = [...new Set(userPosts.map(post => post.personaId))];
+    const personaIds = [...new Set(userPosts.filter(Boolean).map(post => post!.personaId))];
     const personas = await Promise.all(personaIds.map(id => ctx.db.get(id)));
     const personaLookup = new Map(
       personas.filter(Boolean).map(persona => [persona!._id, persona])
@@ -177,7 +177,7 @@ export const getCalendarSchedulesOptimized = query({
       return {
         id: schedule._id,
         title: `${socialAccount?.displayName || socialAccount?.username} (${schedule.platform})`,
-        content: post?.finalContent.substring(0, 100) + (post?.finalContent.length > 100 ? "..." : ""),
+        content: post?.finalContent ? post.finalContent.substring(0, 100) + (post.finalContent.length > 100 ? "..." : "") : "",
         scheduledFor: schedule.scheduledFor,
         status: schedule.status,
         platform: schedule.platform,

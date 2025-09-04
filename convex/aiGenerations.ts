@@ -397,13 +397,23 @@ export const getQualityAnalysis = query({
     }
 
     // 각 생성에 대한 변형 점수들 가져오기
-    const qualityScores = [];
+    const qualityScores: Array<{
+      generationId: string;
+      overallScore: number;
+      engagement: number;
+      virality: number;
+      personaMatch: number;
+      readability: number;
+      trending: number;
+      temperature?: string;
+      generationTime?: number;
+    }> = [];
 
     for (const gen of filteredGenerations) {
       if (gen.postId && gen.type === "variant_creation") {
         const variants = await ctx.db
           .query("postVariants")
-          .withIndex("byPostId", (q) => q.eq("postId", gen.postId))
+          .withIndex("byPostId", (q) => q.eq("postId", gen.postId!))
           .collect();
 
         variants.forEach(variant => {
@@ -416,7 +426,7 @@ export const getQualityAnalysis = query({
             readability: variant.scoreBreakdown.readability,
             trending: variant.scoreBreakdown.trending,
             generationTime: gen.generationTime,
-            temperature: gen.temperature,
+            temperature: gen.temperature?.toString(),
           });
         });
       }
