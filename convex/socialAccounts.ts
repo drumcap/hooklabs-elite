@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalQuery } from "./_generated/server";
 import { getAuthUserId } from "./auth";
 
 // 소셜 계정 목록 조회
@@ -89,6 +89,14 @@ export const getWithTokens = query({
     }
 
     return account;
+  },
+});
+
+// Internal query for action use (순환 참조 해결용)
+export const getInternal = internalQuery({
+  args: { id: v.id("socialAccounts") },
+  handler: async (ctx, { id }) => {
+    return await ctx.db.get(id);
   },
 });
 

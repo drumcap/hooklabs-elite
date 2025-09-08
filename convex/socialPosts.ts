@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalQuery } from "./_generated/server";
 import { getAuthUserId } from "./auth";
 
 // 게시물 목록 조회 (페이징 지원)
@@ -87,6 +87,14 @@ export const get = query({
       persona,
       variants,
     };
+  },
+});
+
+// Internal query for action use (순환 참조 해결용)
+export const getInternal = internalQuery({
+  args: { id: v.id("socialPosts") },
+  handler: async (ctx, { id }) => {
+    return await ctx.db.get(id);
   },
 });
 

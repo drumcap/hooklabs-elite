@@ -2,7 +2,7 @@
 
 import { v } from "convex/values";
 import { action } from "../_generated/server";
-// import { api } from "../_generated/api"; // 순환 참조 방지를 위해 직접 임포트 사용
+import { internal } from "../_generated/api"; // internal API 사용으로 순환 참조 해결
 
 // Twitter API v2 클라이언트
 interface TwitterTweetRequest {
@@ -41,6 +41,36 @@ interface ThreadsPostResponse {
   id: string;
 }
 
+// 공통 타입 정의
+interface PublishResult {
+  success: boolean;
+  platformPostId?: string;
+  publishedAt?: string;
+  error?: string;
+  url?: string;
+  platform?: string;
+}
+
+interface SocialAccount {
+  _id: string;
+  userId: string;
+  platform: string;
+  accountId: string;
+  username: string;
+  displayName: string;
+  profileImage?: string;
+  accessToken: string;
+  refreshToken?: string;
+  tokenExpiresAt?: string;
+  followers?: number;
+  following?: number;
+  postsCount?: number;
+  verificationStatus?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // 트위터 게시물 발행
 export const publishToTwitter = action({
   args: {
@@ -49,9 +79,11 @@ export const publishToTwitter = action({
     mediaUrls: v.optional(v.array(v.string())),
     replyToTweetId: v.optional(v.string()),
   },
-  handler: async (ctx, { socialAccountId, content, mediaUrls, replyToTweetId }) => {
-    // TODO: 소셜 계정 정보 가져오기 (토큰 포함) - 순환 참조 방지를 위해 임시 비활성화
-    const account = null as any; // 임시로 null 처리
+  handler: async (ctx, { socialAccountId, content, mediaUrls, replyToTweetId }): Promise<PublishResult> => {
+    // 직접 데이터베이스에서 소셜 계정 정보 가져오기
+    const account = await ctx.runQuery(internal.socialAccounts.getInternal, {
+      id: socialAccountId
+    }) as SocialAccount | null;
 
     if (!account || account.platform !== "twitter") {
       throw new Error("유효한 트위터 계정이 아닙니다");
@@ -124,9 +156,11 @@ export const publishToThreads = action({
     imageUrl: v.optional(v.string()),
     videoUrl: v.optional(v.string()),
   },
-  handler: async (ctx, { socialAccountId, content, imageUrl, videoUrl }) => {
-    // TODO: 소셜 계정 정보 가져오기 - 순환 참조 방지를 위해 임시 비활성화
-    const account = null as any; // 임시로 null 처리
+  handler: async (ctx, { socialAccountId, content, imageUrl, videoUrl }): Promise<PublishResult> => {
+    // 직접 데이터베이스에서 소셜 계정 정보 가져오기
+    const account = await ctx.runQuery(internal.socialAccounts.getInternal, {
+      id: socialAccountId
+    }) as SocialAccount | null;
 
     if (!account || account.platform !== "threads") {
       throw new Error("유효한 쓰레드 계정이 아닙니다");
@@ -224,9 +258,17 @@ export const publishToMultiplePlatforms = action({
     platforms: v.array(v.string()),
     socialAccountIds: v.array(v.id("socialAccounts")),
   },
-  handler: async (ctx, { postId, variantId, platforms, socialAccountIds }) => {
-    // TODO: 게시물 정보 가져오기 - 순환 참조 방지를 위해 임시 비활성화
-    const post = null as any; // 임시로 null 처리
+  handler: async (ctx, { postId, variantId, platforms, socialAccountIds }): Promise<{
+    success: boolean;
+    results: PublishResult[];
+    errors: string[];
+    publishedCount: number;
+    totalCount: number;
+  }> => {
+    // 게시물 정보 가져오기
+    const post = await ctx.runQuery(internal.socialPosts.getInternal, {
+      id: postId
+    });
     if (!post) {
       throw new Error("게시물을 찾을 수 없습니다");
     }
@@ -234,15 +276,17 @@ export const publishToMultiplePlatforms = action({
     // 사용할 콘텐츠 결정
     let content = post.finalContent;
     if (variantId) {
-      // TODO: variant 가져오기 - 순환 참조 방지를 위해 임시 비활성화
-      const variant = null as any; // 임시로 null 처리
+      // variant 가져오기
+      const variant = await ctx.runQuery(internal.postVariants.getInternal, {
+        id: variantId
+      });
       if (variant) {
         content = variant.content;
       }
     }
 
-    const results = [];
-    const errors = [];
+    const results: PublishResult[] = [];
+    const errors: string[] = [];
 
     // 각 플랫폼별로 발행
     for (let i = 0; i < platforms.length; i++) {
@@ -259,23 +303,21 @@ export const publishToMultiplePlatforms = action({
 
         switch (platform) {
           case "twitter":
-            // TODO: publishToTwitter 호출 - 순환 참조 방지를 위해 임시 비활성화
-            result = { success: false } as any; // 임시로 기본값 반환
-            // result = await ctx.runAction(api.actions.twitterPublisher.publishToTwitter, {
-            //   socialAccountId: accountId,
-            //   content,
-            //   mediaUrls: post.mediaUrls,
-            // });
+            // internal action 호출로 순환 참조 해결
+            result = await ctx.runAction(internal.actions.socialPublishing.publishToTwitter, {
+              socialAccountId: accountId,
+              content,
+              mediaUrls: post.mediaUrls
+            });
             break;
 
           case "threads":
-            // TODO: publishToThreads 호출 - 순환 참조 방지를 위해 임시 비활성화
-            result = { success: false } as any; // 임시로 기본값 반환
-            // result = await ctx.runAction(api.actions.threadsPublisher.publishToThreads, {
-            //   socialAccountId: accountId,
-            //   content,
-            //   imageUrl: post.mediaUrls?.[0],
-            // });
+            // internal action 호출로 순환 참조 해결
+            result = await ctx.runAction(internal.actions.socialPublishing.publishToThreads, {
+              socialAccountId: accountId,
+              content,
+              imageUrl: post.mediaUrls?.[0]
+            });
             break;
 
           default:
@@ -357,9 +399,19 @@ export const collectTwitterMetrics = action({
     socialAccountId: v.id("socialAccounts"),
     tweetId: v.string(),
   },
-  handler: async (ctx, { socialAccountId, tweetId }) => {
-    // TODO: 소셜 계정 정보 가져오기 - 순환 참조 방지를 위해 임시 비활성화
-    const account = null as any; // 임시로 null 처리
+  handler: async (ctx, { socialAccountId, tweetId }): Promise<{
+    success: boolean;
+    metrics?: any;
+    error?: string;
+    views?: number;
+    likes?: number;
+    retweets?: number;
+    replies?: number;
+  }> => {
+    // 직접 데이터베이스에서 소셜 계정 정보 가져오기
+    const account = await ctx.runQuery(internal.socialAccounts.getInternal, {
+      id: socialAccountId
+    }) as SocialAccount | null;
 
     if (!account || account.platform !== "twitter") {
       throw new Error("유효한 트위터 계정이 아닙니다");
@@ -406,9 +458,18 @@ export const collectThreadsMetrics = action({
     socialAccountId: v.id("socialAccounts"),
     postId: v.string(),
   },
-  handler: async (ctx, { socialAccountId, postId }) => {
-    // TODO: 소셜 계정 정보 가져오기 - 순환 참조 방지를 위해 임시 비활성화
-    const account = null as any; // 임시로 null 처리
+  handler: async (ctx, { socialAccountId, postId }): Promise<{
+    success: boolean;
+    metrics?: any;
+    error?: string;
+    views?: number;
+    likes?: number;
+    replies?: number;
+  }> => {
+    // 직접 데이터베이스에서 소셜 계정 정보 가져오기
+    const account = await ctx.runQuery(internal.socialAccounts.getInternal, {
+      id: socialAccountId
+    }) as SocialAccount | null;
 
     if (!account || account.platform !== "threads") {
       throw new Error("유효한 쓰레드 계정이 아닙니다");
@@ -452,9 +513,15 @@ export const refreshTwitterToken = action({
   args: {
     socialAccountId: v.id("socialAccounts"),
   },
-  handler: async (ctx, { socialAccountId }) => {
-    // TODO: 소셜 계정 정보 가져오기 - 순환 참조 방지를 위해 임시 비활성화
-    const account = null as any; // 임시로 null 처리
+  handler: async (ctx, { socialAccountId }): Promise<{
+    success: boolean;
+    expiresAt?: string;
+    error?: string;
+  }> => {
+    // 직접 데이터베이스에서 소셜 계정 정보 가져오기
+    const account = await ctx.runQuery(internal.socialAccounts.getInternal, {
+      id: socialAccountId
+    }) as SocialAccount | null;
 
     if (!account || account.platform !== "twitter" || !account.refreshToken) {
       throw new Error("유효한 트위터 계정이 아니거나 리프레시 토큰이 없습니다");

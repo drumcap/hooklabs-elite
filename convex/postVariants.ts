@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalQuery } from "./_generated/server";
 import { getAuthUserId } from "./auth";
 
 // 특정 게시물의 변형들 조회
@@ -46,6 +46,14 @@ export const get = query({
     }
 
     return variant;
+  },
+});
+
+// Internal query for action use (순환 참조 해결용)
+export const getInternal = internalQuery({
+  args: { id: v.id("postVariants") },
+  handler: async (ctx, { id }) => {
+    return await ctx.db.get(id);
   },
 });
 

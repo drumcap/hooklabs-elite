@@ -2,9 +2,9 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { WebhookEvent } from "@clerk/backend";
-// TODO: svix Webhook import 문제 해결 필요
-// import { Webhook } from "svix";
-const Webhook = null as any; // 임시 처리
+// svix import 문제 해결 및 타입 정의
+const svix = require("svix");
+const Webhook = svix.Webhook;
 import { transformWebhookData } from "./paymentAttemptTypes";
 
 const http = httpRouter();

@@ -2,7 +2,7 @@
 
 import { v } from "convex/values";
 import { action } from "../_generated/server";
-import { api } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 
 // Gemini API 클라이언트 설정
@@ -239,12 +239,12 @@ export const generateVariants = action({
     const creditsPerVariant = 2; // 변형 1개당 2크레딧
     const totalCreditsNeeded = variantCount * creditsPerVariant;
     
-    // TODO: 크레딧 차감 로직 구현
-    // await ctx.runMutation(api.credits.deduct, { 
-    //   userId: persona.userId, 
-    //   amount: totalCreditsNeeded,
-    //   description: `AI 콘텐츠 변형 생성 (${variantCount}개)`
-    // });
+    // 크레딧 차감 실행
+    await ctx.runMutation(internal.credits.useCredits, { 
+      userId: persona.userId, 
+      amount: totalCreditsNeeded,
+      description: `AI 콘텐츠 변형 생성 (${variantCount}개)`
+    });
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
