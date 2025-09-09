@@ -7,7 +7,6 @@ import WebVitalsMonitor from "@/components/WebVitalsMonitor";
 
 import { ClerkProvider } from '@clerk/nextjs'
 import ConvexClientProvider from '@/components/ConvexClientProvider'
-import { ClerkErrorBoundary } from '@/components/ClerkErrorBoundary'
 
 
 const geistSans = Geist({
@@ -124,22 +123,16 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ClerkErrorBoundary>
-            <ClerkProvider 
-              publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!}
-              appearance={{
-                elements: {
-                  rootBox: "font-sans"
-                }
-              }}
-            >
-              <ConvexClientProvider>
-                <ServiceWorkerRegister />
-                <WebVitalsMonitor />
-                {children}
-              </ConvexClientProvider>
-            </ClerkProvider>
-          </ClerkErrorBoundary>
+          <ClerkProvider 
+            publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!}
+            telemetry={false}
+          >
+            <ConvexClientProvider>
+              <ServiceWorkerRegister />
+              <WebVitalsMonitor />
+              {children}
+            </ConvexClientProvider>
+          </ClerkProvider>
         </ThemeProvider>
       </body>
     </html>

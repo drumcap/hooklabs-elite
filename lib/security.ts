@@ -140,6 +140,9 @@ export function generateCSP(): string {
       "'self'",
       ...(isProduction ? [] : ["'unsafe-eval'", "'unsafe-inline'"]),
       'https://js.clerk.dev',
+      'https://*.clerk.dev',
+      'https://clerk.com',
+      'https://*.clerk.com',
       'https://www.googletagmanager.com',
       'https://cdn.mixpanel.com',
       'https://browser.sentry-cdn.com',
@@ -171,6 +174,9 @@ export function generateCSP(): string {
       'wss://*.convex.cloud',
       'https://api.lemonsqueezy.com',
       'https://clerk.dev',
+      'https://*.clerk.dev',
+      'https://clerk.com',
+      'https://*.clerk.com',
       'https://*.clerk.accounts.dev',
       'https://api.mixpanel.com',
       'https://o4507902800437248.ingest.sentry.io',
@@ -220,8 +226,10 @@ export function generateCSP(): string {
 export function applySecurityHeaders(response: NextResponse): NextResponse {
   const isProduction = process.env.NODE_ENV === 'production';
 
-  // Content Security Policy
-  response.headers.set('Content-Security-Policy', generateCSP());
+  // Content Security Policy (개발 환경에서는 비활성화)
+  if (isProduction) {
+    response.headers.set('Content-Security-Policy', generateCSP());
+  }
 
   // XSS 보호
   response.headers.set('X-XSS-Protection', '1; mode=block');

@@ -96,14 +96,21 @@ export const RATE_LIMITS = {
  * Rate Limiter 클래스
  */
 export class RateLimiter {
-  private redis: Redis;
+  private redis: Redis | null;
   private config: RateLimitConfig;
 
   constructor(config: RateLimitConfig) {
-    this.redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL!,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-    });
+    // 개발 환경에서는 Redis 연결을 생략
+    if (process.env.NODE_ENV === 'development' || 
+        !process.env.UPSTASH_REDIS_REST_URL || 
+        !process.env.UPSTASH_REDIS_REST_TOKEN) {
+      this.redis = null;
+    } else {
+      this.redis = new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL!,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+      });
+    }
     this.config = config;
   }
 
@@ -120,6 +127,17 @@ export class RateLimiter {
   }> {
     const now = Date.now();
     const window = this.config.window * 1000; // 밀리초로 변환
+
+    // Redis가 없는 경우 (개발 환경) 항상 허용
+    if (!this.redis) {
+      return {
+        success: true,
+        remaining: this.config.max,
+        resetTime: Math.ceil((now + window) / 1000),
+        totalRequests: 0,
+      };
+    }
+
     const windowStart = now - window;
 
     try {
@@ -354,13 +372,20 @@ export function shouldBypassRateLimit(req: NextRequest): boolean {
  * Rate Limit 현황 모니터링
  */
 export class RateLimitMonitor {
-  private redis: Redis;
+  private redis: Redis | null;
 
   constructor() {
-    this.redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL!,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-    });
+    // 개발 환경에서는 Redis 연결을 생략
+    if (process.env.NODE_ENV === 'development' || 
+        !process.env.UPSTASH_REDIS_REST_URL || 
+        !process.env.UPSTASH_REDIS_REST_TOKEN) {
+      this.redis = null;
+    } else {
+      this.redis = new Redis({
+        url: process.env.UPSTASH_REDIS_REST_URL!,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+      });
+    }
   }
 
   /**
