@@ -387,3 +387,22 @@ export const getByPersona = query({
       .take(limit);
   },
 });
+
+// 최근 소셜 게시물 조회 (대시보드용)
+export const getRecent = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, { limit = 10 }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("인증이 필요합니다");
+    }
+
+    return await ctx.db
+      .query("socialPosts")
+      .withIndex("byUserId", (q) => q.eq("userId", userId))
+      .order("desc")
+      .take(limit);
+  },
+});

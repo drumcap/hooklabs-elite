@@ -3,7 +3,8 @@
  */
 
 import { v } from "convex/values";
-import { internalMutation, internalQuery } from "./_generated/server";
+import { internalMutation, internalQuery, query } from "./_generated/server";
+import { getAuthUserId } from "./auth";
 
 // 세션 업데이트
 export const updateSession = internalMutation({
@@ -110,5 +111,77 @@ export const trackUserAction = internalMutation({
         lastActivityAt: args.timestamp,
       });
     }
+  },
+});
+
+// 대시보드 통계 조회
+export const getDashboardStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("인증이 필요합니다");
+    }
+
+    // 기본 통계 데이터
+    const stats = {
+      totalPosts: 0,
+      scheduledPosts: 0,
+      totalViews: 0,
+      totalLikes: 0,
+      totalEngagement: 0,
+      successRate: 0,
+      platformStats: {} as Record<string, number>,
+      recentActivity: [] as any[],
+    };
+
+    try {
+      // 사용자의 소셜 게시물 수 조회
+      const userPosts = await ctx.db
+        .query("socialPosts")
+        .withIndex("byUserId", (q) => q.eq("userId", userId))
+        .collect();
+      
+      stats.totalPosts = userPosts.length;
+
+      // 스케줄링된 게시물 수 조회
+      const userPostIds = userPosts.map(post => post._id);
+      const scheduledPosts = await ctx.db
+        .query("scheduledPosts")
+        .collect();
+      
+      const userScheduledPosts = scheduledPosts.filter(schedule => 
+        userPostIds.includes(schedule.postId)
+      );
+      
+      stats.scheduledPosts = userScheduledPosts.length;
+
+      // 플랫폼별 통계
+      userPosts.forEach(post => {
+        if (post.platforms && Array.isArray(post.platforms)) {
+          post.platforms.forEach(platform => {
+            stats.platformStats[platform] = (stats.platformStats[platform] || 0) + 1;
+          });
+        }
+      });
+
+      // 성공률 계산 (발행된 게시물 기준)
+      const publishedPosts = userScheduledPosts.filter(s => s.status === "published");
+      if (userScheduledPosts.length > 0) {
+        stats.successRate = Math.round((publishedPosts.length / userScheduledPosts.length) * 100);
+      }
+
+      // 최근 활동 (간단한 더미 데이터)
+      stats.recentActivity = [
+        { action: "post_created", timestamp: new Date().toISOString(), count: userPosts.length },
+        { action: "posts_scheduled", timestamp: new Date().toISOString(), count: stats.scheduledPosts },
+      ];
+
+    } catch (error) {
+      console.error("대시보드 통계 조회 중 오류:", error);
+      // 오류 발생 시 기본값 반환
+    }
+
+    return stats;
   },
 });

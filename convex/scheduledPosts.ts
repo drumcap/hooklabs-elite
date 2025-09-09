@@ -539,3 +539,100 @@ export const getUserStats = query({
     return stats;
   },
 });
+
+// 최근 스케줄링된 게시물 조회 (대시보드용)
+export const getRecent = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, { limit = 10 }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("인증이 필요합니다");
+    }
+
+    // 사용자의 게시물들 먼저 가져오기
+    const userPosts = await ctx.db
+      .query("socialPosts")
+      .withIndex("byUserId", (q) => q.eq("userId", userId))
+      .collect();
+
+    const userPostIds = userPosts.map(post => post._id);
+
+    // 최근 스케줄들 가져오기
+    const schedules = await ctx.db
+      .query("scheduledPosts")
+      .order("desc")
+      .take(limit * 2); // 더 많이 가져와서 필터링
+
+    const userSchedules = schedules
+      .filter(schedule => userPostIds.includes(schedule.postId))
+      .slice(0, limit);
+
+    // 관련 정보 포함하여 반환
+    const results = await Promise.all(
+      userSchedules.map(async (schedule) => {
+        const post = userPosts.find(p => p._id === schedule.postId);
+        const socialAccount = await ctx.db.get(schedule.socialAccountId);
+        return {
+          ...schedule,
+          post,
+          socialAccount,
+        };
+      })
+    );
+
+    return results;
+  },
+});
+
+// 예정된 게시물 조회 (대시보드용)
+export const getUpcoming = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, { limit = 10 }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("인증이 필요합니다");
+    }
+
+    // 사용자의 게시물들 먼저 가져오기
+    const userPosts = await ctx.db
+      .query("socialPosts")
+      .withIndex("byUserId", (q) => q.eq("userId", userId))
+      .collect();
+
+    const userPostIds = userPosts.map(post => post._id);
+
+    // 예정된 스케줄들 가져오기 (현재 시각 이후)
+    const now = new Date().toISOString();
+    const schedules = await ctx.db
+      .query("scheduledPosts")
+      .collect();
+
+    const upcomingSchedules = schedules
+      .filter(schedule => 
+        userPostIds.includes(schedule.postId) &&
+        schedule.scheduledFor > now &&
+        schedule.status === "pending"
+      )
+      .sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor))
+      .slice(0, limit);
+
+    // 관련 정보 포함하여 반환
+    const results = await Promise.all(
+      upcomingSchedules.map(async (schedule) => {
+        const post = userPosts.find(p => p._id === schedule.postId);
+        const socialAccount = await ctx.db.get(schedule.socialAccountId);
+        return {
+          ...schedule,
+          post,
+          socialAccount,
+        };
+      })
+    );
+
+    return results;
+  },
+});

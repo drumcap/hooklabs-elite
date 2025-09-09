@@ -15,7 +15,7 @@ export async function getAuthUserId(ctx: { auth: Auth; db: GenericDatabaseReader
   // Clerk의 external ID를 사용하여 사용자 찾기
   const user = await ctx.db
     .query("users")
-    .withIndex("by_external_id", (q: any) => q.eq("externalId", identity.subject))
+    .withIndex("byExternalId", (q: any) => q.eq("externalId", identity.subject))
     .unique();
 
   if (!user) {
@@ -37,7 +37,7 @@ export async function getAuthUser(ctx: { auth: Auth; db: any }) {
 
   const user = await ctx.db
     .query("users")
-    .withIndex("by_external_id", (q: any) => q.eq("externalId", identity.subject))
+    .withIndex("byExternalId", (q: any) => q.eq("externalId", identity.subject))
     .unique();
 
   if (!user) {
@@ -59,7 +59,7 @@ export async function getOptionalAuthUserId(ctx: { auth: Auth; db: any }): Promi
 
   const user = await ctx.db
     .query("users")
-    .withIndex("by_external_id", (q: any) => q.eq("externalId", identity.subject))
+    .withIndex("byExternalId", (q: any) => q.eq("externalId", identity.subject))
     .unique();
 
   return user?._id ?? null;
