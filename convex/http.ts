@@ -6,6 +6,7 @@ import type { WebhookEvent } from "@clerk/backend";
 const svix = require("svix");
 const Webhook = svix.Webhook;
 import { transformWebhookData } from "./paymentAttemptTypes";
+import { WebhookValidationError, withErrorHandling } from "./lib/errors";
 
 const http = httpRouter();
 
@@ -150,29 +151,36 @@ async function validateRequest(req: Request): Promise<WebhookEvent | null> {
     "svix-timestamp": req.headers.get("svix-timestamp")!,
     "svix-signature": req.headers.get("svix-signature")!,
   };
-  const wh = new Webhook(process.env.CLERK_WEBHOOK_SECRET!);
+  
+  if (!svixHeaders["svix-id"] || !svixHeaders["svix-timestamp"] || !svixHeaders["svix-signature"]) {
+    throw new WebhookValidationError("Clerk", "필수 헤더가 누락되었습니다");
+  }
+  
+  const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    throw new WebhookValidationError("Clerk", "웹훅 시크릿이 설정되지 않았습니다");
+  }
+  
+  const wh = new Webhook(webhookSecret);
   try {
     return wh.verify(payloadString, svixHeaders) as unknown as WebhookEvent;
   } catch (error) {
-    console.error("Error verifying webhook event", error);
-    return null;
+    throw new WebhookValidationError("Clerk", `서명 검증 실패: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
-async function validateLemonSqueezyRequest(req: Request): Promise<any | null> {
+async function validateLemonSqueezyRequest(req: Request): Promise<any> {
   const body = await req.text();
   const signature = req.headers.get("X-Signature");
   
   if (!signature) {
-    console.error("Missing Lemon Squeezy signature");
-    return null;
+    throw new WebhookValidationError("Lemon Squeezy", "서명 헤더가 누락되었습니다");
   }
 
   // Get webhook secret from environment
   const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
   if (!secret) {
-    console.error("Missing LEMONSQUEEZY_WEBHOOK_SECRET");
-    return null;
+    throw new WebhookValidationError("Lemon Squeezy", "웹훅 시크릿이 설정되지 않았습니다");
   }
 
   try {
@@ -201,15 +209,16 @@ async function validateLemonSqueezyRequest(req: Request): Promise<any | null> {
     
     // Compare signatures
     if (expectedSig !== providedSig) {
-      console.error("Lemon Squeezy webhook signature verification failed");
-      return null;
+      throw new WebhookValidationError("Lemon Squeezy", "서명 검증 실패");
     }
     
     // Parse and return the event
     return JSON.parse(body);
   } catch (error) {
-    console.error("Error verifying Lemon Squeezy webhook:", error);
-    return null;
+    if (error instanceof WebhookValidationError) {
+      throw error;
+    }
+    throw new WebhookValidationError("Lemon Squeezy", `웹훅 처리 오류: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 

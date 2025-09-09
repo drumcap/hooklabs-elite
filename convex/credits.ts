@@ -1,5 +1,6 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
+import { InsufficientCreditsError, NotFoundError, withErrorHandling } from "./lib/errors";
 
 // 사용자의 크레딧 잔액 조회
 export const getUserCreditBalance = query({
@@ -101,8 +102,12 @@ export const useCredits = mutation({
       .withIndex("byUserId", (q) => q.eq("userId", args.userId))
       .first();
 
-    if (!balance || balance.availableCredits < args.amount) {
-      throw new Error("크레딧이 부족합니다.");
+    if (!balance) {
+      throw new NotFoundError("크레딧 잔액", args.userId);
+    }
+    
+    if (balance.availableCredits < args.amount) {
+      throw new InsufficientCreditsError(args.amount, balance.availableCredits);
     }
 
     const now = new Date().toISOString();
@@ -266,3 +271,59 @@ async function updateCreditBalance(ctx: any, userId: any) {
     });
   }
 }
+
+// Internal mutations for avoiding circular references
+export const useCreditsInternal = internalMutation({
+  args: {
+    userId: v.id("users"),
+    amount: v.number(),
+    description: v.string(),
+    relatedOrderId: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => {
+    const balance = await ctx.db
+      .query("userCreditBalances")
+      .withIndex("byUserId", (q) => q.eq("userId", args.userId))
+      .first();
+
+    if (!balance) {
+      throw new NotFoundError("크레딧 잔액", args.userId);
+    }
+    
+    if (balance.availableCredits < args.amount) {
+      throw new InsufficientCreditsError(args.amount, balance.availableCredits);
+    }
+
+    const now = new Date().toISOString();
+
+    // 크레딧 사용 기록
+    const creditId = await ctx.db.insert("credits", {
+      userId: args.userId,
+      amount: -args.amount, // 음수로 저장
+      type: "used",
+      description: args.description,
+      relatedOrderId: args.relatedOrderId,
+      metadata: args.metadata,
+      createdAt: now,
+    });
+
+    // 집계 테이블 업데이트
+    await updateCreditBalance(ctx, args.userId);
+
+    return creditId;
+  },
+});
+
+// Internal query for checking credit balance
+export const getBalanceInternal = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    const balance = await ctx.db
+      .query("userCreditBalances")
+      .withIndex("byUserId", (q: any) => q.eq("userId", userId))
+      .first();
+    
+    return balance || { availableCredits: 0 };
+  },
+});

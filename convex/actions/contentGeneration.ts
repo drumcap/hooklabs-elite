@@ -240,7 +240,7 @@ export const generateVariants = action({
     const totalCreditsNeeded = variantCount * creditsPerVariant;
     
     // 크레딧 차감 실행
-    await ctx.runMutation(internal.credits.useCredits, { 
+    await ctx.runMutation(internal.credits.useCreditsInternal, { 
       userId: persona.userId, 
       amount: totalCreditsNeeded,
       description: `AI 콘텐츠 변형 생성 (${variantCount}개)`

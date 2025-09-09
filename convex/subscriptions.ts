@@ -1,17 +1,26 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
+import { NotFoundError, withErrorHandling } from "./lib/errors";
 
 // 사용자의 활성 구독 조회
 export const getUserSubscription = query({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const subscription = await ctx.db
-      .query("subscriptions")
-      .withIndex("byUserId", (q) => q.eq("userId", userId))
-      .filter((q) => q.neq(q.field("status"), "cancelled"))
-      .first();
-    
-    return subscription;
+    return await withErrorHandling(
+      async () => {
+        const subscription = await ctx.db
+          .query("subscriptions")
+          .withIndex("byUserId", (q) => q.eq("userId", userId))
+          .filter((q) => q.neq(q.field("status"), "cancelled"))
+          .first();
+        
+        return subscription;
+      },
+      {
+        context: { userId, action: 'getUserSubscription' },
+        maxRetries: 2,
+      }
+    );
   },
 });
 
@@ -129,19 +138,27 @@ export const updateSubscription = mutation({
     updateData: v.any(),
   },
   handler: async (ctx, { lemonSqueezySubscriptionId, updateData }) => {
-    const subscription = await ctx.db
-      .query("subscriptions")
-      .withIndex("byLemonSqueezyId", (q) => 
-        q.eq("lemonSqueezySubscriptionId", lemonSqueezySubscriptionId)
-      )
-      .unique();
+    return await withErrorHandling(
+      async () => {
+        const subscription = await ctx.db
+          .query("subscriptions")
+          .withIndex("byLemonSqueezyId", (q) => 
+            q.eq("lemonSqueezySubscriptionId", lemonSqueezySubscriptionId)
+          )
+          .unique();
 
-    if (subscription) {
-      await ctx.db.patch(subscription._id, updateData);
-      return subscription._id;
-    }
-    
-    return null;
+        if (!subscription) {
+          throw new NotFoundError("Subscription", lemonSqueezySubscriptionId);
+        }
+
+        await ctx.db.patch(subscription._id, updateData);
+        return subscription._id;
+      },
+      {
+        context: { lemonSqueezySubscriptionId, action: 'updateSubscription' },
+        maxRetries: 3,
+      }
+    );
   },
 });
 
@@ -188,5 +205,24 @@ export const getSubscriptionStats = query({
     };
     
     return stats;
+  },
+});
+
+// Internal queries for avoiding circular references
+export const getByIdInternal = internalQuery({
+  args: { id: v.id("subscriptions") },
+  handler: async (ctx, { id }) => {
+    return await ctx.db.get(id);
+  },
+});
+
+export const getByUserIdInternal = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, { userId }) => {
+    return await ctx.db
+      .query("subscriptions")
+      .withIndex("byUserId", (q) => q.eq("userId", userId))
+      .filter((q) => q.eq(q.field("status"), "active"))
+      .first();
   },
 });

@@ -1,6 +1,7 @@
-import { internalMutation, query, QueryCtx } from "./_generated/server";
+import { internalMutation, internalQuery, query, QueryCtx } from "./_generated/server";
 import { UserJSON } from "@clerk/backend";
 import { v, Validator } from "convex/values";
+import { AuthenticationError } from "./lib/errors";
 
 export const current = query({
   args: {},
@@ -45,7 +46,7 @@ export const deleteFromClerk = internalMutation({
 
 export async function getCurrentUserOrThrow(ctx: QueryCtx) {
   const userRecord = await getCurrentUser(ctx);
-  if (!userRecord) throw new Error("Can't get current user");
+  if (!userRecord) throw new AuthenticationError("사용자 인증이 필요합니다");
   return userRecord;
 }
 
@@ -63,3 +64,18 @@ async function userByExternalId(ctx: QueryCtx, externalId: string) {
     .withIndex("byExternalId", (q) => q.eq("externalId", externalId))
     .unique();
 }
+
+// Internal query for avoiding circular references
+export const getByIdInternal = internalQuery({
+  args: { id: v.id("users") },
+  handler: async (ctx, { id }) => {
+    return await ctx.db.get(id);
+  },
+});
+
+export const getByExternalIdInternal = internalQuery({
+  args: { externalId: v.string() },
+  handler: async (ctx, { externalId }) => {
+    return await userByExternalId(ctx, externalId);
+  },
+});
