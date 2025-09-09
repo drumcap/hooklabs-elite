@@ -262,14 +262,16 @@ export const trackCreditUsage = internalMutation({
     // 사용량 기록 생성
     await ctx.db.insert("usage", {
       userId: args.userId,
-      type: "credit",
-      feature: args.feature,
-      quantity: args.amount,
+      resourceType: "credit",
+      amount: args.amount,
+      unit: "credits",
+      description: `Credit usage for ${args.feature}`,
       metadata: {
         creditAmount: args.amount,
+        feature: args.feature,
       },
       timestamp: args.timestamp,
-      billingPeriod: getBillingPeriod(args.timestamp),
+      createdAt: args.timestamp,
     });
   },
 });

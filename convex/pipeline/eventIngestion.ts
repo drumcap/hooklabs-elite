@@ -54,7 +54,7 @@ export const ingestEvent = mutation({
         });
         
         // 실시간 처리 트리거 (비동기)
-        await ctx.scheduler.runAfter(0, internal.pipeline.processRealtimeEvent, {
+        await ctx.scheduler.runAfter(0, internal.pipeline.events.processRealtimeEvent, {
           eventId,
           eventType: args.eventType,
           payload: args.payload,
@@ -187,7 +187,7 @@ export const processRealtimeEvent = action({
       }
       
       // 처리 완료 표시
-      await ctx.runMutation(internal.pipeline.markEventProcessed, { eventId });
+      await ctx.runMutation(internal.pipeline.events.markEventProcessed, { eventId });
       
       // 실시간 메트릭 업데이트
       await updateRealtimeMetrics(ctx, eventType);
@@ -196,7 +196,7 @@ export const processRealtimeEvent = action({
       console.error(`Failed to process event ${eventId}:`, error);
       
       // Dead Letter Queue로 이동
-      await ctx.runMutation(internal.pipeline.moveToDeadLetterQueue, {
+      await ctx.runMutation(internal.pipeline.events.moveToDeadLetterQueue, {
         eventId,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -403,7 +403,7 @@ export const checkDataQuality = action({
     sampleSize: v.optional(v.number()),
   },
   handler: async (ctx, { dataset, sampleSize = 1000 }): Promise<DataQualityResult> => {
-    const events = await ctx.runQuery(internal.pipeline.getRecentEvents, {
+    const events = await ctx.runQuery(internal.pipeline.events.getRecentEvents, {
       limit: sampleSize,
     });
     

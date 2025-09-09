@@ -67,9 +67,9 @@ const transformationRules: Record<string, TransformationRule> = {
       };
     },
     validation: (output: SocialMetric) => {
-      return output.platform && 
+      return Boolean(output.platform && 
              output.postId && 
-             output.metrics.views >= 0;
+             output.metrics.views >= 0);
     },
   },
   
@@ -150,7 +150,7 @@ export const transformData = action({
         }
         
         // 변환된 데이터 저장
-        await ctx.runMutation(internal.pipeline.saveTransformedData, {
+        await ctx.runMutation(internal.pipeline.storage.saveTransformedData, {
           transformationId,
           sourceType,
           targetType: rule.targetType,
@@ -203,7 +203,7 @@ export const aggregateByWindow = action({
     const endTime = new Date(now).toISOString();
     
     // 해당 기간의 데이터 조회
-    const data = await ctx.runQuery(internal.pipeline.getMetricData, {
+    const data = await ctx.runQuery(internal.pipeline.storage.getMetricData, {
       metric,
       startTime,
       endTime,
@@ -251,7 +251,7 @@ export const aggregateByWindow = action({
     }
     
     // 집계 결과 저장
-    await ctx.runMutation(internal.pipeline.saveAggregation, {
+    await ctx.runMutation(internal.pipeline.storage.saveAggregation, {
       metric,
       window,
       result,
@@ -396,12 +396,13 @@ export const runBatchTransformation = action({
     
     while (true) {
       // 배치 데이터 조회
-      const batch = await ctx.runQuery(internal.pipeline.getBatchData, {
+      const batchResult = await ctx.runQuery(internal.pipeline.storage.getBatchData, {
         table: sourceTable,
         limit: batchSize,
         cursor,
       });
       
+      const batch = batchResult.data;
       if (batch.length === 0) break;
       
       // 각 레코드 변환
@@ -414,7 +415,7 @@ export const runBatchTransformation = action({
             continue;
           }
           
-          await ctx.runMutation(internal.pipeline.saveTransformedData, {
+          await ctx.runMutation(internal.pipeline.storage.saveTransformedData, {
             transformationId,
             sourceType: rule.sourceType,
             targetType: rule.targetType,
@@ -428,11 +429,11 @@ export const runBatchTransformation = action({
         }
       }
       
-      // 다음 배치를 위한 커서 업데이트
-      cursor = batch[batch.length - 1]._id;
+      // 다음 배치를 위한 커서 업데이트 (실제 구현에서는 nextCursor 사용)
+      cursor = batchResult.nextCursor || undefined;
       
       // 진행 상황 업데이트
-      await ctx.runMutation(internal.pipeline.updateBatchProgress, {
+      await ctx.runMutation(internal.pipeline.storage.updateBatchProgress, {
         transformationId,
         processed,
         failed,

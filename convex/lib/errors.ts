@@ -441,12 +441,9 @@ export async function withErrorHandling<T>(
     } catch (error) {
       lastError = ErrorHandler.toConvexError(error);
       
-      // 컨텍스트 추가
-      if (context) {
-        lastError.details = {
-          ...lastError.details,
-          context,
-        };
+      // 컨텍스트 추가 (새로운 오류 객체 생성)
+      if (context && lastError.message) {
+        lastError = new ConvexError(`${lastError.message} - Context: ${JSON.stringify(context)}`);
       }
 
       // 오류 로깅

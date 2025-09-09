@@ -272,6 +272,157 @@ async function updateCreditBalance(ctx: any, userId: any) {
   }
 }
 
+// 간단한 잔액 조회 함수 (대시보드 사이드바용) - 인증된 사용자 자동 감지
+export const getBalance = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("인증되지 않은 사용자입니다.");
+    }
+
+    // 외부 ID로 사용자 찾기
+    const user = await ctx.db
+      .query("users")
+      .withIndex("byExternalId", (q) => q.eq("externalId", identity.subject))
+      .first();
+
+    if (!user) {
+      // 사용자가 없으면 기본값 반환 (신규 사용자일 수 있음)
+      return {
+        availableCredits: 0,
+        totalCredits: 0,
+        usedCredits: 0,
+        expiredCredits: 0,
+      };
+    }
+
+    const balance = await ctx.db
+      .query("userCreditBalances")
+      .withIndex("byUserId", (q: any) => q.eq("userId", user._id))
+      .first();
+
+    if (balance) {
+      return {
+        availableCredits: balance.availableCredits,
+        totalCredits: balance.totalCredits,
+        usedCredits: balance.usedCredits,
+        expiredCredits: balance.expiredCredits,
+      };
+    }
+
+    // 집계 테이블이 없으면 기본값 반환
+    return {
+      availableCredits: 0,
+      totalCredits: 0,
+      usedCredits: 0,
+      expiredCredits: 0,
+    };
+  },
+});
+
+// 사용량 통계 조회 (인증된 사용자 자동 감지)
+export const getUsageStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("인증되지 않은 사용자입니다.");
+    }
+
+    // 외부 ID로 사용자 찾기
+    const user = await ctx.db
+      .query("users")
+      .withIndex("byExternalId", (q) => q.eq("externalId", identity.subject))
+      .first();
+
+    if (!user) {
+      return {
+        today: 0,
+        thisWeek: 0,
+        thisMonth: 0,
+        average: 0,
+      };
+    }
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const thisWeekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    // 사용된 크레딧 내역 조회
+    const usedCredits = await ctx.db
+      .query("credits")
+      .withIndex("byUserId", (q: any) => q.eq("userId", user._id))
+      .filter((q) => q.eq(q.field("type"), "used"))
+      .collect();
+
+    const todayUsage = usedCredits
+      .filter((c) => c.createdAt >= today)
+      .reduce((sum, c) => sum + Math.abs(c.amount), 0);
+
+    const thisWeekUsage = usedCredits
+      .filter((c) => c.createdAt >= thisWeekStart)
+      .reduce((sum, c) => sum + Math.abs(c.amount), 0);
+
+    const thisMonthUsage = usedCredits
+      .filter((c) => c.createdAt >= thisMonthStart)
+      .reduce((sum, c) => sum + Math.abs(c.amount), 0);
+
+    // 일평균 계산 (지난 30일 기준)
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const last30DaysUsage = usedCredits
+      .filter((c) => c.createdAt >= thirtyDaysAgo)
+      .reduce((sum, c) => sum + Math.abs(c.amount), 0);
+    
+    const average = Math.round(last30DaysUsage / 30);
+
+    return {
+      today: todayUsage,
+      thisWeek: thisWeekUsage,
+      thisMonth: thisMonthUsage,
+      average,
+    };
+  },
+});
+
+// 최근 크레딧 거래 내역 조회 (인증된 사용자 자동 감지)
+export const getRecentTransactions = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, { limit = 10 }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("인증되지 않은 사용자입니다.");
+    }
+
+    // 외부 ID로 사용자 찾기
+    const user = await ctx.db
+      .query("users")
+      .withIndex("byExternalId", (q) => q.eq("externalId", identity.subject))
+      .first();
+
+    if (!user) {
+      return [];
+    }
+
+    const transactions = await ctx.db
+      .query("credits")
+      .withIndex("byUserId", (q: any) => q.eq("userId", user._id))
+      .order("desc")
+      .take(limit);
+
+    return transactions.map((transaction) => ({
+      _id: transaction._id,
+      amount: transaction.amount,
+      type: transaction.type,
+      description: transaction.description,
+      createdAt: transaction.createdAt,
+      relatedOrderId: transaction.relatedOrderId,
+      metadata: transaction.metadata,
+    }));
+  },
+});
+
 // Internal mutations for avoiding circular references
 export const useCreditsInternal = internalMutation({
   args: {

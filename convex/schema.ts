@@ -974,4 +974,48 @@ export default defineSchema({
       .index("byKey", ["key"])
       .index("byUserId", ["userId"])
       .index("byDate", ["date"]),
+
+    // 소셜 메트릭스 (개별 게시물 성과)
+    socialMetrics: defineTable({
+      postId: v.id("socialPosts"),
+      platform: v.string(), // "twitter", "threads", "linkedin"
+      metrics: v.object({
+        views: v.number(),
+        likes: v.number(),
+        retweets: v.optional(v.number()),
+        reposts: v.optional(v.number()),
+        replies: v.number(),
+        quotes: v.optional(v.number()),
+        saves: v.optional(v.number()),
+        shares: v.optional(v.number()),
+        clicks: v.optional(v.number()),
+        impressions: v.optional(v.number()),
+      }),
+      engagementRate: v.number(),
+      fetchedAt: v.string(),
+      createdAt: v.string(),
+    })
+      .index("byPostId", ["postId"])
+      .index("byPlatform", ["platform"])
+      .index("byFetchedAt", ["fetchedAt"])
+      .index("byCreatedAt", ["createdAt"]),
+
+    // 사용량 추적 (일반적인 사용량 기록)
+    usage: defineTable({
+      userId: v.id("users"),
+      resourceType: v.string(), // "ai_generation", "api_call", "storage", "credits"
+      amount: v.number(),
+      unit: v.string(), // "requests", "tokens", "MB", "credits"
+      description: v.string(),
+      postId: v.optional(v.id("socialPosts")),
+      personaId: v.optional(v.id("personas")),
+      metadata: v.optional(v.any()),
+      timestamp: v.string(),
+      createdAt: v.string(),
+    })
+      .index("byUserId", ["userId"])
+      .index("byResourceType", ["resourceType"])
+      .index("byTimestamp", ["timestamp"])
+      .index("byCreatedAt", ["createdAt"])
+      .index("byPostId", ["postId"]),
   });
