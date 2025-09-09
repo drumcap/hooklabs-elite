@@ -741,6 +741,147 @@ export default defineSchema({
       .index("bySeverity", ["severity"])
       .index("byTriggeredAt", ["triggeredAt"]),
 
+    // === 데이터 파이프라인 테이블들 ===
+    
+    // 이벤트 스트림
+    eventStreams: defineTable({
+      eventId: v.string(),
+      source: v.string(), // web, mobile, api, social, webhook
+      eventType: v.string(),
+      userId: v.optional(v.id("users")),
+      sessionId: v.optional(v.string()),
+      payload: v.any(),
+      metadata: v.optional(v.object({
+        ip: v.optional(v.string()),
+        userAgent: v.optional(v.string()),
+        referer: v.optional(v.string()),
+        platform: v.optional(v.string()),
+      })),
+      timestamp: v.string(),
+      processed: v.boolean(),
+      processedAt: v.optional(v.string()),
+    })
+      .index("byEventId", ["eventId"])
+      .index("bySource", ["source"])
+      .index("byEventType", ["eventType"])
+      .index("byUserId", ["userId"])
+      .index("byTimestamp", ["timestamp"])
+      .index("byProcessed", ["processed"]),
+    
+    // 변환된 데이터
+    transformedData: defineTable({
+      transformationId: v.string(),
+      sourceType: v.string(),
+      targetType: v.string(),
+      data: v.any(),
+      timestamp: v.string(),
+    })
+      .index("byTransformationId", ["transformationId"])
+      .index("bySourceType", ["sourceType"])
+      .index("byTargetType", ["targetType"])
+      .index("byTimestamp", ["timestamp"]),
+    
+    // 메트릭 포인트
+    metrics: defineTable({
+      metric: v.string(),
+      value: v.number(),
+      dimensions: v.optional(v.any()),
+      timestamp: v.string(),
+    })
+      .index("byMetric", ["metric"])
+      .index("byMetricAndTime", ["metric", "timestamp"])
+      .index("byTimestamp", ["timestamp"]),
+    
+    // 윈도우 집계
+    windowAggregations: defineTable({
+      windowKey: v.string(),
+      metric: v.string(),
+      window: v.string(), // 5min, 1hour, 24hour, 7days, 30days
+      count: v.number(),
+      sum: v.number(),
+      min: v.number(),
+      max: v.number(),
+      startTime: v.string(),
+      lastUpdated: v.string(),
+    })
+      .index("byWindowKey", ["windowKey"])
+      .index("byMetric", ["metric"])
+      .index("byWindow", ["window"]),
+    
+    // 집계 결과
+    aggregations: defineTable({
+      metric: v.string(),
+      window: v.string(),
+      result: v.any(),
+      timestamp: v.string(),
+    })
+      .index("byMetric", ["metric"])
+      .index("byWindow", ["window"])
+      .index("byTimestamp", ["timestamp"]),
+    
+    // Dead Letter Queue
+    deadLetterQueue: defineTable({
+      eventId: v.string(),
+      error: v.string(),
+      timestamp: v.string(),
+      retryCount: v.number(),
+      maxRetries: v.number(),
+      lastRetryAt: v.optional(v.string()),
+    })
+      .index("byEventId", ["eventId"])
+      .index("byTimestamp", ["timestamp"])
+      .index("byRetryCount", ["retryCount"]),
+    
+    // 배치 작업
+    batchJobs: defineTable({
+      transformationId: v.string(),
+      type: v.string(), // import, export, transform, aggregate
+      status: v.string(), // pending, running, completed, failed
+      config: v.any(),
+      processed: v.number(),
+      failed: v.number(),
+      startedAt: v.optional(v.string()),
+      completedAt: v.optional(v.string()),
+      lastUpdated: v.string(),
+      error: v.optional(v.string()),
+    })
+      .index("byTransformationId", ["transformationId"])
+      .index("byType", ["type"])
+      .index("byStatus", ["status"]),
+    
+    // 데이터 품질 체크
+    dataQualityChecks: defineTable({
+      dataset: v.string(),
+      timestamp: v.string(),
+      totalRecords: v.number(),
+      validRecords: v.number(),
+      invalidRecords: v.number(),
+      qualityScore: v.number(),
+      issues: v.array(v.object({
+        field: v.string(),
+        issue: v.string(),
+        count: v.number(),
+        severity: v.string(),
+      })),
+    })
+      .index("byDataset", ["dataset"])
+      .index("byTimestamp", ["timestamp"])
+      .index("byQualityScore", ["qualityScore"]),
+    
+    // 파이프라인 상태
+    pipelineStatus: defineTable({
+      name: v.string(),
+      status: v.string(), // running, completed, failed, paused
+      startedAt: v.string(),
+      completedAt: v.optional(v.string()),
+      processedCount: v.number(),
+      failedCount: v.number(),
+      errorMessages: v.optional(v.array(v.string())),
+      nextRun: v.optional(v.string()),
+    })
+      .index("byName", ["name"])
+      .index("byStatus", ["status"]),
+    
     // 성능 보고서
     performanceReports: defineTable({
       reportType: v.string(), // daily, weekly, monthly
@@ -780,4 +921,57 @@ export default defineSchema({
     })
       .index("byReportType", ["reportType"])
       .index("byGeneratedAt", ["generatedAt"]),
+    
+    // === Analytics 관련 테이블들 ===
+    
+    // 세션 추적
+    sessions: defineTable({
+      sessionId: v.string(),
+      userId: v.optional(v.id("users")),
+      firstPageUrl: v.string(),
+      lastPageUrl: v.string(),
+      startedAt: v.string(),
+      lastActivityAt: v.string(),
+      pageCount: v.number(),
+      duration: v.optional(v.number()),
+    })
+      .index("bySessionId", ["sessionId"])
+      .index("byUserId", ["userId"])
+      .index("byStartedAt", ["startedAt"]),
+    
+    // 페이지 뷰
+    pageViews: defineTable({
+      key: v.string(), // date_url
+      url: v.string(),
+      date: v.string(),
+      count: v.number(),
+      referrers: v.array(v.string()),
+    })
+      .index("byKey", ["key"])
+      .index("byDate", ["date"])
+      .index("byUrl", ["url"]),
+    
+    // 사용자 액션
+    userActions: defineTable({
+      userId: v.id("users"),
+      action: v.string(),
+      metadata: v.optional(v.any()),
+      timestamp: v.string(),
+    })
+      .index("byUserId", ["userId"])
+      .index("byAction", ["action"])
+      .index("byTimestamp", ["timestamp"]),
+    
+    // 사용자 활동 요약
+    userActivitySummary: defineTable({
+      key: v.string(), // userId_date
+      userId: v.id("users"),
+      date: v.string(),
+      actions: v.any(), // action counts
+      totalActions: v.number(),
+      lastActivityAt: v.string(),
+    })
+      .index("byKey", ["key"])
+      .index("byUserId", ["userId"])
+      .index("byDate", ["date"]),
   });

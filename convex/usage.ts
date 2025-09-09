@@ -1,4 +1,4 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 
 // 사용자의 현재 사용량 조회
@@ -249,3 +249,33 @@ export const checkUsageAlerts = query({
     return alerts;
   },
 });
+
+// 크레딧 사용량 추적 (internal)
+export const trackCreditUsage = internalMutation({
+  args: {
+    userId: v.id("users"),
+    amount: v.number(),
+    feature: v.string(),
+    timestamp: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // 사용량 기록 생성
+    await ctx.db.insert("usage", {
+      userId: args.userId,
+      type: "credit",
+      feature: args.feature,
+      quantity: args.amount,
+      metadata: {
+        creditAmount: args.amount,
+      },
+      timestamp: args.timestamp,
+      billingPeriod: getBillingPeriod(args.timestamp),
+    });
+  },
+});
+
+// 헬퍼 함수
+function getBillingPeriod(timestamp: string): string {
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
