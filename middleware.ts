@@ -209,7 +209,7 @@ function logRequest(req: NextRequest, status: number, duration: number, note?: s
 
   // API 요청만 로깅 (정적 파일 제외)
   if (pathname.startsWith('/api/') || pathname.startsWith('/dashboard')) {
-    logger.request(method, `${pathname}${search}`, status, duration, {
+    console.log(`[${new Date().toISOString()}] ${method} ${pathname}${search} - ${status} (${duration}ms)`, {
       ip,
       userAgent: userAgent.substring(0, 100), // 길이 제한
       note
