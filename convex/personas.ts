@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalQuery } from "./_generated/server";
 import { getAuthUserId } from "./auth";
 
 // 페르소나 목록 조회
@@ -57,6 +57,35 @@ export const getActive = query({
       .filter((q) => q.eq(q.field("isActive"), true))
       .order("desc")
       .collect();
+  },
+});
+
+// Internal query for action use (인증 불필요)
+export const getInternal = internalQuery({
+  args: { id: v.id("personas") },
+  handler: async (ctx, { id }) => {
+    return await ctx.db.get(id);
+  },
+});
+
+// Internal query for getting persona by userId (action 전용)
+export const getByUserIdInternal = internalQuery({
+  args: { 
+    userId: v.id("users"),
+    personaId: v.id("personas") 
+  },
+  handler: async (ctx, { userId, personaId }) => {
+    const persona = await ctx.db.get(personaId);
+    if (!persona) {
+      throw new Error("페르소나를 찾을 수 없습니다");
+    }
+    
+    // 사용자 소유 확인
+    if (persona.userId !== userId) {
+      throw new Error("페르소나에 대한 접근 권한이 없습니다");
+    }
+    
+    return persona;
   },
 });
 

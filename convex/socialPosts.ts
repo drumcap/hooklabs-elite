@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query, internalQuery } from "./_generated/server";
+import { mutation, query, internalQuery, internalMutation } from "./_generated/server";
 import { getAuthUserId } from "./auth";
 
 // 게시물 목록 조회 (페이징 지원)
@@ -124,6 +124,43 @@ export const create = mutation({
 
     return await ctx.db.insert("socialPosts", {
       userId,
+      personaId: args.personaId,
+      originalContent: args.originalContent,
+      finalContent: args.originalContent, // 초기값은 원본과 동일
+      platforms: args.platforms,
+      status: "draft",
+      hashtags: args.hashtags || [],
+      mediaUrls: args.mediaUrls,
+      threadCount: args.threadCount || 1,
+      creditsUsed: 0, // 초기 생성시에는 크레딧 미사용
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+// Internal mutation for action use (초안 생성)
+export const createInternal = internalMutation({
+  args: {
+    userId: v.id("users"),
+    personaId: v.id("personas"),
+    originalContent: v.string(),
+    platforms: v.array(v.string()),
+    hashtags: v.optional(v.array(v.string())),
+    mediaUrls: v.optional(v.array(v.string())),
+    threadCount: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // 페르소나 확인 (소유권 검증은 action에서 이미 수행)
+    const persona = await ctx.db.get(args.personaId);
+    if (!persona) {
+      throw new Error("페르소나를 찾을 수 없습니다");
+    }
+
+    const now = new Date().toISOString();
+
+    return await ctx.db.insert("socialPosts", {
+      userId: args.userId,
       personaId: args.personaId,
       originalContent: args.originalContent,
       finalContent: args.originalContent, // 초기값은 원본과 동일

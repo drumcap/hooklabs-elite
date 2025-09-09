@@ -215,22 +215,24 @@ function calculateTrendingScore(content: string): number {
 // AI 콘텐츠 변형 생성
 export const generateVariants = action({
   args: {
+    userId: v.id("users"),
     postId: v.id("socialPosts"),
     personaId: v.id("personas"),
     originalContent: v.string(),
     platforms: v.array(v.string()),
     variantCount: v.optional(v.number()),
   },
-  handler: async (ctx, { postId, personaId, originalContent, platforms, variantCount = 5 }): Promise<{
+  handler: async (ctx, { userId, postId, personaId, originalContent, platforms, variantCount = 5 }): Promise<{
     success: boolean;
     variantIds: string[];
     creditsUsed: number;
     totalVariants: number;
   }> => {
-    // 사용자 인증 확인은 호출하는 쪽에서 처리
-    
-    // 페르소나 정보 가져오기
-    const persona = await ctx.runQuery(api.personas.get, { id: personaId });
+    // 페르소나 정보 가져오기 (내부 쿼리 사용)
+    const persona = await ctx.runQuery(internal.personas.getByUserIdInternal, { 
+      userId,
+      personaId 
+    });
     if (!persona) {
       throw new Error("페르소나를 찾을 수 없습니다");
     }
@@ -241,7 +243,7 @@ export const generateVariants = action({
     
     // 크레딧 차감 실행
     await ctx.runMutation(internal.credits.useCreditsInternal, { 
-      userId: persona.userId, 
+      userId, 
       amount: totalCreditsNeeded,
       description: `AI 콘텐츠 변형 생성 (${variantCount}개)`
     });
@@ -398,6 +400,115 @@ ${systemPrompt}
       });
 
       throw error;
+    }
+  },
+});
+
+// 통합 콘텐츠 생성 플로우 (초안 생성 + 변형 생성)
+export const createPostWithVariants = action({
+  args: {
+    userId: v.id("users"),
+    personaId: v.id("personas"),
+    originalContent: v.string(),
+    platforms: v.array(v.string()),
+    hashtags: v.optional(v.array(v.string())),
+    mediaUrls: v.optional(v.array(v.string())),
+    threadCount: v.optional(v.number()),
+    variantCount: v.optional(v.number()),
+    generateVariants: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args): Promise<{
+    success: boolean;
+    postId: string;
+    variantIds?: string[];
+    creditsUsed: number;
+    message: string;
+  }> => {
+    const { 
+      userId, 
+      personaId, 
+      originalContent, 
+      platforms, 
+      hashtags, 
+      mediaUrls, 
+      threadCount,
+      variantCount = 5,
+      generateVariants = true 
+    } = args;
+
+    try {
+      // 1. 페르소나 검증
+      const persona = await ctx.runQuery(internal.personas.getByUserIdInternal, { 
+        userId,
+        personaId 
+      });
+      if (!persona) {
+        throw new Error("페르소나를 찾을 수 없습니다");
+      }
+
+      // 2. 초안 게시물 생성
+      const postId = await ctx.runMutation(internal.socialPosts.createInternal, {
+        userId,
+        personaId,
+        originalContent,
+        platforms,
+        hashtags,
+        mediaUrls,
+        threadCount,
+      });
+
+      if (!postId) {
+        throw new Error("게시물 생성에 실패했습니다");
+      }
+
+      // 3. 변형 생성 (선택적)
+      let variantIds: string[] = [];
+      let totalCreditsUsed = 0;
+
+      if (generateVariants) {
+        try {
+          const variantResult = await ctx.runAction(internal.actions.contentGeneration.generateVariants, {
+            userId,
+            postId: postId as Id<"socialPosts">,
+            personaId,
+            originalContent,
+            platforms,
+            variantCount,
+          });
+          
+          variantIds = variantResult.variantIds;
+          totalCreditsUsed = variantResult.creditsUsed;
+        } catch (variantError) {
+          console.error("변형 생성 중 오류:", variantError);
+          // 변형 생성 실패해도 초안은 생성되었으므로 부분 성공으로 처리
+          return {
+            success: true,
+            postId: postId.toString(),
+            variantIds: [],
+            creditsUsed: 0,
+            message: `초안은 생성되었으나 변형 생성에 실패했습니다: ${(variantError as Error).message}`,
+          };
+        }
+      }
+
+      return {
+        success: true,
+        postId: postId.toString(),
+        variantIds,
+        creditsUsed: totalCreditsUsed,
+        message: generateVariants 
+          ? `게시물과 ${variantIds.length}개의 변형이 성공적으로 생성되었습니다`
+          : "게시물 초안이 성공적으로 생성되었습니다",
+      };
+    } catch (error) {
+      console.error("게시물 생성 중 오류:", error);
+      return {
+        success: false,
+        postId: "",
+        variantIds: [],
+        creditsUsed: 0,
+        message: `게시물 생성 실패: ${(error as Error).message}`,
+      };
     }
   },
 });
