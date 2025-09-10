@@ -248,6 +248,7 @@ export const generateVariants = action({
       description: `AI 콘텐츠 변형 생성 (${variantCount}개)`
     });
 
+    // 중앙화된 config 사용 (서버 사이드에서는 직접 process.env 접근 필요)
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error("Gemini API 키가 설정되지 않았습니다");
@@ -528,6 +529,7 @@ export const optimizeContent = action({
       throw new Error("페르소나를 찾을 수 없습니다");
     }
 
+    // 중앙화된 config 사용 (서버 사이드에서는 직접 process.env 접근 필요)
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       throw new Error("Gemini API 키가 설정되지 않았습니다");

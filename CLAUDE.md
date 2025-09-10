@@ -176,3 +176,4 @@ When installing shadcn/ui components:
 Always verify both frontend and backend builds when work is completed:
 - **Frontend**: `bun build` - Verify Next.js production build succeeds
 - **Backend**: `bunx convex dev` - Verify Convex functions compile and deploy successfully
+- 작업의 마무리에는 convex 빌드 next 빌드해서 오류를 잡아줘
