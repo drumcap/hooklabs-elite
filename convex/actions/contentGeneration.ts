@@ -433,7 +433,7 @@ export const createPostWithVariants = action({
       mediaUrls, 
       threadCount,
       variantCount = 5,
-      generateVariants = true 
+      generateVariants: shouldGenerateVariants = true 
     } = args;
 
     try {
@@ -465,9 +465,10 @@ export const createPostWithVariants = action({
       let variantIds: string[] = [];
       let totalCreditsUsed = 0;
 
-      if (generateVariants) {
+      if (shouldGenerateVariants) {
         try {
-          const variantResult = await ctx.runAction(internal.actions.contentGeneration.generateVariants, {
+          // generateVariants 액션을 직접 호출
+          const variantResult = await ctx.runAction(api.actions.contentGeneration.generateVariants, {
             userId,
             postId: postId as Id<"socialPosts">,
             personaId,
@@ -496,7 +497,7 @@ export const createPostWithVariants = action({
         postId: postId.toString(),
         variantIds,
         creditsUsed: totalCreditsUsed,
-        message: generateVariants 
+        message: shouldGenerateVariants 
           ? `게시물과 ${variantIds.length}개의 변형이 성공적으로 생성되었습니다`
           : "게시물 초안이 성공적으로 생성되었습니다",
       };
