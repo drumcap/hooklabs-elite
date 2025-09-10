@@ -1,5 +1,6 @@
 import dynamic from 'next/dynamic';
 import { ComponentType } from 'react';
+import React from 'react';
 
 /**
  * 동적 임포트 최적화
@@ -14,7 +15,7 @@ import { ComponentType } from 'react';
 export const DynamicChart = dynamic(
   () => import('@/components/charts/analytics-chart'),
   {
-    loading: () => <div className="animate-pulse bg-muted h-64 rounded-lg" />,
+    loading: () => React.createElement('div', { className: "animate-pulse bg-muted h-64 rounded-lg" }),
     ssr: false, // 차트는 클라이언트에서만 렌더링
   }
 );
@@ -22,7 +23,7 @@ export const DynamicChart = dynamic(
 export const DynamicMetricsDashboard = dynamic(
   () => import('@/components/dashboard/metrics-dashboard'),
   {
-    loading: () => <div className="animate-pulse bg-muted h-96 rounded-lg" />,
+    loading: () => React.createElement('div', { className: "animate-pulse bg-muted h-96 rounded-lg" }),
     ssr: false,
   }
 );
@@ -34,15 +35,13 @@ export const DynamicMetricsDashboard = dynamic(
 export const DynamicContentEditor = dynamic(
   () => import('@/components/content/content-editor'),
   {
-    loading: () => (
-      <div className="animate-pulse space-y-4">
-        <div className="h-12 bg-muted rounded" />
-        <div className="h-64 bg-muted rounded" />
-        <div className="flex gap-2">
-          <div className="h-10 w-24 bg-muted rounded" />
-          <div className="h-10 w-24 bg-muted rounded" />
-        </div>
-      </div>
+    loading: () => React.createElement('div', { className: "animate-pulse space-y-4" },
+      React.createElement('div', { className: "h-12 bg-muted rounded" }),
+      React.createElement('div', { className: "h-64 bg-muted rounded" }),
+      React.createElement('div', { className: "flex gap-2" },
+        React.createElement('div', { className: "h-10 w-24 bg-muted rounded" }),
+        React.createElement('div', { className: "h-10 w-24 bg-muted rounded" })
+      )
     ),
     ssr: false,
   }
@@ -51,7 +50,7 @@ export const DynamicContentEditor = dynamic(
 export const DynamicRichTextEditor = dynamic(
   () => import('@/components/ui/rich-text-editor'),
   {
-    loading: () => <div className="animate-pulse bg-muted h-40 rounded border" />,
+    loading: () => React.createElement('div', { className: "animate-pulse bg-muted h-40 rounded border" }),
     ssr: false,
   }
 );
@@ -63,19 +62,17 @@ export const DynamicRichTextEditor = dynamic(
 export const DynamicSocialAccountManager = dynamic(
   () => import('@/components/social/social-account-manager'),
   {
-    loading: () => (
-      <div className="animate-pulse space-y-4">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-4 p-4 border rounded">
-            <div className="w-12 h-12 bg-muted rounded-full" />
-            <div className="space-y-2 flex-1">
-              <div className="h-4 bg-muted rounded w-32" />
-              <div className="h-3 bg-muted rounded w-24" />
-            </div>
-            <div className="h-8 w-16 bg-muted rounded" />
-          </div>
-        ))}
-      </div>
+    loading: () => React.createElement('div', { className: "animate-pulse space-y-4" },
+      Array.from({ length: 3 }).map((_, i) => 
+        React.createElement('div', { key: i, className: "flex items-center gap-4 p-4 border rounded" },
+          React.createElement('div', { className: "w-12 h-12 bg-muted rounded-full" }),
+          React.createElement('div', { className: "space-y-2 flex-1" },
+            React.createElement('div', { className: "h-4 bg-muted rounded w-32" }),
+            React.createElement('div', { className: "h-3 bg-muted rounded w-24" })
+          ),
+          React.createElement('div', { className: "h-8 w-16 bg-muted rounded" })
+        )
+      )
     ),
   }
 );
@@ -83,15 +80,13 @@ export const DynamicSocialAccountManager = dynamic(
 export const DynamicPostScheduler = dynamic(
   () => import('@/components/scheduler/post-scheduler'),
   {
-    loading: () => (
-      <div className="animate-pulse space-y-6">
-        <div className="h-8 bg-muted rounded w-48" />
-        <div className="grid grid-cols-7 gap-2">
-          {Array.from({ length: 35 }).map((_, i) => (
-            <div key={i} className="h-16 bg-muted rounded" />
-          ))}
-        </div>
-      </div>
+    loading: () => React.createElement('div', { className: "animate-pulse space-y-6" },
+      React.createElement('div', { className: "h-8 bg-muted rounded w-48" }),
+      React.createElement('div', { className: "grid grid-cols-7 gap-2" },
+        Array.from({ length: 35 }).map((_, i) => 
+          React.createElement('div', { key: i, className: "h-16 bg-muted rounded" })
+        )
+      )
     ),
   }
 );
@@ -103,21 +98,19 @@ export const DynamicPostScheduler = dynamic(
 export const DynamicPricingTable = dynamic(
   () => import('@/components/pricing/pricing-table'),
   {
-    loading: () => (
-      <div className="animate-pulse grid md:grid-cols-3 gap-6">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="border rounded-lg p-6 space-y-4">
-            <div className="h-6 bg-muted rounded w-24" />
-            <div className="h-12 bg-muted rounded w-32" />
-            <div className="space-y-2">
-              {Array.from({ length: 4 }).map((_, j) => (
-                <div key={j} className="h-4 bg-muted rounded" />
-              ))}
-            </div>
-            <div className="h-10 bg-muted rounded" />
-          </div>
-        ))}
-      </div>
+    loading: () => React.createElement('div', { className: "animate-pulse grid md:grid-cols-3 gap-6" },
+      Array.from({ length: 3 }).map((_, i) => 
+        React.createElement('div', { key: i, className: "border rounded-lg p-6 space-y-4" },
+          React.createElement('div', { className: "h-6 bg-muted rounded w-24" }),
+          React.createElement('div', { className: "h-12 bg-muted rounded w-32" }),
+          React.createElement('div', { className: "space-y-2" },
+            Array.from({ length: 4 }).map((_, j) => 
+              React.createElement('div', { key: j, className: "h-4 bg-muted rounded" })
+            )
+          ),
+          React.createElement('div', { className: "h-10 bg-muted rounded" })
+        )
+      )
     ),
   }
 );
@@ -125,17 +118,15 @@ export const DynamicPricingTable = dynamic(
 export const DynamicSubscriptionManager = dynamic(
   () => import('@/components/subscription/subscription-manager'),
   {
-    loading: () => (
-      <div className="animate-pulse space-y-6">
-        <div className="border rounded-lg p-6 space-y-4">
-          <div className="h-6 bg-muted rounded w-40" />
-          <div className="h-4 bg-muted rounded w-64" />
-          <div className="flex gap-2">
-            <div className="h-10 w-24 bg-muted rounded" />
-            <div className="h-10 w-24 bg-muted rounded" />
-          </div>
-        </div>
-      </div>
+    loading: () => React.createElement('div', { className: "animate-pulse space-y-6" },
+      React.createElement('div', { className: "border rounded-lg p-6 space-y-4" },
+        React.createElement('div', { className: "h-6 bg-muted rounded w-40" }),
+        React.createElement('div', { className: "h-4 bg-muted rounded w-64" }),
+        React.createElement('div', { className: "flex gap-2" },
+          React.createElement('div', { className: "h-10 w-24 bg-muted rounded" }),
+          React.createElement('div', { className: "h-10 w-24 bg-muted rounded" })
+        )
+      )
     ),
   }
 );
@@ -147,16 +138,14 @@ export const DynamicSubscriptionManager = dynamic(
 export const DynamicDataTable = dynamic(
   () => import('@/components/ui/data-table'),
   {
-    loading: () => (
-      <div className="animate-pulse space-y-4">
-        <div className="h-10 bg-muted rounded" />
-        <div className="border rounded">
-          <div className="h-12 bg-muted border-b" />
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-12 bg-muted/50 border-b last:border-b-0" />
-          ))}
-        </div>
-      </div>
+    loading: () => React.createElement('div', { className: "animate-pulse space-y-4" },
+      React.createElement('div', { className: "h-10 bg-muted rounded" }),
+      React.createElement('div', { className: "border rounded" },
+        React.createElement('div', { className: "h-12 bg-muted border-b" }),
+        Array.from({ length: 5 }).map((_, i) => 
+          React.createElement('div', { key: i, className: "h-12 bg-muted/50 border-b last:border-b-0" })
+        )
+      )
     ),
   }
 );
@@ -188,7 +177,7 @@ export const DynamicImageUploadModal = dynamic(
 export const DynamicImageOptimizer = dynamic(
   () => import('@/components/media/image-optimizer'),
   {
-    loading: () => <div className="animate-pulse bg-muted h-32 rounded" />,
+    loading: () => React.createElement('div', { className: "animate-pulse bg-muted h-32 rounded" }),
     ssr: false,
   }
 );
@@ -196,9 +185,7 @@ export const DynamicImageOptimizer = dynamic(
 export const DynamicFileUpload = dynamic(
   () => import('@/components/ui/file-upload'),
   {
-    loading: () => (
-      <div className="animate-pulse border-dashed border-2 h-32 rounded-lg bg-muted/20" />
-    ),
+    loading: () => React.createElement('div', { className: "animate-pulse border-dashed border-2 h-32 rounded-lg bg-muted/20" }),
     ssr: false,
   }
 );
@@ -210,15 +197,13 @@ export const DynamicFileUpload = dynamic(
 export const DynamicLiveMetrics = dynamic(
   () => import('@/components/metrics/live-metrics'),
   {
-    loading: () => (
-      <div className="animate-pulse grid grid-cols-2 md:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="border rounded-lg p-4 space-y-2">
-            <div className="h-4 bg-muted rounded w-16" />
-            <div className="h-8 bg-muted rounded w-12" />
-          </div>
-        ))}
-      </div>
+    loading: () => React.createElement('div', { className: "animate-pulse grid grid-cols-2 md:grid-cols-4 gap-4" },
+      Array.from({ length: 4 }).map((_, i) => 
+        React.createElement('div', { key: i, className: "border rounded-lg p-4 space-y-2" },
+          React.createElement('div', { className: "h-4 bg-muted rounded w-16" }),
+          React.createElement('div', { className: "h-8 bg-muted rounded w-12" })
+        )
+      )
     ),
     ssr: false,
   }
@@ -231,15 +216,13 @@ export const DynamicLiveMetrics = dynamic(
 export const DynamicThemeCustomizer = dynamic(
   () => import('@/components/settings/theme-customizer'),
   {
-    loading: () => (
-      <div className="animate-pulse space-y-4">
-        <div className="h-6 bg-muted rounded w-32" />
-        <div className="grid grid-cols-6 gap-2">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="w-8 h-8 bg-muted rounded-full" />
-          ))}
-        </div>
-      </div>
+    loading: () => React.createElement('div', { className: "animate-pulse space-y-4" },
+      React.createElement('div', { className: "h-6 bg-muted rounded w-32" }),
+      React.createElement('div', { className: "grid grid-cols-6 gap-2" },
+        Array.from({ length: 12 }).map((_, i) => 
+          React.createElement('div', { key: i, className: "w-8 h-8 bg-muted rounded-full" })
+        )
+      )
     ),
     ssr: false,
   }
@@ -260,7 +243,7 @@ export function createDynamicComponent<T = {}>(
   }
 ) {
   return dynamic(importFn, {
-    loading: options?.loading || (() => <div className="animate-pulse bg-muted h-8 rounded" />),
+    loading: options?.loading || (() => React.createElement('div', { className: "animate-pulse bg-muted h-8 rounded" })),
     ssr: options?.ssr ?? true,
   });
 }
