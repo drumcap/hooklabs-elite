@@ -2,7 +2,7 @@
 model: opus
 ---
 
-Intelligently fix the issue using automatic agent selection with explicit Task tool invocations:
+지능적 문제 해결 - 명시적인 작업 도구 호출을 통한 자동 에이전트 선택 사용:
 
 [Extended thinking: This workflow analyzes the issue and automatically routes to the most appropriate specialist agent(s). Complex issues may require multiple agents working together.]
 

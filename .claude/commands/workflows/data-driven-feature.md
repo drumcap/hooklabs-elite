@@ -2,7 +2,7 @@
 model: opus
 ---
 
-Build data-driven features with integrated pipelines and ML capabilities using specialized agents:
+데이터드리븐 기능 구현 - 데이터 파이프라인과 ML 통합:
 
 [Extended thinking: This workflow orchestrates data scientists, data engineers, backend architects, and AI engineers to build features that leverage data pipelines, analytics, and machine learning. Each agent contributes their expertise to create a complete data-driven solution.]
 

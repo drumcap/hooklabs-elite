@@ -2,7 +2,7 @@
 model: opus
 ---
 
-Implement a new feature using specialized agents with explicit Task tool invocations:
+신규기능 구현 - 역할별 Sub Agent로 구현:
 
 [Extended thinking: This workflow orchestrates multiple specialized agents to implement a complete feature from design to deployment. Each agent receives context from previous agents to ensure coherent implementation.]
 

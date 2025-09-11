@@ -2,7 +2,7 @@
 model: sonnet
 ---
 
-# Data Validation Pipeline
+# 데이터 검증 파이프라인
 
 Create a comprehensive data validation system for: $ARGUMENTS
 

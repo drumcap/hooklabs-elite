@@ -2,7 +2,7 @@
 model: opus
 ---
 
-Implement security-first architecture and hardening measures with coordinated agent orchestration:
+보안 중심 아키텍처와 강화 조치를 조정된 에이전트 오케스트레이션으로 구현:
 
 [Extended thinking: This workflow prioritizes security at every layer of the application stack. Multiple agents work together to identify vulnerabilities, implement secure patterns, and ensure compliance with security best practices.]
 

@@ -2,7 +2,7 @@
 model: opus
 ---
 
-Build the same feature across multiple platforms:
+멀티플랫폼 기능 구현:
 
 Run in parallel:
 - frontend-developer: Web implementation

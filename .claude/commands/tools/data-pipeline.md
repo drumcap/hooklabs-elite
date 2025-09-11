@@ -2,7 +2,7 @@
 model: sonnet
 ---
 
-# Data Pipeline Architecture
+# 데이터 파이프라인 아키텍처
 
 Design and implement a scalable data pipeline for: $ARGUMENTS
 

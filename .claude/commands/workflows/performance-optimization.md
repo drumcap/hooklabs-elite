@@ -2,7 +2,7 @@
 model: opus
 ---
 
-Optimize application performance end-to-end using specialized performance and optimization agents:
+E2E 애플리케이션 성능 최적화 - using specialized performance and optimization agents:
 
 [Extended thinking: This workflow coordinates multiple agents to identify and fix performance bottlenecks across the entire stack. From database queries to frontend rendering, each agent contributes their expertise to create a highly optimized application.]
 

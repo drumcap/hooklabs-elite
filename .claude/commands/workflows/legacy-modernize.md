@@ -2,7 +2,7 @@
 model: opus
 ---
 
-Modernize legacy code using expert agents:
+레거시 코드 현대화 - 전문 에이전트를 활용:
 
 1. legacy-modernizer: Analyze and plan modernization
 2. test-automator: Create tests for legacy code

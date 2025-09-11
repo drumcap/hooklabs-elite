@@ -2,7 +2,7 @@
 model: opus
 ---
 
-# Machine Learning Pipeline
+머신러닝 파이프라인 구현:
 
 Design and implement a complete ML pipeline for: $ARGUMENTS
 

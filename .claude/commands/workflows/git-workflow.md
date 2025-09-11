@@ -2,7 +2,7 @@
 model: opus
 ---
 
-Complete Git workflow using specialized agents:
+Git 워크플로우 - 리뷰, 테스트, 배포검증, 커밋, 푸시:
 
 1. code-reviewer: Review uncommitted changes
 2. test-automator: Ensure tests pass

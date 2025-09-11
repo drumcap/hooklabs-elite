@@ -2,7 +2,7 @@
 model: sonnet
 ---
 
-Save current project context for future agent coordination:
+프로젝트 컨텍스트 저장:
 
 [Extended thinking: This tool uses the context-manager agent to capture and preserve project state, decisions, and patterns. This enables better continuity across sessions and improved agent coordination.]
 

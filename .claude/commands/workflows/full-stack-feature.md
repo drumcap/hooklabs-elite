@@ -2,7 +2,7 @@
 model: opus
 ---
 
-Implement a full-stack feature across multiple platforms with coordinated agent orchestration:
+풀스택 기능구현 - 멀티플랫폼 상황에 맞게 Sub Agent 가 각각 구현:
 
 [Extended thinking: This workflow orchestrates a comprehensive feature implementation across backend, frontend, mobile, and API layers. Each agent builds upon the work of previous agents to create a cohesive multi-platform solution.]
 

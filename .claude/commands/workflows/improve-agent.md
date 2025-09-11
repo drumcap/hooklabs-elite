@@ -2,7 +2,7 @@
 model: opus
 ---
 
-Improve an existing agent based on recent performance:
+기존 에이전트 개선 - 최근 성과를 바탕으로 수행:
 
 1. Analyze recent uses of: $ARGUMENTS
 2. Identify patterns in:

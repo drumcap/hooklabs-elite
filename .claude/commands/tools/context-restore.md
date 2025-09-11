@@ -2,7 +2,7 @@
 model: sonnet
 ---
 
-Restore saved project context for agent coordination:
+프로젝트 컨텍스트 복구:
 
 [Extended thinking: This tool uses the context-manager agent to restore previously saved project context, enabling continuity across sessions and providing agents with comprehensive project knowledge.]
 

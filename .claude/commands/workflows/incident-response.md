@@ -2,7 +2,7 @@
 model: opus
 ---
 
-Respond to production incidents with coordinated agent expertise for rapid resolution:
+제품장애 대응 - coordinated agent expertise for rapid resolution:
 
 [Extended thinking: This workflow handles production incidents with urgency and precision. Multiple specialized agents work together to identify root causes, implement fixes, and prevent recurrence.]
 
