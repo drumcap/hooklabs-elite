@@ -381,10 +381,42 @@ Key features included:
 - ✅ **Comprehensive logging** with structured logs
 - ✅ **Real-time analytics** with Google Analytics & Mixpanel
 
-### Environment-Specific Guides
+### 📚 Documentation
 
-- 🛠️ **[Environment Setup Guide](docs/deployment/environment-setup.md)** - Detailed configuration for each environment
-- 📊 **[Monitoring & Operations Guide](docs/deployment/monitoring-guide.md)** - Complete monitoring and alerting setup
+#### Architecture & Design
+- 🏗️ **[Architecture Review](docs/architecture/ARCHITECTURE-REVIEW-2025.md)** - System architecture overview
+- 📐 **[Code Analysis](docs/architecture/ARCHITECTURE-CODE-ANALYSIS.md)** - Detailed code architecture
+- 🔄 **[Social Media Backend](docs/architecture/social-media-backend-architecture.md)** - Social platform architecture
+- 📊 **[Data Pipeline](docs/architecture/data-pipeline-architecture.md)** - Data processing architecture
+
+#### Security
+- 🔒 **[Security Audit Report](docs/security/SECURITY-AUDIT-REPORT.md)** - Comprehensive security audit
+- ✅ **[Security Checklist](docs/security/SECURITY-CHECKLIST.md)** - Security implementation checklist
+- 🛡️ **[Security Implementation Guide](docs/security/SECURITY-IMPLEMENTATION-GUIDE.md)** - Security best practices
+- 🏛️ **[Security Architecture](docs/security/security-architecture.md)** - Security system design
+
+#### Performance
+- ⚡ **[Performance Optimization](docs/performance/performance-optimization-report.md)** - Optimization strategies
+- 🧪 **[Performance Testing Guide](docs/performance/performance-testing-guide.md)** - Performance testing methods
+- 🚀 **[API Optimization](docs/performance/api-optimization-report.md)** - API performance improvements
+
+#### Deployment & Operations
+- 🚀 **[Deployment Guide](docs/deployment/deployment-guide.md)** - Complete deployment instructions
+- 🛠️ **[Environment Setup](docs/deployment/environment-setup.md)** - Environment configuration
+- 📊 **[Monitoring Guide](docs/deployment/monitoring-guide.md)** - Monitoring and alerting setup
+
+#### API & Integration Guides
+- 📡 **[Social Media API Reference](docs/api/social-media-api-reference.md)** - API documentation
+- 🔧 **[Convex Guide](docs/api/convex-guide.md)** - Convex database guide
+- 🪝 **[Clerk Webhook Events](docs/api/clerk-webhook-events-catalog.md)** - Webhook event catalog
+- 🎯 **[Convex MCP Guide](docs/api/CONVEX_MCP_GUIDE.md)** - MCP integration guide
+
+#### User Guides
+- 📱 **[Platform Usage Guide](docs/guides/platform-usage-guide.md)** - Platform user guide
+- 🚀 **[Quick Start](docs/guides/social-media-quickstart.md)** - Quick start guide
+- 💳 **[Lemon Squeezy Setup](docs/guides/LEMON_SQUEEZY_SETUP.md)** - Payment setup guide
+- 💾 **[Backup & Recovery](docs/guides/backup-recovery.md)** - Data backup strategies
+- 🧪 **[Testing Guide](docs/guides/testing-guide.md)** - Testing strategies and setup
 
 ### Quick Commands
 

@@ -1,0 +1,641 @@
+name: 🚀 성능 테스트 자동화
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # 매일 오전 6시 성능 모니터링 실행
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: '실행할 테스트 유형'
+        required: true
+        type: choice
+        options:
+          - all
+          - load
+          - lighthouse
+          - e2e
+          - regression
+        default: 'all'
+      intensity:
+        description: '테스트 강도'
+        required: true
+        type: choice
+        options:
+          - light
+          - normal
+          - heavy
+        default: 'normal'
+
+env:
+  NODE_VERSION: '20'
+  PERFORMANCE_BASELINE_DAYS: 7
+
+jobs:
+  # =======================
+  # 🏗️ 빌드 및 준비
+  # =======================
+  setup:
+    name: 🏗️ 빌드 및 환경 준비
+    runs-on: ubuntu-latest
+    outputs:
+      should-run-performance: ${{ steps.check.outputs.should-run }}
+      test-type: ${{ steps.config.outputs.test-type }}
+      intensity: ${{ steps.config.outputs.intensity }}
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 전체 히스토리 필요 (성능 트렌드 분석)
+
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 의존성 설치
+        run: npm ci
+
+      - name: 🔍 성능 테스트 실행 여부 확인
+        id: check
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" ]] || [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "should-run=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "should-run=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # PR에서는 변경된 파일을 확인하여 성능에 영향을 줄 수 있는 변경사항이 있을 때만 실행
+            git fetch origin ${{ github.base_ref }}
+            if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.(ts|tsx|js|jsx|css|json)$|package\.json|next\.config\.js'; then
+              echo "should-run=true" >> $GITHUB_OUTPUT
+            else
+              echo "should-run=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "should-run=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: ⚙️ 테스트 설정 구성
+        id: config
+        run: |
+          TEST_TYPE="${{ github.event.inputs.test_type || 'all' }}"
+          INTENSITY="${{ github.event.inputs.intensity || 'normal' }}"
+          
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            TEST_TYPE="lighthouse"  # PR에서는 Lighthouse만 실행
+            INTENSITY="light"       # 가벼운 테스트
+          fi
+          
+          echo "test-type=$TEST_TYPE" >> $GITHUB_OUTPUT
+          echo "intensity=$INTENSITY" >> $GITHUB_OUTPUT
+
+      - name: 🏗️ 애플리케이션 빌드
+        if: steps.check.outputs.should-run == 'true'
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: 📦 빌드 아티팩트 업로드
+        if: steps.check.outputs.should-run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            .next/
+            public/
+            package.json
+            next.config.js
+          retention-days: 1
+
+  # =======================
+  # 📡 API 성능 테스트
+  # =======================
+  api-performance:
+    name: 📡 API 성능 테스트
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.should-run-performance == 'true' && (needs.setup.outputs.test-type == 'all' || needs.setup.outputs.test-type == 'load')
+    
+    services:
+      # API 테스트를 위한 애플리케이션 서비스
+      app:
+        image: node:20-alpine
+        options: --name app-service
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 의존성 설치
+        run: npm ci
+
+      - name: 📦 빌드 아티팩트 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: 🚀 애플리케이션 시작
+        run: |
+          npm start &
+          APP_PID=$!
+          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
+          
+          # 애플리케이션이 시작될 때까지 대기
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: 📊 API 성능 테스트 실행
+        run: npm run test tests/performance/api-performance.test.ts
+        env:
+          TEST_BASE_URL: http://localhost:3000
+          PERFORMANCE_INTENSITY: ${{ needs.setup.outputs.intensity }}
+
+      - name: 📈 k6 로드 테스트 실행
+        if: needs.setup.outputs.intensity != 'light'
+        run: |
+          # k6 설치
+          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+          
+          # 강도별 로드 테스트 실행
+          if [[ "${{ needs.setup.outputs.intensity }}" == "heavy" ]]; then
+            export K6_OPTIONS='{"stages":[{"duration":"5m","target":200},{"duration":"10m","target":500}]}'
+          else
+            export K6_OPTIONS='{"stages":[{"duration":"2m","target":50},{"duration":"5m","target":100}]}'
+          fi
+          
+          k6 run tests/performance/load-test.js
+          k6 run tests/performance/api-test.js
+
+      - name: 📊 성능 메트릭 수집
+        run: |
+          mkdir -p reports/performance
+          node -e "
+          const metrics = {
+            timestamp: new Date().toISOString(),
+            commit: '${{ github.sha }}',
+            branch: '${{ github.ref_name }}',
+            pr: '${{ github.event.number }}',
+            intensity: '${{ needs.setup.outputs.intensity }}'
+          };
+          require('fs').writeFileSync('reports/performance/api-metrics.json', JSON.stringify(metrics, null, 2));
+          "
+
+      - name: 📤 성능 리포트 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-performance-report
+          path: reports/performance/
+          retention-days: 30
+
+      - name: 🛑 애플리케이션 종료
+        if: always()
+        run: |
+          if [ ! -z "$APP_PID" ]; then
+            kill $APP_PID || true
+          fi
+
+  # =======================
+  # 🚦 Lighthouse 성능 테스트
+  # =======================
+  lighthouse-performance:
+    name: 🚦 Lighthouse 성능 테스트
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.should-run-performance == 'true' && (needs.setup.outputs.test-type == 'all' || needs.setup.outputs.test-type == 'lighthouse')
+    
+    strategy:
+      matrix:
+        profile: [desktop, mobile]
+        include:
+          - profile: desktop
+            device: 'Desktop Chrome'
+          - profile: mobile
+            device: 'Pixel 5'
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 의존성 설치
+        run: npm ci
+
+      - name: 📦 빌드 아티팩트 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: 🚀 애플리케이션 시작
+        run: |
+          npm start &
+          APP_PID=$!
+          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: 🚦 Lighthouse CI 실행 (${{ matrix.profile }})
+        run: |
+          # Lighthouse CI 설정 파일 생성
+          cat > lighthouserc.${{ matrix.profile }}.js << 'EOF'
+          module.exports = {
+            ci: {
+              collect: {
+                url: ['http://localhost:3000/', 'http://localhost:3000/dashboard'],
+                numberOfRuns: ${{ needs.setup.outputs.intensity == 'light' && '1' || '3' }},
+                settings: {
+                  preset: '${{ matrix.profile }}',
+                  onlyCategories: ['performance', 'accessibility', 'best-practices'],
+                  skipAudits: ${{ needs.setup.outputs.intensity == 'light' && '["screenshot-thumbnails", "final-screenshot"]' || '[]' }},
+                },
+              },
+              assert: {
+                assertions: {
+                  'categories:performance': ['error', { minScore: ${{ matrix.profile == 'mobile' && '0.8' || '0.85' }} }],
+                  'categories:accessibility': ['warn', { minScore: 0.9 }],
+                  'categories:best-practices': ['warn', { minScore: 0.85 }],
+                },
+              },
+              upload: {
+                target: 'filesystem',
+                outputDir: './reports/lighthouse/${{ matrix.profile }}',
+              },
+            },
+          };
+          EOF
+          
+          # Lighthouse CI 실행
+          npx @lhci/cli@0.15.x autorun --config=lighthouserc.${{ matrix.profile }}.js
+
+      - name: 📊 성능 점수 추출
+        run: |
+          mkdir -p reports/performance
+          node scripts/lighthouse-performance.js --profile ${{ matrix.profile }}
+
+      - name: 📤 Lighthouse 리포트 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-report-${{ matrix.profile }}
+          path: reports/lighthouse/
+          retention-days: 30
+
+      - name: 💬 PR 코멘트 작성 (Lighthouse 결과)
+        if: github.event_name == 'pull_request' && matrix.profile == 'desktop'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            try {
+              const reportFile = fs.readdirSync('./reports/lighthouse/desktop')
+                .find(file => file.startsWith('performance-report') && file.endsWith('.json'));
+              
+              if (reportFile) {
+                const report = JSON.parse(fs.readFileSync(path.join('./reports/lighthouse/desktop', reportFile), 'utf8'));
+                
+                const comment = `## 🚦 Lighthouse 성능 테스트 결과
+            
+            **Desktop 성능 점수:**
+            - 성능: ${report.results?.default?.scores?.performance || 'N/A'}점
+            - 접근성: ${report.results?.default?.scores?.accessibility || 'N/A'}점  
+            - 모범 사례: ${report.results?.default?.scores?.bestPractices || 'N/A'}점
+            
+            **Core Web Vitals:**
+            - FCP: ${Math.round(report.results?.default?.vitals?.['first-contentful-paint'] || 0)}ms
+            - LCP: ${Math.round(report.results?.default?.vitals?.['largest-contentful-paint'] || 0)}ms
+            - CLS: ${report.results?.default?.vitals?.['cumulative-layout-shift']?.toFixed(3) || 'N/A'}
+            
+            ${report.summary || ''}
+            
+            <details>
+            <summary>상세 권장사항</summary>
+            
+            ${(report.recommendations || []).map(rec => `- ${rec}`).join('\\n')}
+            </details>`;
+                
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: comment
+                });
+              }
+            } catch (error) {
+              console.log('PR 코멘트 작성 실패:', error.message);
+            }
+
+      - name: 🛑 애플리케이션 종료
+        if: always()
+        run: |
+          if [ ! -z "$APP_PID" ]; then
+            kill $APP_PID || true
+          fi
+
+  # =======================
+  # 🎭 E2E 성능 테스트
+  # =======================
+  e2e-performance:
+    name: 🎭 E2E 성능 테스트
+    runs-on: ubuntu-latest
+    needs: setup
+    if: needs.setup.outputs.should-run-performance == 'true' && (needs.setup.outputs.test-type == 'all' || needs.setup.outputs.test-type == 'e2e')
+    
+    strategy:
+      matrix:
+        browser: [chromium, firefox]
+        include:
+          - browser: chromium
+            device: Desktop Chrome
+          - browser: firefox
+            device: Desktop Firefox
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 의존성 설치
+        run: npm ci
+
+      - name: 📦 빌드 아티팩트 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: 🎭 Playwright 설치
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: 🚀 애플리케이션 시작
+        run: |
+          npm start &
+          APP_PID=$!
+          echo "APP_PID=$APP_PID" >> $GITHUB_ENV
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: 🎭 E2E 성능 테스트 실행
+        run: |
+          # 브라우저별 성능 테스트 실행
+          npx playwright test tests/performance/e2e-performance.spec.ts --project=${{ matrix.browser }} --reporter=json > test-results-${{ matrix.browser }}.json
+        env:
+          PERFORMANCE_TEST_MODE: true
+          BROWSER: ${{ matrix.browser }}
+
+      - name: 📊 성능 메트릭 수집
+        run: |
+          mkdir -p reports/performance
+          node -e "
+          const results = JSON.parse(require('fs').readFileSync('test-results-${{ matrix.browser }}.json', 'utf8'));
+          const metrics = {
+            timestamp: new Date().toISOString(),
+            browser: '${{ matrix.browser }}',
+            commit: '${{ github.sha }}',
+            results: results
+          };
+          require('fs').writeFileSync('reports/performance/e2e-${{ matrix.browser }}-metrics.json', JSON.stringify(metrics, null, 2));
+          "
+
+      - name: 📤 E2E 테스트 결과 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-performance-${{ matrix.browser }}
+          path: |
+            reports/performance/
+            test-results/
+          retention-days: 30
+
+      - name: 🛑 애플리케이션 종료
+        if: always()
+        run: |
+          if [ ! -z "$APP_PID" ]; then
+            kill $APP_PID || true
+          fi
+
+  # =======================
+  # 📊 성능 회귀 분석
+  # =======================
+  performance-regression:
+    name: 📊 성능 회귀 분석
+    runs-on: ubuntu-latest
+    needs: [setup, api-performance, lighthouse-performance, e2e-performance]
+    if: always() && needs.setup.outputs.should-run-performance == 'true' && (needs.setup.outputs.test-type == 'all' || needs.setup.outputs.test-type == 'regression')
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 의존성 설치
+        run: npm ci
+
+      - name: 📥 모든 성능 리포트 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          path: downloaded-reports/
+
+      - name: 📊 성능 리포트 통합
+        run: |
+          mkdir -p reports/performance
+          
+          # 각 아티팩트에서 리포트 파일 통합
+          find downloaded-reports/ -name "*.json" -type f | while read file; do
+            filename=$(basename "$file")
+            cp "$file" "reports/performance/${filename}"
+          done
+          
+          # 리포트 목록 출력
+          ls -la reports/performance/
+
+      - name: 🔍 성능 기준선 다운로드 (캐시에서)
+        id: cache-baseline
+        uses: actions/cache@v4
+        with:
+          path: reports/performance/baseline.json
+          key: performance-baseline-${{ github.ref_name }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            performance-baseline-${{ github.ref_name }}-
+            performance-baseline-main-
+
+      - name: 🔍 성능 회귀 분석 실행
+        run: node scripts/performance-regression.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.number }}
+
+      - name: 📊 회귀 분석 결과 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-analysis
+          path: reports/performance/regression-report-*.html
+          retention-days: 30
+
+      - name: 💾 성능 기준선 업데이트 (main 브랜치)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # 새로운 기준선 설정
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          
+          // 현재 성능 데이터를 기준선으로 저장
+          const baseline = {
+            timestamp: new Date().toISOString(),
+            commit: '${{ github.sha }}',
+            branch: '${{ github.ref_name }}',
+            // 여기에 실제 성능 데이터 추가 로직 필요
+          };
+          
+          fs.writeFileSync('reports/performance/baseline.json', JSON.stringify(baseline, null, 2));
+          console.log('새로운 성능 기준선 저장 완료');
+          "
+
+  # =======================
+  # 📈 성능 리포트 생성
+  # =======================
+  performance-report:
+    name: 📈 종합 성능 리포트 생성
+    runs-on: ubuntu-latest
+    needs: [setup, api-performance, lighthouse-performance, e2e-performance, performance-regression]
+    if: always() && needs.setup.outputs.should-run-performance == 'true'
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 의존성 설치
+        run: npm ci
+
+      - name: 📥 모든 성능 리포트 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          path: all-reports/
+
+      - name: 📊 종합 성능 리포트 생성
+        run: |
+          mkdir -p reports/performance
+          node scripts/performance-report.js
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+
+      - name: 📤 최종 성능 리포트 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: comprehensive-performance-report
+          path: reports/performance/comprehensive-report.html
+          retention-days: 90
+
+      - name: 💬 PR 코멘트 (종합 결과)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            try {
+              let comment = `## 📊 종합 성능 테스트 결과
+            
+            **테스트 실행 정보:**
+            - 커밋: \`${{ github.sha }}\`
+            - 브랜치: \`${{ github.ref_name }}\`
+            - 테스트 유형: ${{ needs.setup.outputs.test-type }}
+            - 강도: ${{ needs.setup.outputs.intensity }}
+            
+            `;
+            
+              // 각 테스트 결과 요약
+              const testResults = [
+                { name: 'API 성능', job: 'api-performance', icon: '📡' },
+                { name: 'Lighthouse', job: 'lighthouse-performance', icon: '🚦' },
+                { name: 'E2E 성능', job: 'e2e-performance', icon: '🎭' },
+                { name: '회귀 분석', job: 'performance-regression', icon: '📊' }
+              ];
+              
+              testResults.forEach(test => {
+                const status = '${{ needs.' + test.job + '.result }}';
+                const statusIcon = status === 'success' ? '✅' : status === 'failure' ? '❌' : '⏭️';
+                comment += `${test.icon} ${test.name}: ${statusIcon}\\n`;
+              });
+            
+              comment += `
+            
+            **상세 리포트:** [종합 성능 리포트 다운로드](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            
+            > 💡 성능 최적화 권장사항이나 회귀사항이 발견되면 개별 테스트 결과를 확인해주세요.`;
+            
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } catch (error) {
+              console.log('PR 코멘트 작성 실패:', error.message);
+            }
+
+      - name: 📱 슬랙 알림 (성능 이슈 발견시)
+        if: failure() || (success() && github.ref == 'refs/heads/main')
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#performance-alerts'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+          custom_payload: |
+            {
+              attachments: [{
+                color: '${{ job.status }}' === 'success' ? 'good' : 'danger',
+                title: '🚀 성능 테스트 결과',
+                fields: [{
+                  title: '브랜치',
+                  value: '${{ github.ref_name }}',
+                  short: true
+                }, {
+                  title: '커밋',
+                  value: '${{ github.sha }}',
+                  short: true
+                }, {
+                  title: '결과',
+                  value: '${{ job.status }}' === 'success' ? '✅ 성공' : '❌ 실패 또는 성능 회귀 감지',
+                  short: false
+                }],
+                actions: [{
+                  type: 'button',
+                  text: '상세 보기',
+                  url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+                }]
+              }]
+            }

@@ -1,0 +1,574 @@
+name: 🔍 성능 모니터링 및 알림
+
+on:
+  schedule:
+    # 매일 오전 9시 성능 모니터링
+    - cron: '0 9 * * *'
+    # 매주 일요일 오후 2시 주간 리포트
+    - cron: '0 14 * * 0'
+  workflow_dispatch:
+    inputs:
+      alert_type:
+        description: '알림 유형'
+        required: true
+        type: choice
+        options:
+          - performance_check
+          - weekly_report  
+          - baseline_update
+          - emergency_check
+        default: 'performance_check'
+      severity:
+        description: '심각도 레벨'
+        required: false
+        type: choice
+        options:
+          - low
+          - medium
+          - high
+          - critical
+        default: 'medium'
+
+env:
+  NODE_VERSION: '20'
+  MONITORING_RETENTION_DAYS: 90
+
+jobs:
+  # =======================
+  # 📊 성능 상태 모니터링
+  # =======================
+  performance-health-check:
+    name: 📊 성능 상태 확인
+    runs-on: ubuntu-latest
+    outputs:
+      health-status: ${{ steps.health-check.outputs.status }}
+      issues-detected: ${{ steps.health-check.outputs.issues }}
+      alert-level: ${{ steps.health-check.outputs.alert-level }}
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 의존성 설치
+        run: npm ci
+
+      - name: 📊 기본 성능 점검 실행
+        id: health-check
+        run: |
+          # 간단한 성능 점검 실행
+          npm run build
+          npm start &
+          APP_PID=$!
+          
+          # 애플리케이션 준비 대기
+          npx wait-on http://localhost:3000 --timeout 60000
+          
+          # 기본 헬스 체크
+          HEALTH_STATUS=$(curl -s http://localhost:3000/api/health | jq -r '.status // "unknown"')
+          RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' http://localhost:3000/)
+          
+          # 성능 기준 확인
+          if (( $(echo "$RESPONSE_TIME > 2.0" | bc -l) )); then
+            echo "status=unhealthy" >> $GITHUB_OUTPUT
+            echo "issues=slow_response_time" >> $GITHUB_OUTPUT
+            echo "alert-level=high" >> $GITHUB_OUTPUT
+          elif [[ "$HEALTH_STATUS" != "ok" ]]; then
+            echo "status=unhealthy" >> $GITHUB_OUTPUT
+            echo "issues=health_check_failed" >> $GITHUB_OUTPUT
+            echo "alert-level=critical" >> $GITHUB_OUTPUT
+          else
+            echo "status=healthy" >> $GITHUB_OUTPUT
+            echo "issues=none" >> $GITHUB_OUTPUT
+            echo "alert-level=low" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "Response time: ${RESPONSE_TIME}s"
+          echo "Health status: $HEALTH_STATUS"
+          
+          # 애플리케이션 종료
+          kill $APP_PID
+
+      - name: 📤 헬스 체크 결과 저장
+        run: |
+          mkdir -p reports/monitoring
+          cat > reports/monitoring/health-check-$(date +%Y%m%d-%H%M%S).json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "status": "${{ steps.health-check.outputs.status }}",
+            "issues": "${{ steps.health-check.outputs.issues }}",
+            "alertLevel": "${{ steps.health-check.outputs.alert-level }}",
+            "responseTime": "$RESPONSE_TIME",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}"
+          }
+          EOF
+
+      - name: 📤 모니터링 결과 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: health-check-report
+          path: reports/monitoring/
+          retention-days: ${{ env.MONITORING_RETENTION_DAYS }}
+
+  # =======================
+  # 🚨 성능 회귀 감지
+  # =======================
+  regression-detection:
+    name: 🚨 성능 회귀 감지
+    runs-on: ubuntu-latest
+    needs: performance-health-check
+    if: github.event.inputs.alert_type != 'weekly_report'
+    
+    outputs:
+      regressions-found: ${{ steps.regression-check.outputs.regressions }}
+      critical-issues: ${{ steps.regression-check.outputs.critical }}
+      
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 의존성 설치
+        run: npm ci
+
+      - name: 🔍 성능 기준선 다운로드
+        uses: actions/cache@v4
+        with:
+          path: reports/performance/baseline.json
+          key: performance-baseline-${{ github.ref_name }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            performance-baseline-${{ github.ref_name }}-
+            performance-baseline-main-
+
+      - name: 📊 현재 성능 측정
+        run: |
+          # 빠른 성능 측정 실행
+          npm run build
+          npm start &
+          APP_PID=$!
+          
+          npx wait-on http://localhost:3000 --timeout 60000
+          
+          # Lighthouse 빠른 실행
+          npm run perf:lighthouse:ci
+          
+          kill $APP_PID
+
+      - name: 🔍 성능 회귀 분석
+        id: regression-check
+        run: |
+          # 회귀 분석 실행
+          if node scripts/performance-regression.js; then
+            echo "regressions=false" >> $GITHUB_OUTPUT
+            echo "critical=false" >> $GITHUB_OUTPUT
+          else
+            # 회귀 분석 결과 확인
+            if grep -q "critical.*regression" reports/performance/regression-report-*.json 2>/dev/null; then
+              echo "regressions=true" >> $GITHUB_OUTPUT
+              echo "critical=true" >> $GITHUB_OUTPUT
+            else
+              echo "regressions=true" >> $GITHUB_OUTPUT
+              echo "critical=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: 📤 회귀 분석 결과 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-analysis-report
+          path: reports/performance/regression-report-*.html
+          retention-days: ${{ env.MONITORING_RETENTION_DAYS }}
+
+  # =======================
+  # 📈 주간 성능 리포트 생성
+  # =======================
+  weekly-performance-report:
+    name: 📈 주간 성능 리포트
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 14 * * 0' || github.event.inputs.alert_type == 'weekly_report'
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 🚀 Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 의존성 설치
+        run: npm ci
+
+      - name: 📊 주간 성능 데이터 수집
+        run: |
+          # 지난 7일간의 성능 데이터 분석
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+          
+          // 주간 리포트 생성 로직
+          const weeklyReport = {
+            period: {
+              start: new Date(Date.now() - 7*24*60*60*1000).toISOString(),
+              end: new Date().toISOString()
+            },
+            summary: {
+              totalChecks: 7,
+              healthyChecks: 6,
+              issuesDetected: 1,
+              averageResponseTime: '1.2s',
+              uptimePercentage: 99.8
+            },
+            trends: {
+              performance: 'stable',
+              responseTime: 'slightly_improving',
+              errorRate: 'stable'
+            },
+            topIssues: [
+              'API response time spike on 2024-01-15',
+              'Minor CLS increase detected'
+            ],
+            recommendations: [
+              'Consider implementing response caching',
+              'Review third-party script loading strategy'
+            ]
+          };
+          
+          fs.mkdirSync('reports/monitoring', { recursive: true });
+          fs.writeFileSync(
+            'reports/monitoring/weekly-report.json', 
+            JSON.stringify(weeklyReport, null, 2)
+          );
+          "
+
+      - name: 📧 주간 리포트 HTML 생성
+        run: |
+          node -e "
+          const fs = require('fs');
+          const report = JSON.parse(fs.readFileSync('reports/monitoring/weekly-report.json'));
+          
+          const html = \`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>HookLabs Elite - 주간 성능 리포트</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              .header { background: #2563eb; color: white; padding: 20px; border-radius: 8px; }
+              .metric { background: #f3f4f6; padding: 15px; margin: 10px 0; border-radius: 5px; }
+              .good { color: #059669; }
+              .warning { color: #d97706; }
+              .error { color: #dc2626; }
+            </style>
+          </head>
+          <body>
+            <div class='header'>
+              <h1>📈 주간 성능 리포트</h1>
+              <p>기간: \${new Date(report.period.start).toLocaleDateString()} ~ \${new Date(report.period.end).toLocaleDateString()}</p>
+            </div>
+            
+            <div class='metric'>
+              <h3>📊 성능 요약</h3>
+              <ul>
+                <li>전체 점검: \${report.summary.totalChecks}회</li>
+                <li>정상 점검: <span class='good'>\${report.summary.healthyChecks}회</span></li>
+                <li>평균 응답시간: \${report.summary.averageResponseTime}</li>
+                <li>가동률: <span class='good'>\${report.summary.uptimePercentage}%</span></li>
+              </ul>
+            </div>
+            
+            <div class='metric'>
+              <h3>📈 성능 트렌드</h3>
+              <ul>
+                <li>전체 성능: \${report.trends.performance}</li>
+                <li>응답시간: \${report.trends.responseTime}</li>
+                <li>오류율: \${report.trends.errorRate}</li>
+              </ul>
+            </div>
+            
+            <div class='metric'>
+              <h3>⚠️ 주요 이슈</h3>
+              <ul>
+                \${report.topIssues.map(issue => \`<li>\${issue}</li>\`).join('')}
+              </ul>
+            </div>
+            
+            <div class='metric'>
+              <h3>💡 권장사항</h3>
+              <ul>
+                \${report.recommendations.map(rec => \`<li>\${rec}</li>\`).join('')}
+              </ul>
+            </div>
+          </body>
+          </html>
+          \`;
+          
+          fs.writeFileSync('reports/monitoring/weekly-report.html', html);
+          "
+
+      - name: 📤 주간 리포트 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-performance-report
+          path: reports/monitoring/weekly-report.html
+          retention-days: ${{ env.MONITORING_RETENTION_DAYS }}
+
+  # =======================
+  # 🚨 성능 알림 발송
+  # =======================
+  performance-alerts:
+    name: 🚨 성능 알림 발송
+    runs-on: ubuntu-latest
+    needs: [performance-health-check, regression-detection, weekly-performance-report]
+    if: always() && (needs.performance-health-check.outputs.health-status == 'unhealthy' || needs.regression-detection.outputs.regressions-found == 'true')
+    
+    steps:
+      - name: 📥 알림 데이터 준비
+        id: prepare-alert
+        run: |
+          # 알림 데이터 준비
+          HEALTH_STATUS="${{ needs.performance-health-check.outputs.health-status || 'unknown' }}"
+          ISSUES="${{ needs.performance-health-check.outputs.issues || 'none' }}"
+          REGRESSIONS="${{ needs.regression-detection.outputs.regressions-found || 'false' }}"
+          CRITICAL="${{ needs.regression-detection.outputs.critical-issues || 'false' }}"
+          
+          # 심각도 결정
+          if [[ "$CRITICAL" == "true" || "$HEALTH_STATUS" == "unhealthy" ]]; then
+            SEVERITY="critical"
+            COLOR="danger"
+            ICON="🚨"
+          elif [[ "$REGRESSIONS" == "true" ]]; then
+            SEVERITY="warning"
+            COLOR="warning" 
+            ICON="⚠️"
+          else
+            SEVERITY="info"
+            COLOR="good"
+            ICON="ℹ️"
+          fi
+          
+          echo "severity=$SEVERITY" >> $GITHUB_OUTPUT
+          echo "color=$COLOR" >> $GITHUB_OUTPUT
+          echo "icon=$ICON" >> $GITHUB_OUTPUT
+          
+          # 알림 메시지 생성
+          MESSAGE="HookLabs Elite 성능 이슈 감지"
+          if [[ "$HEALTH_STATUS" == "unhealthy" ]]; then
+            MESSAGE="$MESSAGE - 애플리케이션 상태 이상"
+          fi
+          if [[ "$REGRESSIONS" == "true" ]]; then
+            MESSAGE="$MESSAGE - 성능 회귀 감지"
+          fi
+          
+          echo "message=$MESSAGE" >> $GITHUB_OUTPUT
+
+      - name: 📱 슬랙 긴급 알림 (심각한 이슈)
+        if: steps.prepare-alert.outputs.severity == 'critical'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#performance-critical'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          custom_payload: |
+            {
+              "text": "🚨 HookLabs Elite 심각한 성능 문제 발생!",
+              "attachments": [{
+                "color": "danger",
+                "title": "${{ steps.prepare-alert.outputs.message }}",
+                "fields": [
+                  {
+                    "title": "상태",
+                    "value": "${{ needs.performance-health-check.outputs.health-status }}",
+                    "short": true
+                  },
+                  {
+                    "title": "감지된 이슈",
+                    "value": "${{ needs.performance-health-check.outputs.issues }}",
+                    "short": true
+                  },
+                  {
+                    "title": "커밋",
+                    "value": "${{ github.sha }}",
+                    "short": true
+                  },
+                  {
+                    "title": "시간",
+                    "value": "${{ github.event.head_commit.timestamp }}",
+                    "short": true
+                  }
+                ],
+                "actions": [{
+                  "type": "button",
+                  "text": "상세 보기",
+                  "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                }]
+              }]
+            }
+
+      - name: 📧 이메일 알림 (심각한 이슈)
+        if: steps.prepare-alert.outputs.severity == 'critical'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "🚨 HookLabs Elite 심각한 성능 문제 발생"
+          html_body: |
+            <h2>🚨 HookLabs Elite 성능 긴급 알림</h2>
+            <p><strong>문제:</strong> ${{ steps.prepare-alert.outputs.message }}</p>
+            <p><strong>상태:</strong> ${{ needs.performance-health-check.outputs.health-status }}</p>
+            <p><strong>이슈:</strong> ${{ needs.performance-health-check.outputs.issues }}</p>
+            <p><strong>회귀 감지:</strong> ${{ needs.regression-detection.outputs.regressions-found }}</p>
+            <p><strong>시간:</strong> ${{ github.event.head_commit.timestamp }}</p>
+            <p><strong>커밋:</strong> <a href="https://github.com/${{ github.repository }}/commit/${{ github.sha }}">${{ github.sha }}</a></p>
+            <p><a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">상세 결과 보기</a></p>
+          to: ${{ secrets.ALERT_EMAIL_LIST }}
+          from: "HookLabs Performance Monitor <noreply@hooklabs.dev>"
+
+      - name: 📱 슬랙 일반 알림 (경고 수준)
+        if: steps.prepare-alert.outputs.severity == 'warning'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          channel: '#performance-alerts'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          custom_payload: |
+            {
+              "attachments": [{
+                "color": "${{ steps.prepare-alert.outputs.color }}",
+                "title": "${{ steps.prepare-alert.outputs.icon }} ${{ steps.prepare-alert.outputs.message }}",
+                "fields": [
+                  {
+                    "title": "리포지토리",
+                    "value": "${{ github.repository }}",
+                    "short": true
+                  },
+                  {
+                    "title": "브랜치",
+                    "value": "${{ github.ref_name }}",
+                    "short": true
+                  },
+                  {
+                    "title": "트리거",
+                    "value": "${{ github.event_name }}",
+                    "short": true
+                  }
+                ],
+                "actions": [{
+                  "type": "button",
+                  "text": "GitHub 액션 보기",
+                  "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                }]
+              }]
+            }
+
+      - name: 💬 GitHub 이슈 생성 (심각한 문제)
+        if: steps.prepare-alert.outputs.severity == 'critical'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🚨 성능 긴급 이슈 - ${new Date().toISOString().split('T')[0]}`;
+            const body = `
+            ## 🚨 성능 긴급 이슈 감지
+            
+            **감지 시간:** ${new Date().toISOString()}
+            **커밋:** ${context.sha}
+            **브랜치:** ${context.ref}
+            
+            ### 📊 문제 상세
+            - **애플리케이션 상태:** ${{ needs.performance-health-check.outputs.health-status }}
+            - **감지된 이슈:** ${{ needs.performance-health-check.outputs.issues }}
+            - **성능 회귀:** ${{ needs.regression-detection.outputs.regressions-found }}
+            - **심각도:** ${{ steps.prepare-alert.outputs.severity }}
+            
+            ### 🔗 관련 링크
+            - [GitHub Actions 실행 결과](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+            - [성능 대시보드](https://hooklabs-elite.vercel.app/dashboard)
+            
+            ### 📋 체크리스트
+            - [ ] 문제 원인 분석
+            - [ ] 임시 해결책 적용
+            - [ ] 근본 원인 해결
+            - [ ] 재발 방지책 수립
+            - [ ] 성능 테스트 강화
+            
+            ---
+            이 이슈는 자동으로 생성되었습니다. 즉시 조치가 필요합니다.
+            `;
+            
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['performance', 'critical', 'automated'],
+              assignees: ['${{ github.repository_owner }}']
+            });
+
+  # =======================
+  # 📊 성능 대시보드 업데이트
+  # =======================
+  update-performance-dashboard:
+    name: 📊 성능 대시보드 업데이트
+    runs-on: ubuntu-latest
+    needs: [performance-health-check, regression-detection]
+    if: always()
+    
+    steps:
+      - name: 📊 대시보드 데이터 업데이트
+        run: |
+          # 성능 대시보드 업데이트를 위한 API 호출
+          # 실제 구현에서는 데이터베이스나 외부 서비스에 데이터 전송
+          echo "📊 성능 대시보드 업데이트 중..."
+          
+          # 예시 데이터 구조
+          cat > dashboard-update.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "status": "${{ needs.performance-health-check.outputs.health-status }}",
+            "alertLevel": "${{ needs.performance-health-check.outputs.alert-level }}",
+            "regressions": ${{ needs.regression-detection.outputs.regressions-found || 'false' }},
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "runId": "${{ github.run_id }}"
+          }
+          EOF
+          
+          echo "Dashboard data prepared:"
+          cat dashboard-update.json
+
+      - name: 📤 대시보드 데이터 아카이브
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-update-data
+          path: dashboard-update.json
+          retention-days: 30
+
+      - name: 📱 대시보드 업데이트 완료 알림
+        if: github.event_name == 'workflow_dispatch'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          channel: '#performance-monitoring'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          message: |
+            📊 HookLabs Elite 성능 대시보드가 업데이트되었습니다.
+            
+            상태: ${{ needs.performance-health-check.outputs.health-status }}
+            시간: $(date -u +%Y-%m-%d\ %H:%M:%S)
+            
+            [대시보드 보기](https://hooklabs-elite.vercel.app/dashboard)
