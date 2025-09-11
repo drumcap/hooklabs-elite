@@ -41,6 +41,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# build analysis
+bundle-analysis.json
+
 # IDE and editor directories
 # .claude/
 # .windsurf/
