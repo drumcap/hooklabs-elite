@@ -50,3 +50,7 @@ next-env.d.ts
 # Convex
 .convex/
 convex/_generated/
+
+test-results/
+performance-results/
+playwright-report/
