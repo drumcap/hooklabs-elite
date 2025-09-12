@@ -39,9 +39,9 @@ const envSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().default('http://localhost:3000'),
   
   // Feature Flags
-  ENABLE_ANALYTICS: z.string().transform(val => val === 'true').default('false'),
-  ENABLE_SOCIAL_PUBLISHING: z.string().transform(val => val === 'true').default('false'),
-  ENABLE_AI_GENERATION: z.string().transform(val => val === 'true').default('true'),
+  ENABLE_ANALYTICS: z.string().default('false').transform(val => val === 'true'),
+  ENABLE_SOCIAL_PUBLISHING: z.string().default('false').transform(val => val === 'true'),
+  ENABLE_AI_GENERATION: z.string().default('true').transform(val => val === 'true'),
 });
 
 // 환경 변수 타입
@@ -53,7 +53,7 @@ function parseEnv(): EnvConfig {
     return envSchema.parse(process.env);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const missingVars = error.errors.map(e => e.path.join('.')).join(', ');
+      const missingVars = error.issues.map(e => e.path.join('.')).join(', ');
       console.error('❌ 환경 변수 검증 실패:', missingVars);
       console.error('상세 오류:', error.format());
       
@@ -148,15 +148,14 @@ export function validateConfig() {
   
   return {
     isValid: result.success,
-    errors: result.success ? [] : result.error.errors,
+    errors: result.success ? [] : result.error.issues,
     warnings: [],
     summary: {
       totalVars: Object.keys(envSchema.shape).length,
       setVars: Object.keys(process.env).filter(key => key in envSchema.shape).length,
-      missingVars: result.success ? 0 : result.error.errors.length,
+      missingVars: result.success ? 0 : result.error.issues.length,
     }
   };
 }
 
-// 타입 export
-export type { EnvConfig };
+// 타입은 이미 위에서 export되었음

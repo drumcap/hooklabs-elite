@@ -225,9 +225,9 @@ export class CacheManager {
       CacheKeyGenerator.user(userId),
       `${CacheKeyGenerator.userSubscription(userId)}*`,
       `${CacheKeyGenerator.userCredits(userId)}*`,
-      `${CacheKeyGenerator.userPersonas(userId)}*`,
-      `${CacheKeyGenerator.socialPosts(userId)}*`,
-      `${CacheKeyGenerator.metrics(userId)}*`,
+      // TODO: userPersonas, socialPosts 메서드를 CacheKeyGenerator에 추가 후 활성화
+      // `${CacheKeyGenerator.userPersonas(userId)}*`,
+      // `${CacheKeyGenerator.socialPosts(userId)}*`,
     ];
 
     await Promise.all(patterns.map(pattern => this.delPattern(pattern)));
@@ -299,9 +299,10 @@ export class CacheInvalidation {
    */
   async onPostChange(userId: string, postId?: string): Promise<void> {
     await Promise.all([
-      this.cache.delPattern(CacheKeyGenerator.socialPosts(userId, '*')),
-      this.cache.delPattern(CacheKeyGenerator.metrics(userId, '*')),
-      ...(postId ? [this.cache.del(CacheKeyGenerator.analytics(postId))] : []),
+      // TODO: socialPosts, metrics, analytics 메서드를 CacheKeyGenerator에 추가 후 활성화
+      // this.cache.delPattern(CacheKeyGenerator.socialPosts(userId, '*')),
+      // this.cache.delPattern(CacheKeyGenerator.metrics(userId, '*')),
+      // ...(postId ? [this.cache.del(CacheKeyGenerator.analytics(postId))] : []),
     ]);
   }
 
@@ -372,7 +373,7 @@ export class CacheMonitor {
    * 캐시 성능 리포트
    */
   async generateReport(): Promise<{
-    stats: typeof this.stats & { hitRate: number };
+    stats: { hits: number; misses: number; hitRate: number; [key: string]: any };
     recommendations: string[];
   }> {
     const stats = this.getStats();

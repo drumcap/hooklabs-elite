@@ -11,6 +11,8 @@ import crypto from 'crypto';
  */
 export class LLMResponseCache {
   private cache: LRUCache<string, CachedResponse>;
+  private hits = 0;
+  private misses = 0;
   
   constructor(options?: {
     maxSize?: number;  // 최대 캐시 항목 수
@@ -54,7 +56,15 @@ export class LLMResponseCache {
     if (temperature > 0) return undefined;
     
     const key = this.generateKey(prompt, model, temperature, maxTokens);
-    return this.cache.get(key);
+    const result = this.cache.get(key);
+    
+    if (result) {
+      this.hits++;
+    } else {
+      this.misses++;
+    }
+    
+    return result;
   }
   
   /**
@@ -85,9 +95,9 @@ export class LLMResponseCache {
   getStats() {
     return {
       size: this.cache.size,
-      hits: this.cache.hits,
-      misses: this.cache.misses,
-      hitRate: this.cache.hits / (this.cache.hits + this.cache.misses) || 0,
+      hits: this.hits,
+      misses: this.misses,
+      hitRate: this.hits / (this.hits + this.misses) || 0,
     };
   }
   
@@ -279,14 +289,16 @@ export class CostOptimizer {
     const examples = compressed.match(/Example \d+:/gi) || [];
     if (examples.length > 3) {
       // 처음 3개만 유지
-      const examplePattern = /Example \d+:.*?(?=Example \d+:|$)/gis;
+      const examplePattern = /Example \d+:.*?(?=Example \d+:|$)/gi;
       const allExamples = compressed.match(examplePattern) || [];
       if (allExamples.length > 3) {
         const kept = allExamples.slice(0, 3).join('\n');
         const firstExample = allExamples[0];
-        const idx = compressed.indexOf(firstExample);
-        compressed = compressed.substring(0, idx) + kept + 
-                    '\n[Additional examples omitted for brevity]';
+        const idx = firstExample ? compressed.indexOf(firstExample) : -1;
+        if (idx !== -1) {
+          compressed = compressed.substring(0, idx) + kept + 
+                      '\n[Additional examples omitted for brevity]';
+        }
       }
     }
     
