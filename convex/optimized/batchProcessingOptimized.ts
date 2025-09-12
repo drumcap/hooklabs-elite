@@ -199,7 +199,11 @@ export const batchCreateSchedules = mutation({
     // 배치로 스케줄 생성
     const insertPromises = validSchedules.map(schedule =>
       ctx.db.insert("scheduledPosts", {
-        ...schedule,
+        postId: schedule.postId,
+        variantId: schedule.variantId,
+        platform: schedule.platform,
+        socialAccountId: schedule.socialAccountId,
+        scheduledFor: schedule.scheduledFor,
         status: "pending",
         retryCount: 0,
         maxRetries: 3,
@@ -364,9 +368,9 @@ export const archiveOldData = mutation({
         .filter(q => q.lt(q.field("recordedAt"), cutoffDateStr))
         .collect(),
       
-      ctx.db.query("usageRecords")
-        .withIndex("byRecordedAt")  
-        .filter(q => q.lt(q.field("recordedAt"), cutoffDateStr))
+      ctx.db.query("usage" as any)
+        .withIndex("byTimestamp" as any)  
+        .filter((q: any) => q.lt(q.field("timestamp"), cutoffDateStr))
         .collect(),
     ]);
 

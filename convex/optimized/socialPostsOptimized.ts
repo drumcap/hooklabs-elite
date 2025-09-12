@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import { getAuthUserId } from "../auth";
+import { SecurityLogger, InputSanitizer } from "../lib/encryption";
 
 // 📈 최적화된 게시물 상세 조회 - 배치 처리로 N+1 문제 해결
 export const getOptimized = query({
@@ -8,14 +9,34 @@ export const getOptimized = query({
   handler: async (ctx, { id }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
+      console.log(SecurityLogger.createSecurityLog(
+        "unauthorized_optimized_post_access",
+        null,
+        { action: "get_optimized_post", postId: id },
+        "warning"
+      ));
       throw new Error("인증이 필요합니다");
     }
 
     // 1. 메인 게시물 조회
     const post = await ctx.db.get(id);
     if (!post || post.userId !== userId) {
+      console.log(SecurityLogger.createSecurityLog(
+        "unauthorized_optimized_post_access",
+        userId,
+        { postId: id, postUserId: post?.userId },
+        "error"
+      ));
       throw new Error("접근 권한이 없습니다");
     }
+    
+    // 보안 로깅
+    console.log(SecurityLogger.createSecurityLog(
+      "optimized_post_accessed",
+      userId,
+      { postId: id },
+      "info"
+    ));
 
     // 2. 배치로 관련 데이터 동시 조회 (N+1 해결)
     const [persona, variants, schedules] = await Promise.all([

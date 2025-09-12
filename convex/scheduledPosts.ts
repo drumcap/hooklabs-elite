@@ -636,3 +636,6 @@ export const getUpcoming = query({
     return results;
   },
 });
+
+// 스케줄 생성 (create 함수의 별칭)
+export const schedule = create;

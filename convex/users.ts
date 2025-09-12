@@ -2,6 +2,9 @@ import { internalMutation, internalQuery, query, QueryCtx } from "./_generated/s
 import { UserJSON } from "@clerk/backend";
 import { v, Validator } from "convex/values";
 import { AuthenticationError } from "./lib/errors";
+import { requireAuth, getOptionalAuth } from "./lib/auth";
+import { createResource, updateResource, checkDuplicate } from "./lib/crud";
+import { DataSanitizer } from "./lib/validators";
 
 export const current = query({
   args: {},
@@ -14,15 +17,15 @@ export const upsertFromClerk = internalMutation({
   args: { data: v.any() as Validator<UserJSON> }, // no runtime validation, trust Clerk
   async handler(ctx, { data }) {
     const userAttributes = {
-      name: `${data.first_name} ${data.last_name}`,
+      name: DataSanitizer.text(`${data.first_name || ''} ${data.last_name || ''}`).trim(),
       externalId: data.id,
     };
 
     const user = await userByExternalId(ctx, data.id);
     if (user === null) {
-      await ctx.db.insert("users", userAttributes);
+      await createResource(ctx, "users", userAttributes);
     } else {
-      await ctx.db.patch(user._id, userAttributes);
+      await updateResource(ctx, "users", user._id, userAttributes, undefined, false);
     }
   },
 });
@@ -51,11 +54,11 @@ export async function getCurrentUserOrThrow(ctx: QueryCtx) {
 }
 
 export async function getCurrentUser(ctx: QueryCtx) {
-  const identity = await ctx.auth.getUserIdentity();
-  if (identity === null) {
+  const userId = await getOptionalAuth(ctx);
+  if (!userId) {
     return null;
   }
-  return await userByExternalId(ctx, identity.subject);
+  return await ctx.db.get(userId);
 }
 
 async function userByExternalId(ctx: QueryCtx, externalId: string) {

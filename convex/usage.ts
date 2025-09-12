@@ -23,12 +23,12 @@ export const getUserUsage = query({
 
     // 현재 기간의 사용량 집계
     const usageRecords = await ctx.db
-      .query("usageRecords")
-      .withIndex("byUserId", (q) => q.eq("userId", userId))
-      .filter((q) => 
+      .query("usage" as any)
+      .withIndex("byUserId", (q: any) => q.eq("userId", userId))
+      .filter((q: any) => 
         q.and(
-          q.gte(q.field("recordedAt"), periodStart),
-          q.lte(q.field("recordedAt"), periodEnd)
+          q.gte(q.field("timestamp"), periodStart),
+          q.lte(q.field("timestamp"), periodEnd)
         )
       )
       .collect();
@@ -86,7 +86,7 @@ export const recordUsage = mutation({
       .first();
 
     // 사용량 기록 생성
-    const usageId = await ctx.db.insert("usageRecords", {
+    const usageId = await ctx.db.insert("usage" as any, {
       userId: args.userId,
       subscriptionId: subscription?._id,
       resourceType: args.resourceType,
@@ -94,9 +94,10 @@ export const recordUsage = mutation({
       unit: args.unit,
       description: args.description,
       metadata: args.metadata,
-      recordedAt: now.toISOString(),
+      timestamp: now.toISOString(),
       periodStart,
       periodEnd,
+      createdAt: now.toISOString(),
     });
 
     // 구독이 있다면 현재 사용량 업데이트
@@ -128,35 +129,35 @@ export const getUsageStats = query({
 
     // 기간 내 모든 사용량 기록
     const allRecords = await ctx.db
-      .query("usageRecords")
-      .withIndex("byRecordedAt")
-      .filter((q) => 
+      .query("usage" as any)
+      .withIndex("byTimestamp" as any)
+      .filter((q: any) => 
         q.and(
-          q.gte(q.field("recordedAt"), start),
-          q.lte(q.field("recordedAt"), end)
+          q.gte(q.field("timestamp"), start),
+          q.lte(q.field("timestamp"), end)
         )
       )
       .collect();
 
     // 총 사용량
-    const totalUsage = allRecords.reduce((sum, record) => sum + record.amount, 0);
+    const totalUsage = allRecords.reduce((sum: any, record: any) => sum + record.amount, 0);
 
     // 리소스 타입별 사용량
-    const usageByType = allRecords.reduce((acc, record) => {
+    const usageByType = allRecords.reduce((acc: any, record: any) => {
       const type = record.resourceType;
       acc[type] = (acc[type] || 0) + record.amount;
       return acc;
     }, {} as Record<string, number>);
 
     // 일별 사용량
-    const usageByDate = allRecords.reduce((acc, record) => {
-      const date = record.recordedAt.split('T')[0];
+    const usageByDate = allRecords.reduce((acc: any, record: any) => {
+      const date = record.timestamp.split('T')[0];
       acc[date] = (acc[date] || 0) + record.amount;
       return acc;
     }, {} as Record<string, number>);
 
     // 활성 사용자 수
-    const activeUsers = new Set(allRecords.map(record => record.userId)).size;
+    const activeUsers = new Set(allRecords.map((record: any) => record.userId)).size;
 
     return {
       totalUsage,

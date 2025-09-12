@@ -1,6 +1,9 @@
 import { v } from "convex/values";
 import { mutation, query, internalQuery, internalMutation } from "./_generated/server";
-import { getAuthUserId } from "./auth";
+import { requireAuth, requireResourceOwnership } from "./lib/auth";
+import { createResource, getResource, updateResource, deleteResource, listResources, batchDeleteResources } from "./lib/crud";
+import { ValidatorComposer, DataSanitizer } from "./lib/validators";
+import { SecurityLogger, InputSanitizer, DataMasker } from "./lib/encryption";
 
 // 게시물 목록 조회 (페이징 지원)
 export const list = query({
@@ -14,27 +17,50 @@ export const list = query({
     personaId: v.optional(v.id("personas")),
   },
   handler: async (ctx, { limit = 50, paginationOpts, status, personaId }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("인증이 필요합니다");
-    }
+    const userId = await requireAuth(ctx);
 
-    let query = ctx.db
-      .query("socialPosts")
-      .withIndex("byUserId", (q) => q.eq("userId", userId));
-
-    // 상태 필터링
-    if (status) {
-      query = query.filter((q) => q.eq(q.field("status"), status));
+    // 입력 검증
+    if (status && typeof status !== 'string') {
+      throw new Error("올바르지 않은 상태 형식입니다");
     }
+    
+    // 보안 로깅
+    console.log(SecurityLogger.createSecurityLog(
+      "social_posts_accessed",
+      userId,
+      { 
+        limit, 
+        status, 
+        personaId,
+        hasPagination: !!paginationOpts 
+      },
+      "info"
+    ));
 
-    // 페르소나 필터링
-    if (personaId) {
-      query = query.filter((q) => q.eq(q.field("personaId"), personaId));
-    }
+    const options = {
+      pagination: paginationOpts ? {
+        cursor: paginationOpts.cursor,
+        limit: paginationOpts.numItems
+      } : { limit },
+      sort: { field: "_creationTime", direction: "desc" as const },
+      indexName: "byUserId",
+      filter: {
+        status,
+        personaId
+      }
+    };
+
+    const posts = await listResources(ctx, "socialPosts", userId, options);
 
     // 페이징 처리
     if (paginationOpts) {
+      let query = ctx.db
+        .query("socialPosts")
+        .withIndex("byUserId", (q) => q.eq("userId", userId));
+
+      if (status) query = query.filter((q) => q.eq(q.field("status"), status));
+      if (personaId) query = query.filter((q) => q.eq(q.field("personaId"), personaId));
+
       return await query
         .order("desc")
         .paginate({
@@ -44,9 +70,7 @@ export const list = query({
     }
 
     return {
-      page: await query
-        .order("desc")
-        .take(limit),
+      page: posts.slice(0, limit),
       isDone: true,
       continueCursor: null
     };
@@ -57,19 +81,11 @@ export const list = query({
 export const get = query({
   args: { id: v.id("socialPosts") },
   handler: async (ctx, { id }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("인증이 필요합니다");
-    }
-
-    const post = await ctx.db.get(id);
+    const userId = await requireAuth(ctx);
+    
+    const post = await getResource(ctx, "socialPosts", id, userId);
     if (!post) {
       throw new Error("게시물을 찾을 수 없습니다");
-    }
-
-    // 사용자 소유 확인
-    if (post.userId !== userId) {
-      throw new Error("접근 권한이 없습니다");
     }
 
     // 페르소나 정보 함께 조회
@@ -103,39 +119,76 @@ export const create = mutation({
   args: {
     personaId: v.id("personas"),
     originalContent: v.string(),
+    finalContent: v.string(),
     platforms: v.array(v.string()),
+    status: v.optional(v.string()),
     hashtags: v.optional(v.array(v.string())),
     mediaUrls: v.optional(v.array(v.string())),
     threadCount: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("인증이 필요합니다");
-    }
+    const userId = await requireAuth(ctx);
 
     // 페르소나 소유 확인
-    const persona = await ctx.db.get(args.personaId);
-    if (!persona || persona.userId !== userId) {
-      throw new Error("페르소나에 대한 접근 권한이 없습니다");
+    await requireResourceOwnership(ctx, "personas", args.personaId);
+
+    // 입력 검증 및 XSS 방지
+    const sanitizedArgs = {
+      originalContent: InputSanitizer.stripHtml(args.originalContent),
+      platforms: args.platforms.map(platform => InputSanitizer.sanitizeInput(platform)),
+      hashtags: args.hashtags?.map(tag => InputSanitizer.sanitizeInput(tag)),
+      mediaUrls: args.mediaUrls, // URL은 별도 검증 필요
+      threadCount: args.threadCount
+    };
+
+    // 데이터 검증
+    const validation = ValidatorComposer.validateSocialPost({
+      content: sanitizedArgs.originalContent,
+      platforms: sanitizedArgs.platforms,
+      hashtags: sanitizedArgs.hashtags,
+    });
+    
+    if (!validation.isValid) {
+      console.log(SecurityLogger.createSecurityLog(
+        "social_post_validation_failed",
+        userId,
+        { errors: validation.errors, personaId: args.personaId },
+        "warning"
+      ));
+      throw new Error(validation.errors[0]);
     }
 
-    const now = new Date().toISOString();
+    // 보안 로깅
+    console.log(SecurityLogger.createSecurityLog(
+      "social_post_created",
+      userId,
+      { 
+        personaId: args.personaId,
+        platforms: sanitizedArgs.platforms,
+        hasHashtags: !!(sanitizedArgs.hashtags?.length),
+        hasMedia: !!(sanitizedArgs.mediaUrls?.length),
+        contentLength: sanitizedArgs.originalContent.length
+      },
+      "info"
+    ));
 
-    return await ctx.db.insert("socialPosts", {
+    // 데이터 정규화
+    const sanitizedData = {
       userId,
       personaId: args.personaId,
-      originalContent: args.originalContent,
-      finalContent: args.originalContent, // 초기값은 원본과 동일
+      originalContent: DataSanitizer.text(args.originalContent),
+      finalContent: DataSanitizer.text(args.originalContent), // 초기값은 원본과 동일
       platforms: args.platforms,
       status: "draft",
-      hashtags: args.hashtags || [],
-      mediaUrls: args.mediaUrls,
+      hashtags: args.hashtags?.map(tag => DataSanitizer.hashtag(tag)) || [],
+      mediaUrls: args.mediaUrls?.map(url => DataSanitizer.url(url)),
       threadCount: args.threadCount || 1,
       creditsUsed: 0, // 초기 생성시에는 크레딧 미사용
-      createdAt: now,
-      updatedAt: now,
-    });
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    return await createResource(ctx, "socialPosts", sanitizedData, userId);
   },
 });
 
@@ -145,7 +198,9 @@ export const createInternal = internalMutation({
     userId: v.id("users"),
     personaId: v.id("personas"),
     originalContent: v.string(),
+    finalContent: v.string(),
     platforms: v.array(v.string()),
+    status: v.optional(v.string()),
     hashtags: v.optional(v.array(v.string())),
     mediaUrls: v.optional(v.array(v.string())),
     threadCount: v.optional(v.number()),
@@ -190,19 +245,11 @@ export const update = mutation({
     scheduledFor: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...updates }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("인증이 필요합니다");
-    }
+    const userId = await requireAuth(ctx);
 
-    const post = await ctx.db.get(id);
+    const post = await getResource(ctx, "socialPosts", id, userId);
     if (!post) {
       throw new Error("게시물을 찾을 수 없습니다");
-    }
-
-    // 사용자 소유 확인
-    if (post.userId !== userId) {
-      throw new Error("수정 권한이 없습니다");
     }
 
     // 이미 발행된 게시물은 일부 필드만 수정 가능
@@ -216,13 +263,16 @@ export const update = mutation({
       }
     }
 
-    const now = new Date().toISOString();
-
-    await ctx.db.patch(id, {
+    // 데이터 정규화
+    const sanitizedUpdates = {
       ...updates,
-      updatedAt: now,
-    });
+      ...(updates.originalContent && { originalContent: DataSanitizer.text(updates.originalContent) }),
+      ...(updates.finalContent && { finalContent: DataSanitizer.text(updates.finalContent) }),
+      ...(updates.hashtags && { hashtags: updates.hashtags.map(tag => DataSanitizer.hashtag(tag)) }),
+      ...(updates.mediaUrls && { mediaUrls: updates.mediaUrls.map(url => DataSanitizer.url(url)) }),
+    };
 
+    await updateResource(ctx, "socialPosts", id, sanitizedUpdates, userId);
     return id;
   },
 });
@@ -231,19 +281,11 @@ export const update = mutation({
 export const remove = mutation({
   args: { id: v.id("socialPosts") },
   handler: async (ctx, { id }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("인증이 필요합니다");
-    }
+    const userId = await requireAuth(ctx);
 
-    const post = await ctx.db.get(id);
+    const post = await getResource(ctx, "socialPosts", id, userId);
     if (!post) {
       throw new Error("게시물을 찾을 수 없습니다");
-    }
-
-    // 사용자 소유 확인
-    if (post.userId !== userId) {
-      throw new Error("삭제 권한이 없습니다");
     }
 
     // 예약된 게시물은 삭제 불가
@@ -257,8 +299,9 @@ export const remove = mutation({
       .withIndex("byPostId", (q) => q.eq("postId", id))
       .collect();
 
-    for (const variant of variants) {
-      await ctx.db.delete(variant._id);
+    const variantIds = variants.map(v => v._id);
+    if (variantIds.length > 0) {
+      await batchDeleteResources(ctx, "postVariants", variantIds, undefined, false);
     }
 
     // 관련된 스케줄 삭제
@@ -267,12 +310,13 @@ export const remove = mutation({
       .withIndex("byPostId", (q) => q.eq("postId", id))
       .collect();
 
-    for (const schedule of schedules) {
-      await ctx.db.delete(schedule._id);
+    const scheduleIds = schedules.map(s => s._id);
+    if (scheduleIds.length > 0) {
+      await batchDeleteResources(ctx, "scheduledPosts", scheduleIds, undefined, false);
     }
 
     // 게시물 삭제
-    await ctx.db.delete(id);
+    await deleteResource(ctx, "socialPosts", id, userId);
     return id;
   },
 });
@@ -286,30 +330,15 @@ export const updateStatus = mutation({
     errorMessage: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("인증이 필요합니다");
-    }
+    const userId = await requireAuth(ctx);
 
-    const post = await ctx.db.get(args.id);
-    if (!post) {
-      throw new Error("게시물을 찾을 수 없습니다");
-    }
-
-    // 사용자 소유 확인
-    if (post.userId !== userId) {
-      throw new Error("수정 권한이 없습니다");
-    }
-
-    const now = new Date().toISOString();
-
-    await ctx.db.patch(args.id, {
+    const updates = {
       status: args.status,
       publishedAt: args.publishedAt,
       errorMessage: args.errorMessage,
-      updatedAt: now,
-    });
+    };
 
+    await updateResource(ctx, "socialPosts", args.id, updates, userId);
     return args.id;
   },
 });
@@ -329,19 +358,11 @@ export const updateMetrics = mutation({
     }),
   },
   handler: async (ctx, { id, platform, metrics }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("인증이 필요합니다");
-    }
+    const userId = await requireAuth(ctx);
 
-    const post = await ctx.db.get(id);
+    const post = await getResource(ctx, "socialPosts", id, userId);
     if (!post) {
       throw new Error("게시물을 찾을 수 없습니다");
-    }
-
-    // 사용자 소유 확인
-    if (post.userId !== userId) {
-      throw new Error("수정 권한이 없습니다");
     }
 
     const now = new Date().toISOString();
@@ -358,11 +379,7 @@ export const updateMetrics = mutation({
       lastUpdatedAt: now,
     };
 
-    await ctx.db.patch(id, {
-      metrics: updatedMetrics,
-      updatedAt: now,
-    });
-
+    await updateResource(ctx, "socialPosts", id, { metrics: updatedMetrics }, userId);
     return id;
   },
 });
@@ -374,17 +391,11 @@ export const getDashboardStats = query({
     endDate: v.optional(v.string()),
   },
   handler: async (ctx, { startDate, endDate }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("인증이 필요합니다");
-    }
+    const userId = await requireAuth(ctx);
 
-    let query = ctx.db
-      .query("socialPosts")
-      .withIndex("byUserId", (q) => q.eq("userId", userId));
-
-    // 날짜 필터링 (필요시 구현)
-    const posts = await query.collect();
+    const posts = await listResources(ctx, "socialPosts", userId, {
+      indexName: "byUserId"
+    });
 
     const stats = {
       total: posts.length,
@@ -406,16 +417,10 @@ export const getByPersona = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { personaId, limit = 20 }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("인증이 필요합니다");
-    }
+    const userId = await requireAuth(ctx);
 
     // 페르소나 소유 확인
-    const persona = await ctx.db.get(personaId);
-    if (!persona || persona.userId !== userId) {
-      throw new Error("페르소나에 대한 접근 권한이 없습니다");
-    }
+    await requireResourceOwnership(ctx, "personas", personaId);
 
     return await ctx.db
       .query("socialPosts")
@@ -431,15 +436,12 @@ export const getRecent = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { limit = 10 }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("인증이 필요합니다");
-    }
+    const userId = await requireAuth(ctx);
 
-    return await ctx.db
-      .query("socialPosts")
-      .withIndex("byUserId", (q) => q.eq("userId", userId))
-      .order("desc")
-      .take(limit);
+    return await listResources(ctx, "socialPosts", userId, {
+      pagination: { limit },
+      sort: { field: "_creationTime", direction: "desc" },
+      indexName: "byUserId"
+    });
   },
 });

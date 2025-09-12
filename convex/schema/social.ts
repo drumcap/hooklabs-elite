@@ -38,11 +38,13 @@ export const socialAccounts = defineTable({
   postsCount: v.optional(v.number()),
   verificationStatus: v.optional(v.string()),
   isActive: v.boolean(),
+  lastSyncedAt: v.string(),
   createdAt: v.string(),
   updatedAt: v.string(),
 })
   .index("byUserId", ["userId"])
-  .index("byPlatform", ["platform", "userId"])
+  .index("byPlatform", ["platform"])
+  .index("byIsActive", ["isActive"])
   .index("byAccountId", ["accountId"]);
 
 // 소셜 게시물 테이블
@@ -91,20 +93,27 @@ export const postVariants = defineTable({
 // 예약 게시물 테이블
 export const scheduledPosts = defineTable({
   postId: v.id("socialPosts"),
-  accountId: v.id("socialAccounts"),
+  variantId: v.optional(v.id("postVariants")),
   platform: v.string(),
+  socialAccountId: v.id("socialAccounts"),
   scheduledFor: v.string(),
-  status: v.string(),
+  status: v.string(), // "pending", "processing", "published", "failed", "cancelled"
   publishedAt: v.optional(v.string()),
-  errorMessage: v.optional(v.string()),
+  publishedPostId: v.optional(v.string()), // 플랫폼에서 반환된 게시물 ID
+  error: v.optional(v.string()),
   retryCount: v.number(),
+  maxRetries: v.number(),
+  nextRetryAt: v.optional(v.string()),
+  publishMetadata: v.optional(v.any()), // 플랫폼별 발행 메타데이터
   createdAt: v.string(),
   updatedAt: v.string(),
 })
   .index("byPostId", ["postId"])
-  .index("byAccountId", ["accountId"])
-  .index("byScheduledTime", ["scheduledFor"])
-  .index("byStatus", ["status"]);
+  .index("byPlatform", ["platform"])
+  .index("byStatus", ["status"])
+  .index("byScheduledFor", ["scheduledFor"])
+  .index("bySocialAccountId", ["socialAccountId"])
+  .index("byNextRetryAt", ["nextRetryAt"]);
 
 // 소셜 메트릭 테이블
 export const socialMetrics = defineTable({

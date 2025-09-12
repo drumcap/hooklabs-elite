@@ -3,6 +3,7 @@
 import { v } from "convex/values";
 import { action } from "../_generated/server";
 import { internal } from "../_generated/api"; // internal API 사용으로 순환 참조 해결
+import { SecurityLogger, InputSanitizer, SocialTokenManager } from "../lib/encryption";
 
 // Twitter API v2 클라이언트
 interface TwitterTweetRequest {
@@ -80,45 +81,90 @@ export const publishToTwitter = action({
     replyToTweetId: v.optional(v.string()),
   },
   handler: async (ctx, { socialAccountId, content, mediaUrls, replyToTweetId }): Promise<PublishResult> => {
+    // 입력 검증 및 XSS 방지
+    const sanitizedContent = InputSanitizer.stripHtml(content);
+    const sanitizedReplyToTweetId = replyToTweetId ? InputSanitizer.sanitizeInput(replyToTweetId) : undefined;
+    
+    // 보안 로깅 - 발행 시작
+    console.log(SecurityLogger.createSecurityLog(
+      "twitter_publish_started",
+      null, // action에서는 userId 직접 접근 불가
+      { 
+        accountId: socialAccountId, 
+        contentLength: sanitizedContent.length,
+        hasMedia: !!(mediaUrls?.length),
+        isReply: !!sanitizedReplyToTweetId
+      },
+      "info"
+    ));
+    
     // 직접 데이터베이스에서 소셜 계정 정보 가져오기
     const account = await ctx.runQuery(internal.socialAccounts.getInternal, {
       id: socialAccountId
     }) as SocialAccount | null;
 
     if (!account || account.platform !== "twitter") {
+      console.log(SecurityLogger.createSecurityLog(
+        "invalid_twitter_account",
+        null,
+        { accountId: socialAccountId, platform: account?.platform },
+        "error"
+      ));
       throw new Error("유효한 트위터 계정이 아닙니다");
     }
 
     // 토큰 만료 확인
-    if (account.tokenExpiresAt) {
-      const expiresAt = new Date(account.tokenExpiresAt);
-      if (expiresAt <= new Date()) {
-        throw new Error("액세스 토큰이 만료되었습니다. 재인증이 필요합니다.");
-      }
+    if (SocialTokenManager.isTokenExpired(account.tokenExpiresAt)) {
+      console.log(SecurityLogger.createSecurityLog(
+        "expired_twitter_token",
+        account.userId,
+        { accountId: socialAccountId, platform: "twitter" },
+        "warning"
+      ));
+      throw new Error("액세스 토큰이 만료되었습니다. 재인증이 필요합니다.");
+    }
+    
+    // 토큰 복호화
+    let decryptedAccessToken: string;
+    try {
+      decryptedAccessToken = SocialTokenManager.decryptToken(
+        account.accessToken,
+        account.platform,
+        account.userId
+      );
+    } catch (error) {
+      console.error(SecurityLogger.createSecurityLog(
+        "twitter_token_decryption_failed",
+        account.userId,
+        { accountId: socialAccountId, error: error instanceof Error ? error.message : String(error) },
+        "error"
+      ));
+      throw new Error("토큰 복호화에 실패했습니다");
     }
 
     const tweetData: TwitterTweetRequest = {
-      text: content,
+      text: sanitizedContent,
     };
 
     // 미디어 파일 처리 (필요시 구현)
     if (mediaUrls && mediaUrls.length > 0) {
       // TODO: 미디어 업로드 로직 구현
-      // const mediaIds = await uploadMediaToTwitter(mediaUrls, account.accessToken);
+      // const mediaIds = await uploadMediaToTwitter(mediaUrls, decryptedAccessToken);
       // tweetData.media = { media_ids: mediaIds };
     }
 
     // 답글 처리
-    if (replyToTweetId) {
-      tweetData.reply = { in_reply_to_tweet_id: replyToTweetId };
+    if (sanitizedReplyToTweetId) {
+      tweetData.reply = { in_reply_to_tweet_id: sanitizedReplyToTweetId };
     }
 
     try {
       const response = await fetch("https://api.twitter.com/2/tweets", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${account.accessToken}`,
+          "Authorization": `Bearer ${decryptedAccessToken}`,
           "Content-Type": "application/json",
+          "User-Agent": "HookLabs-Social-Bot/1.0",
         },
         body: JSON.stringify(tweetData),
       });
@@ -126,12 +172,35 @@ export const publishToTwitter = action({
       if (!response.ok) {
         const errorData = await response.json();
         const twitterError = errorData.errors?.[0] as TwitterError;
+        
+        console.error(SecurityLogger.createSecurityLog(
+          "twitter_publish_failed",
+          account.userId,
+          { 
+            accountId: socialAccountId, 
+            status: response.status,
+            error: twitterError?.detail || response.statusText
+          },
+          "error"
+        ));
+        
         throw new Error(
           `트위터 발행 실패: ${twitterError?.detail || response.statusText}`
         );
       }
 
       const tweetResponse: TwitterTweetResponse = await response.json();
+
+      console.log(SecurityLogger.createSecurityLog(
+        "twitter_publish_success",
+        account.userId,
+        { 
+          accountId: socialAccountId,
+          tweetId: tweetResponse.data.id,
+          contentLength: sanitizedContent.length
+        },
+        "info"
+      ));
 
       return {
         success: true,
@@ -141,6 +210,16 @@ export const publishToTwitter = action({
       };
 
     } catch (error) {
+      console.error(SecurityLogger.createSecurityLog(
+        "twitter_publish_error",
+        account.userId,
+        { 
+          accountId: socialAccountId, 
+          error: error instanceof Error ? error.message : "알 수 없는 오류"
+        },
+        "error"
+      ));
+      
       throw new Error(
         `트위터 발행 중 오류 발생: ${error instanceof Error ? error.message : "알 수 없는 오류"}`
       );
@@ -514,12 +593,26 @@ export const refreshTwitterToken = action({
     expiresAt?: string;
     error?: string;
   }> => {
+    // 보안 로깅
+    console.log(SecurityLogger.createSecurityLog(
+      "twitter_token_refresh_started",
+      null,
+      { accountId: socialAccountId },
+      "info"
+    ));
+
     // 직접 데이터베이스에서 소셜 계정 정보 가져오기
     const account = await ctx.runQuery(internal.socialAccounts.getInternal, {
       id: socialAccountId
     }) as SocialAccount | null;
 
     if (!account || account.platform !== "twitter" || !account.refreshToken) {
+      console.log(SecurityLogger.createSecurityLog(
+        "invalid_twitter_refresh_token",
+        account?.userId || null,
+        { accountId: socialAccountId, platform: account?.platform, hasRefreshToken: !!account?.refreshToken },
+        "error"
+      ));
       throw new Error("유효한 트위터 계정이 아니거나 리프레시 토큰이 없습니다");
     }
 
@@ -527,7 +620,31 @@ export const refreshTwitterToken = action({
     const clientSecret = process.env.TWITTER_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
+      console.error(SecurityLogger.createSecurityLog(
+        "missing_twitter_credentials",
+        account.userId,
+        { accountId: socialAccountId },
+        "error"
+      ));
       throw new Error("트위터 클라이언트 정보가 설정되지 않았습니다");
+    }
+    
+    // 리프레시 토큰 복호화
+    let decryptedRefreshToken: string;
+    try {
+      decryptedRefreshToken = SocialTokenManager.decryptToken(
+        account.refreshToken,
+        account.platform,
+        account.userId
+      );
+    } catch (error) {
+      console.error(SecurityLogger.createSecurityLog(
+        "refresh_token_decryption_failed",
+        account.userId,
+        { accountId: socialAccountId, error: error instanceof Error ? error.message : String(error) },
+        "error"
+      ));
+      throw new Error("리프레시 토큰 복호화에 실패했습니다");
     }
 
     try {

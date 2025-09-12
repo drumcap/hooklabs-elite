@@ -452,6 +452,7 @@ export const createPostWithVariants = action({
         userId,
         personaId,
         originalContent,
+        finalContent: originalContent, // 초기에는 원본과 동일
         platforms,
         hashtags,
         mediaUrls,

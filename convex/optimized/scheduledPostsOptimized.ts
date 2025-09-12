@@ -74,7 +74,7 @@ export const listOptimized = query({
     // 5. 소셜 계정 ID들을 모아서 배치 조회
     const socialAccountIds = new Set(filteredSchedules.map(s => s.socialAccountId));
     const socialAccounts = await Promise.all(
-      Array.from(socialAccountIds).map(id => ctx.db.get(id))
+      Array.from(socialAccountIds).map(id => ctx.db.get(id as any))
     );
     const socialAccountLookup = new Map(
       socialAccounts.filter(Boolean).map(account => [account!._id, account])
@@ -141,9 +141,9 @@ export const getCalendarSchedulesOptimized = query({
     }
 
     // 2. 관련 게시물들을 배치로 조회
-    const postIds = [...new Set(schedules.map(s => s.postId))];
+    const postIds = Array.from(new Set(schedules.map(s => s.postId)));
     const posts = await Promise.all(postIds.map(id => ctx.db.get(id)));
-    const userPosts = posts.filter(post => post && post.userId === userId);
+    const userPosts = posts.filter(post => post && (post as any).userId === userId);
     
     if (userPosts.length === 0) {
       return [];
@@ -153,7 +153,7 @@ export const getCalendarSchedulesOptimized = query({
     const validSchedules = schedules.filter(s => userPostLookup.has(s.postId));
 
     // 3. 소셜 계정들을 배치로 조회
-    const socialAccountIds = [...new Set(validSchedules.map(s => s.socialAccountId))];
+    const socialAccountIds = Array.from(new Set(validSchedules.map(s => s.socialAccountId)));
     const socialAccounts = await Promise.all(
       socialAccountIds.map(id => ctx.db.get(id))
     );
@@ -162,7 +162,7 @@ export const getCalendarSchedulesOptimized = query({
     );
 
     // 4. 페르소나들을 배치로 조회
-    const personaIds = [...new Set(userPosts.filter(Boolean).map(post => post!.personaId))];
+    const personaIds = Array.from(new Set(userPosts.filter(Boolean).map(post => (post as any).personaId)));
     const personas = await Promise.all(personaIds.map(id => ctx.db.get(id)));
     const personaLookup = new Map(
       personas.filter(Boolean).map(persona => [persona!._id, persona])
@@ -172,18 +172,18 @@ export const getCalendarSchedulesOptimized = query({
     const calendarEvents = validSchedules.map(schedule => {
       const post = userPostLookup.get(schedule.postId);
       const socialAccount = socialAccountLookup.get(schedule.socialAccountId);
-      const persona = post ? personaLookup.get(post.personaId) : null;
+      const persona = post ? personaLookup.get((post as any).personaId) : null;
 
       return {
         id: schedule._id,
-        title: `${socialAccount?.displayName || socialAccount?.username} (${schedule.platform})`,
-        content: post?.finalContent ? post.finalContent.substring(0, 100) + (post.finalContent.length > 100 ? "..." : "") : "",
+        title: `${(socialAccount as any)?.displayName || (socialAccount as any)?.username} (${schedule.platform})`,
+        content: (post as any)?.finalContent ? (post as any).finalContent.substring(0, 100) + ((post as any).finalContent.length > 100 ? "..." : "") : "",
         scheduledFor: schedule.scheduledFor,
         status: schedule.status,
         platform: schedule.platform,
-        personaName: persona?.name,
-        accountDisplayName: socialAccount?.displayName,
-        accountUsername: socialAccount?.username,
+        personaName: (persona as any)?.name,
+        accountDisplayName: (socialAccount as any)?.displayName,
+        accountUsername: (socialAccount as any)?.username,
         postId: schedule.postId,
         error: schedule.error,
       };
@@ -215,11 +215,11 @@ export const createBatch = mutation({
     const results = [];
 
     // 1. 모든 관련 데이터를 배치로 미리 검증
-    const postIds = [...new Set(schedules.map(s => s.postId))];
+    const postIds = Array.from(new Set(schedules.map(s => s.postId)));
     const posts = await Promise.all(postIds.map(id => ctx.db.get(id)));
     const postLookup = new Map(posts.filter(Boolean).map(post => [post!._id, post]));
 
-    const socialAccountIds = [...new Set(schedules.map(s => s.socialAccountId))];
+    const socialAccountIds = Array.from(new Set(schedules.map(s => s.socialAccountId)));
     const socialAccounts = await Promise.all(socialAccountIds.map(id => ctx.db.get(id)));
     const socialAccountLookup = new Map(
       socialAccounts.filter(Boolean).map(account => [account!._id, account])
@@ -242,7 +242,7 @@ export const createBatch = mutation({
     for (const schedule of schedules) {
       // 권한 검증
       const post = postLookup.get(schedule.postId);
-      if (!post || post.userId !== userId) {
+      if (!post || (post as any).userId !== userId) {
         results.push({ 
           postId: schedule.postId, 
           success: false, 
@@ -252,7 +252,7 @@ export const createBatch = mutation({
       }
 
       const socialAccount = socialAccountLookup.get(schedule.socialAccountId);
-      if (!socialAccount || socialAccount.userId !== userId) {
+      if (!socialAccount || (socialAccount as any).userId !== userId) {
         results.push({ 
           postId: schedule.postId, 
           success: false, 
@@ -261,7 +261,7 @@ export const createBatch = mutation({
         continue;
       }
 
-      if (socialAccount.platform !== schedule.platform) {
+      if ((socialAccount as any).platform !== schedule.platform) {
         results.push({ 
           postId: schedule.postId, 
           success: false, 

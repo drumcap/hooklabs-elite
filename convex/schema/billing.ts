@@ -5,78 +5,94 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
 
-// 사용량 추적 테이블
+// 통합된 사용량 추적 테이블
 export const usage = defineTable({
   userId: v.id("users"),
   subscriptionId: v.optional(v.id("subscriptions")),
-  type: v.string(),
+  resourceType: v.string(), // "ai_generation", "api_call", "storage", "credits", "bandwidth" 등
   amount: v.number(),
-  unit: v.string(),
+  unit: v.string(), // "requests", "tokens", "MB", "credits", "GB" 등
   description: v.string(),
+  // 관련 리소스 참조
+  postId: v.optional(v.id("socialPosts")),
+  personaId: v.optional(v.id("personas")),
+  // 청구 관련 정보
+  periodStart: v.optional(v.string()), // 청구 주기 시작일
+  periodEnd: v.optional(v.string()), // 청구 주기 종료일
+  // 메타데이터
   metadata: v.optional(v.any()),
-  billingPeriod: v.optional(v.string()),
   timestamp: v.string(),
+  createdAt: v.string(),
 })
   .index("byUserId", ["userId"])
   .index("bySubscriptionId", ["subscriptionId"])
+  .index("byResourceType", ["resourceType"])
   .index("byTimestamp", ["timestamp"])
-  .index("byType", ["type", "userId"]);
+  .index("byCreatedAt", ["createdAt"])
+  .index("byPostId", ["postId"])
+  .index("byPeriod", ["periodStart", "periodEnd"]);
 
 // 크레딧 관리 테이블
 export const credits = defineTable({
   userId: v.id("users"),
-  amount: v.number(),
-  type: v.string(),
-  source: v.string(),
+  amount: v.number(), // 크레딧 양 (양수는 적립, 음수는 사용)
+  type: v.string(), // earned, purchased, used, refunded, expired
   description: v.string(),
   expiresAt: v.optional(v.string()),
-  usedAmount: v.number(),
-  isActive: v.boolean(),
+  relatedOrderId: v.optional(v.string()), // 관련 주문 ID
+  relatedCouponId: v.optional(v.id("coupons")),
   metadata: v.optional(v.any()),
   createdAt: v.string(),
-  updatedAt: v.string(),
 })
   .index("byUserId", ["userId"])
   .index("byType", ["type"])
   .index("byExpiresAt", ["expiresAt"])
-  .index("byIsActive", ["isActive", "userId"]);
+  .index("byCreatedAt", ["createdAt"]);
 
-// 쿠폰 테이블
+// 쿠폰 관리 테이블
 export const coupons = defineTable({
-  code: v.string(),
-  type: v.string(),
-  value: v.number(),
+  code: v.string(), // 쿠폰 코드
+  name: v.string(),
+  description: v.optional(v.string()),
+  type: v.string(), // percentage, fixed_amount, credits
+  value: v.number(), // 할인 금액 또는 크레딧 양
   currency: v.optional(v.string()),
-  description: v.string(),
-  usageLimit: v.optional(v.number()),
-  usageCount: v.number(),
+  minAmount: v.optional(v.number()), // 최소 주문 금액
+  maxDiscount: v.optional(v.number()), // 최대 할인 금액
+  usageLimit: v.optional(v.number()), // 전체 사용 횟수 제한
+  usageCount: v.number(), // 현재 사용 횟수
+  userLimit: v.optional(v.number()), // 사용자당 사용 횟수 제한
   validFrom: v.string(),
   validUntil: v.optional(v.string()),
-  restrictions: v.optional(v.any()),
   isActive: v.boolean(),
+  metadata: v.optional(v.any()),
   createdAt: v.string(),
   updatedAt: v.string(),
 })
   .index("byCode", ["code"])
   .index("byIsActive", ["isActive"])
+  .index("byValidFrom", ["validFrom"])
   .index("byValidUntil", ["validUntil"]);
 
-// 쿠폰 사용 내역
-export const couponUsage = defineTable({
-  couponId: v.id("coupons"),
+// 쿠폰 사용 내역 테이블
+export const couponUsages = defineTable({
   userId: v.id("users"),
+  couponId: v.id("coupons"),
   orderId: v.optional(v.string()),
+  subscriptionId: v.optional(v.id("subscriptions")),
   discountAmount: v.number(),
+  currency: v.optional(v.string()),
   usedAt: v.string(),
 })
-  .index("byCouponId", ["couponId"])
   .index("byUserId", ["userId"])
-  .index("byOrderId", ["orderId"]);
+  .index("byCouponId", ["couponId"])
+  .index("byOrderId", ["orderId"])
+  .index("byUsedAt", ["usedAt"]);
 
 // 빌링 스키마 export
 export const billingSchema = {
-  usage,
+  usage, // usageRecords와 통합됨
   credits,
   coupons,
-  couponUsage,
+  couponUsages,
 };

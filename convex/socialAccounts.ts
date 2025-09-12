@@ -1,6 +1,12 @@
 import { v } from "convex/values";
 import { mutation, query, internalQuery } from "./_generated/server";
 import { getAuthUserId } from "./auth";
+import { 
+  SocialTokenManager, 
+  SecurityLogger, 
+  InputSanitizer, 
+  DataMasker 
+} from "./lib/encryption";
 
 // 소셜 계정 목록 조회
 export const list = query({
@@ -11,7 +17,19 @@ export const list = query({
   handler: async (ctx, { platform, isActive }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
+      // 보안 이벤트 로깅
+      console.log(SecurityLogger.createSecurityLog(
+        "unauthorized_access_attempt",
+        null,
+        { action: "list_social_accounts", platform },
+        "warning"
+      ));
       throw new Error("인증이 필요합니다");
+    }
+
+    // 입력 검증
+    if (platform && typeof platform !== 'string') {
+      throw new Error("올바르지 않은 플랫폼 형식입니다");
     }
 
     let query = ctx.db
@@ -32,7 +50,18 @@ export const list = query({
       .order("desc")
       .collect();
 
-    // 민감한 토큰 정보 제거하고 반환
+    // 민감한 토큰 정보 마스킹 처리하고 반환 (로그용)
+    console.log(SecurityLogger.createSecurityLog(
+      "social_accounts_accessed",
+      userId,
+      { 
+        accountsCount: accounts.length, 
+        platform,
+        isActive 
+      },
+      "info"
+    ));
+
     return accounts.map(account => ({
       ...account,
       accessToken: undefined,
@@ -47,6 +76,12 @@ export const get = query({
   handler: async (ctx, { id }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
+      console.log(SecurityLogger.createSecurityLog(
+        "unauthorized_access_attempt",
+        null,
+        { action: "get_social_account", accountId: id },
+        "warning"
+      ));
       throw new Error("인증이 필요합니다");
     }
 
@@ -57,6 +92,12 @@ export const get = query({
 
     // 사용자 소유 확인
     if (account.userId !== userId) {
+      console.log(SecurityLogger.createSecurityLog(
+        "unauthorized_account_access",
+        userId,
+        { accountId: id, attemptedUserId: userId, actualUserId: account.userId },
+        "error"
+      ));
       throw new Error("접근 권한이 없습니다");
     }
 
@@ -75,6 +116,12 @@ export const getWithTokens = query({
   handler: async (ctx, { id }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
+      console.log(SecurityLogger.createSecurityLog(
+        "unauthorized_token_access_attempt",
+        null,
+        { action: "get_tokens", accountId: id },
+        "error"
+      ));
       throw new Error("인증이 필요합니다");
     }
 
@@ -85,10 +132,65 @@ export const getWithTokens = query({
 
     // 사용자 소유 확인
     if (account.userId !== userId) {
+      console.log(SecurityLogger.createSecurityLog(
+        "unauthorized_token_access",
+        userId,
+        { accountId: id, attemptedUserId: userId, actualUserId: account.userId },
+        "error"
+      ));
       throw new Error("접근 권한이 없습니다");
     }
 
-    return account;
+    // 토큰 만료 확인
+    if (SocialTokenManager.isTokenExpired(account.tokenExpiresAt)) {
+      console.log(SecurityLogger.createSecurityLog(
+        "expired_token_access",
+        userId,
+        { accountId: id, platform: account.platform },
+        "warning"
+      ));
+    }
+
+    // 토큰 복호화
+    let decryptedAccount = { ...account };
+    try {
+      if (account.accessToken) {
+        decryptedAccount.accessToken = SocialTokenManager.decryptToken(
+          account.accessToken, 
+          account.platform, 
+          userId
+        );
+      }
+      if (account.refreshToken) {
+        decryptedAccount.refreshToken = SocialTokenManager.decryptToken(
+          account.refreshToken, 
+          account.platform, 
+          userId
+        );
+      }
+      
+      console.log(SecurityLogger.createSecurityLog(
+        "token_decryption_success",
+        userId,
+        { 
+          accountId: id, 
+          platform: account.platform,
+          hasAccessToken: !!account.accessToken,
+          hasRefreshToken: !!account.refreshToken
+        },
+        "info"
+      ));
+    } catch (error) {
+      console.error(SecurityLogger.createSecurityLog(
+        "token_decryption_failed",
+        userId,
+        { accountId: id, platform: account.platform, error: error instanceof Error ? error.message : String(error) },
+        "error"
+      ));
+      throw new Error("토큰 복호화에 실패했습니다");
+    }
+
+    return decryptedAccount;
   },
 });
 
@@ -138,44 +240,149 @@ export const create = mutation({
       }
       
       // 같은 사용자의 계정인 경우 토큰 업데이트
+      // 입력 검증
+      const sanitizedDisplayName = InputSanitizer.stripHtml(args.displayName);
+      const sanitizedVerificationStatus = args.verificationStatus ? 
+        InputSanitizer.sanitizeInput(args.verificationStatus) : undefined;
+      
+      // 토큰 암호화
+      let encryptedAccessToken: string;
+      let encryptedRefreshToken: string | undefined;
+      
+      try {
+        encryptedAccessToken = SocialTokenManager.encryptToken(
+          args.accessToken,
+          args.platform,
+          userId
+        );
+        
+        if (args.refreshToken) {
+          encryptedRefreshToken = SocialTokenManager.encryptToken(
+            args.refreshToken,
+            args.platform,
+            userId
+          );
+        }
+      } catch (error) {
+        console.error(SecurityLogger.createSecurityLog(
+          "token_update_encryption_failed",
+          userId,
+          { accountId: existingAccount._id, platform: args.platform, error: error instanceof Error ? error.message : String(error) },
+          "error"
+        ));
+        throw new Error("토큰 암호화에 실패했습니다");
+      }
+      
       await ctx.db.patch(existingAccount._id, {
-        accessToken: args.accessToken,
-        refreshToken: args.refreshToken,
+        accessToken: encryptedAccessToken,
+        refreshToken: encryptedRefreshToken,
         tokenExpiresAt: args.tokenExpiresAt,
-        displayName: args.displayName,
+        displayName: sanitizedDisplayName,
         profileImage: args.profileImage,
         followers: args.followers,
         following: args.following,
         postsCount: args.postsCount,
-        verificationStatus: args.verificationStatus,
+        verificationStatus: sanitizedVerificationStatus,
         isActive: true,
         lastSyncedAt: now,
         updatedAt: now,
       });
+      
+      console.log(SecurityLogger.createSecurityLog(
+        "social_account_tokens_updated",
+        userId,
+        { 
+          accountId: existingAccount._id,
+          platform: args.platform 
+        },
+        "info"
+      ));
 
       return existingAccount._id;
     }
 
-    // 새 계정 생성
-    return await ctx.db.insert("socialAccounts", {
-      userId,
-      platform: args.platform,
-      accountId: args.accountId,
-      username: args.username,
-      displayName: args.displayName,
+    // 입력 검증 및 XSS 방지
+    const sanitizedArgs = {
+      platform: InputSanitizer.sanitizeInput(args.platform),
+      accountId: InputSanitizer.sanitizeInput(args.accountId),
+      username: InputSanitizer.sanitizeInput(args.username),
+      displayName: InputSanitizer.stripHtml(args.displayName),
       profileImage: args.profileImage,
-      accessToken: args.accessToken,
-      refreshToken: args.refreshToken,
+      verificationStatus: args.verificationStatus ? InputSanitizer.sanitizeInput(args.verificationStatus) : undefined,
+    };
+
+    // 토큰 암호화
+    let encryptedAccessToken: string;
+    let encryptedRefreshToken: string | undefined;
+    
+    try {
+      encryptedAccessToken = SocialTokenManager.encryptToken(
+        args.accessToken,
+        sanitizedArgs.platform,
+        userId
+      );
+      
+      if (args.refreshToken) {
+        encryptedRefreshToken = SocialTokenManager.encryptToken(
+          args.refreshToken,
+          sanitizedArgs.platform,
+          userId
+        );
+      }
+      
+      console.log(SecurityLogger.createSecurityLog(
+        "token_encryption_success",
+        userId,
+        { 
+          platform: sanitizedArgs.platform,
+          accountId: sanitizedArgs.accountId,
+          hasRefreshToken: !!args.refreshToken
+        },
+        "info"
+      ));
+    } catch (error) {
+      console.error(SecurityLogger.createSecurityLog(
+        "token_encryption_failed",
+        userId,
+        { platform: sanitizedArgs.platform, error: error instanceof Error ? error.message : String(error) },
+        "error"
+      ));
+      throw new Error("토큰 암호화에 실패했습니다");
+    }
+
+    // 새 계정 생성
+    const newAccountId = await ctx.db.insert("socialAccounts", {
+      userId,
+      platform: sanitizedArgs.platform,
+      accountId: sanitizedArgs.accountId,
+      username: sanitizedArgs.username,
+      displayName: sanitizedArgs.displayName,
+      profileImage: sanitizedArgs.profileImage,
+      accessToken: encryptedAccessToken,
+      refreshToken: encryptedRefreshToken,
       tokenExpiresAt: args.tokenExpiresAt,
       followers: args.followers,
       following: args.following,
       postsCount: args.postsCount,
-      verificationStatus: args.verificationStatus,
+      verificationStatus: sanitizedArgs.verificationStatus,
       isActive: true,
       lastSyncedAt: now,
       createdAt: now,
       updatedAt: now,
     });
+
+    console.log(SecurityLogger.createSecurityLog(
+      "social_account_created",
+      userId,
+      { 
+        accountId: newAccountId,
+        platform: sanitizedArgs.platform,
+        username: sanitizedArgs.username
+      },
+      "info"
+    ));
+
+    return newAccountId;
   },
 });
 
@@ -229,6 +436,12 @@ export const updateTokens = mutation({
   handler: async (ctx, { id, accessToken, refreshToken, tokenExpiresAt }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
+      console.log(SecurityLogger.createSecurityLog(
+        "unauthorized_token_update_attempt",
+        null,
+        { action: "update_tokens", accountId: id },
+        "warning"
+      ));
       throw new Error("인증이 필요합니다");
     }
 
@@ -239,14 +452,59 @@ export const updateTokens = mutation({
 
     // 사용자 소유 확인
     if (account.userId !== userId) {
+      console.log(SecurityLogger.createSecurityLog(
+        "unauthorized_token_update",
+        userId,
+        { accountId: id, attemptedUserId: userId, actualUserId: account.userId },
+        "error"
+      ));
       throw new Error("수정 권한이 없습니다");
+    }
+
+    // 토큰 암호화
+    let encryptedAccessToken: string;
+    let encryptedRefreshToken: string | undefined;
+    
+    try {
+      encryptedAccessToken = SocialTokenManager.encryptToken(
+        accessToken,
+        account.platform,
+        userId
+      );
+      
+      if (refreshToken) {
+        encryptedRefreshToken = SocialTokenManager.encryptToken(
+          refreshToken,
+          account.platform,
+          userId
+        );
+      }
+      
+      console.log(SecurityLogger.createSecurityLog(
+        "tokens_updated",
+        userId,
+        { 
+          accountId: id,
+          platform: account.platform,
+          hasRefreshToken: !!refreshToken
+        },
+        "info"
+      ));
+    } catch (error) {
+      console.error(SecurityLogger.createSecurityLog(
+        "token_update_failed",
+        userId,
+        { accountId: id, platform: account.platform, error: error instanceof Error ? error.message : String(error) },
+        "error"
+      ));
+      throw new Error("토큰 업데이트에 실패했습니다");
     }
 
     const now = new Date().toISOString();
 
     await ctx.db.patch(id, {
-      accessToken,
-      refreshToken,
+      accessToken: encryptedAccessToken,
+      refreshToken: encryptedRefreshToken,
       tokenExpiresAt,
       lastSyncedAt: now,
       updatedAt: now,

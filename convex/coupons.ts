@@ -1,6 +1,9 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getCurrentUser } from "./users";
+import { requireAuth, getOptionalAuth } from "./lib/auth";
+import { createResource, updateResource, checkDuplicate, CRUD_ERRORS } from "./lib/crud";
+import { ValidatorComposer, DataSanitizer, isValidCouponCode } from "./lib/validators";
 
 // 쿠폰 코드로 쿠폰 조회 및 유효성 검증
 export const validateCoupon = query({
@@ -11,7 +14,7 @@ export const validateCoupon = query({
   },
   handler: async (ctx, { code, userId, orderAmount }) => {
     const coupon = await ctx.db
-      .query("coupons")
+      .query("coupons" as any)
       .withIndex("byCode", (q) => q.eq("code", code.toUpperCase()))
       .first();
 
@@ -50,7 +53,7 @@ export const validateCoupon = query({
     // 사용자별 사용 횟수 제한 확인
     if (userId && coupon.userLimit) {
       const userUsageCount = await ctx.db
-        .query("couponUsages")
+        .query("couponUsages" as any)
         .withIndex("byUserId", (q) => q.eq("userId", userId))
         .filter((q) => q.eq(q.field("couponId"), coupon._id))
         .collect();
@@ -100,46 +103,46 @@ export const useCoupon = mutation({
     currency: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const sanitizedCode = DataSanitizer.couponCode(args.couponCode);
+    
     const coupon = await ctx.db
-      .query("coupons")
-      .withIndex("byCode", (q) => q.eq("code", args.couponCode.toUpperCase()))
+      .query("coupons" as any)
+      .withIndex("byCode", (q) => q.eq("code", sanitizedCode))
       .first();
 
     if (!coupon) {
-      throw new Error("유효하지 않은 쿠폰 코드입니다.");
+      throw new Error(CRUD_ERRORS.NOT_FOUND);
     }
 
-    const now = new Date().toISOString();
-
     // 사용 기록 추가
-    const usageId = await ctx.db.insert("couponUsages", {
+    const usageData = {
       userId: args.userId,
       couponId: coupon._id,
       orderId: args.orderId,
       subscriptionId: args.subscriptionId,
       discountAmount: args.discountAmount,
       currency: args.currency,
-      usedAt: now,
-    });
+      usedAt: new Date().toISOString(),
+    };
+
+    const usageId = await createResource(ctx, "couponUsages" as any, usageData);
 
     // 쿠폰 사용 횟수 업데이트
-    await ctx.db.patch(coupon._id, {
+    await updateResource(ctx, "coupons" as any, coupon._id, {
       usageCount: coupon.usageCount + 1,
-      updatedAt: now,
-    });
+    }, undefined, false);
 
     // 크레딧 타입 쿠폰인 경우 크레딧 지급
     if (coupon.type === "credits") {
-      // credits.ts의 addCredits 함수를 직접 호출하는 대신
-      // 여기서 직접 크레딧을 추가
-      await ctx.db.insert("credits", {
+      const creditData = {
         userId: args.userId,
         amount: coupon.value,
         type: "earned",
         description: `쿠폰 적용: ${coupon.name}`,
         relatedCouponId: coupon._id,
-        createdAt: now,
-      });
+      };
+      
+      await createResource(ctx, "credits" as any, creditData);
     }
 
     return usageId;
@@ -152,14 +155,11 @@ export const getUserCouponUsages = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { limit = 20 }) => {
-    const user = await getCurrentUser(ctx);
-    if (!user) {
-      return []; // Return empty array instead of throwing error
-    }
+    const userId = await requireAuth(ctx);
 
     const usages = await ctx.db
       .query("couponUsages")
-      .withIndex("byUserId", (q) => q.eq("userId", user._id))
+      .withIndex("byUserId", (q) => q.eq("userId", userId))
       .order("desc")
       .take(limit);
 
@@ -191,7 +191,7 @@ export const getAllCoupons = query({
   handler: async (ctx, { isActive, limit = 100 }) => {
     if (isActive !== undefined) {
       const coupons = await ctx.db
-        .query("coupons")
+        .query("coupons" as any)
         .withIndex("byIsActive", (q) => q.eq("isActive", isActive))
         .order("desc")
         .take(limit);
@@ -199,7 +199,7 @@ export const getAllCoupons = query({
     }
 
     const coupons = await ctx.db
-      .query("coupons")
+      .query("coupons" as any)
       .order("desc")
       .take(limit);
     return coupons;
@@ -224,22 +224,31 @@ export const createCoupon = mutation({
     metadata: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    // 중복 코드 확인
-    const existingCoupon = await ctx.db
-      .query("coupons")
-      .withIndex("byCode", (q) => q.eq("code", args.code.toUpperCase()))
-      .first();
-
-    if (existingCoupon) {
-      throw new Error("이미 존재하는 쿠폰 코드입니다.");
+    // 데이터 검증
+    const validation = ValidatorComposer.validateCouponCreation({
+      code: args.code,
+      type: args.type,
+      value: args.value,
+      validFrom: args.validFrom,
+      validUntil: args.validUntil,
+    });
+    
+    if (!validation.isValid) {
+      throw new Error(validation.errors[0]);
     }
 
-    const now = new Date().toISOString();
+    const sanitizedCode = DataSanitizer.couponCode(args.code);
+    
+    // 중복 코드 확인
+    const isDuplicate = await checkDuplicate(ctx, "coupons" as any, "code", sanitizedCode);
+    if (isDuplicate) {
+      throw new Error(CRUD_ERRORS.ALREADY_EXISTS);
+    }
 
-    const couponId = await ctx.db.insert("coupons", {
-      code: args.code.toUpperCase(),
-      name: args.name,
-      description: args.description,
+    const couponData = {
+      code: sanitizedCode,
+      name: DataSanitizer.text(args.name),
+      description: args.description ? DataSanitizer.text(args.description) : args.description,
       type: args.type,
       value: args.value,
       currency: args.currency,
@@ -252,11 +261,9 @@ export const createCoupon = mutation({
       validUntil: args.validUntil,
       isActive: true,
       metadata: args.metadata,
-      createdAt: now,
-      updatedAt: now,
-    });
+    };
 
-    return couponId;
+    return await createResource(ctx, "coupons" as any, couponData);
   },
 });
 
@@ -277,13 +284,14 @@ export const updateCoupon = mutation({
     }),
   },
   handler: async (ctx, { couponId, updates }) => {
-    const now = new Date().toISOString();
-    
-    await ctx.db.patch(couponId, {
+    // 데이터 정규화
+    const sanitizedUpdates = {
       ...updates,
-      updatedAt: now,
-    });
-
+      ...(updates.name && { name: DataSanitizer.text(updates.name) }),
+      ...(updates.description && { description: DataSanitizer.text(updates.description) }),
+    };
+    
+    await updateResource(ctx, "coupons" as any, couponId, sanitizedUpdates, undefined, false);
     return couponId;
   },
 });
