@@ -132,7 +132,7 @@ function getClientIdentifier(request: NextRequest): string {
   // IP 주소 추출 (프록시 환경 고려)
   const forwarded = request.headers.get('x-forwarded-for')
   const realIp = request.headers.get('x-real-ip')
-  const ip = forwarded?.split(',')[0] || realIp || request.ip || 'unknown'
+  const ip = forwarded?.split(',')[0] || realIp || 'unknown'
   
   return `ip:${ip}`
 }
@@ -216,7 +216,7 @@ const whitelist = new Set([
 export function isWhitelisted(request: NextRequest): boolean {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
            request.headers.get('x-real-ip') || 
-           request.ip || ''
+           ''
            
   if (whitelist.has(ip)) {
     return true

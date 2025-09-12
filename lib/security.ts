@@ -431,7 +431,7 @@ export class SecurityAuditLogger {
     this.logSecurityEvent('sql_injection_attempt', {
       input,
       url: req.url,
-      ip: req.ip,
+      ip: req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'unknown',
       userAgent: req.headers.get('user-agent'),
     }, 'high');
   }
@@ -440,7 +440,7 @@ export class SecurityAuditLogger {
     this.logSecurityEvent('xss_attempt', {
       input,
       url: req.url,
-      ip: req.ip,
+      ip: req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'unknown',
       userAgent: req.headers.get('user-agent'),
     }, 'high');
   }
@@ -449,7 +449,7 @@ export class SecurityAuditLogger {
     this.logSecurityEvent('rate_limit_exceeded', {
       key,
       url: req.url,
-      ip: req.ip,
+      ip: req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'unknown',
       userAgent: req.headers.get('user-agent'),
     }, 'medium');
   }
@@ -458,7 +458,7 @@ export class SecurityAuditLogger {
     this.logSecurityEvent('unauthorized_access', {
       resource,
       url: req.url,
-      ip: req.ip,
+      ip: req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'unknown',
       userAgent: req.headers.get('user-agent'),
     }, 'high');
   }
@@ -467,7 +467,7 @@ export class SecurityAuditLogger {
     this.logSecurityEvent('suspicious_activity', {
       activity,
       url: req.url,
-      ip: req.ip,
+      ip: req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'unknown',
       userAgent: req.headers.get('user-agent'),
     }, 'medium');
   }

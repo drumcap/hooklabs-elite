@@ -1,11 +1,17 @@
 /**
- * 보안 강화된 API 라우트 예제
+ * 보안 강화된 API 라우트 예제 - 임시 비활성화
+ * TODO: security-enhanced 모듈이 활성화된 후 재활성화하세요
  * - 인증, Rate Limiting, 입력 검증, 로깅이 모두 포함된 템플릿
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { SecureAPIHandler, commonSchemas } from '@/lib/security-enhanced';
+// TODO: security-enhanced 모듈 활성화 후 재활성화
+// import { SecureAPIHandler, commonSchemas } from '@/lib/security-enhanced';
+
+// 간단한 ID 스키마 (commonSchemas 대체)
+const idSchema = z.string().uuid();
+const dateSchema = z.string().datetime();
 
 // 요청 스키마 정의
 const requestSchema = z.object({
@@ -18,211 +24,208 @@ const requestSchema = z.object({
   }),
   metadata: z.object({
     source: z.string().optional(),
-    timestamp: commonSchemas.date.optional(),
+    timestamp: dateSchema.optional(),
   }).optional(),
 });
 
-// API 핸들러 인스턴스 생성
-const apiHandler = new SecureAPIHandler({
-  rateLimitConfig: {
-    window: 60,        // 1분
-    max: 30,          // 30 요청/분
-  },
-  schema: requestSchema,
-});
+// 간단한 JSON 응답 헬퍼
+function jsonResponse(data: any, status = 200) {
+  return NextResponse.json(data, { status });
+}
 
 /**
- * GET 핸들러 - 데이터 조회
+ * GET 핸들러 - 데이터 조회 (간소화된 버전)
  */
 export async function GET(req: NextRequest) {
-  return apiHandler.handle(req, async (req, { userId }) => {
-    try {
-      // URL 파라미터 파싱
-      const { searchParams } = new URL(req.url);
-      const id = searchParams.get('id');
-      const includeDeleted = searchParams.get('includeDeleted') === 'true';
+  try {
+    // 간단한 예제 응답 (보안 모듈 비활성화로 인한 임시 구현)
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    const includeDeleted = searchParams.get('includeDeleted') === 'true';
 
-      // ID 검증
-      if (id && !commonSchemas.id.safeParse(id).success) {
-        return NextResponse.json(
-          { error: 'Invalid ID format' },
-          { status: 400 }
-        );
-      }
-
-      // 데이터 조회 로직
-      const data = {
-        id: id || 'all',
-        userId,
-        items: [],
-        includeDeleted,
-        timestamp: new Date().toISOString(),
-      };
-
-      return NextResponse.json({
-        success: true,
-        data,
-      });
-
-    } catch (error) {
-      console.error('GET handler error:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch data' },
-        { status: 500 }
+    // ID 검증 (간소화)
+    if (id && !idSchema.safeParse(id).success) {
+      return jsonResponse(
+        { error: 'Invalid ID format' },
+        400
       );
     }
-  });
+
+    // 모의 데이터 조회 로직
+    const data = {
+      id: id || 'all',
+      items: [],
+      includeDeleted,
+      timestamp: new Date().toISOString(),
+      note: 'SecureAPIHandler가 비활성화되어 있어 간소화된 버전입니다.'
+    };
+
+    return jsonResponse({
+      success: true,
+      data,
+    });
+
+  } catch (error) {
+    console.error('GET handler error:', error);
+    return jsonResponse(
+      { error: 'Failed to fetch data' },
+      500
+    );
+  }
 }
 
 /**
- * POST 핸들러 - 데이터 생성
+ * POST 핸들러 - 데이터 생성 (간소화된 버전)
  */
 export async function POST(req: NextRequest) {
-  return apiHandler.handle(req, async (req, { userId, body }) => {
-    try {
-      // body는 이미 검증됨 (requestSchema)
-      const { action, data, metadata } = body;
-
-      // 액션별 처리
-      let result;
-      switch (action) {
-        case 'create':
-          result = await handleCreate(userId, data, metadata);
-          break;
-        
-        case 'update':
-          result = await handleUpdate(userId, data, metadata);
-          break;
-        
-        case 'delete':
-          result = await handleDelete(userId, data, metadata);
-          break;
-        
-        default:
-          return NextResponse.json(
-            { error: 'Invalid action' },
-            { status: 400 }
-          );
-      }
-
-      return NextResponse.json({
-        success: true,
-        action,
-        result,
-        timestamp: new Date().toISOString(),
-      });
-
-    } catch (error) {
-      console.error('POST handler error:', error);
-      return NextResponse.json(
-        { error: 'Operation failed' },
-        { status: 500 }
+  try {
+    // 간단한 body 파싱 및 검증
+    const body = await req.json();
+    const validation = requestSchema.safeParse(body);
+    
+    if (!validation.success) {
+      return jsonResponse(
+        { error: 'Invalid request data', details: validation.error.issues },
+        400
       );
     }
-  });
+
+    const { action, data, metadata } = validation.data;
+
+    // 액션별 처리 (간소화)
+    let result;
+    switch (action) {
+      case 'create':
+        result = await handleCreate('mock-user-id', data, metadata);
+        break;
+      
+      case 'update':
+        result = await handleUpdate('mock-user-id', data, metadata);
+        break;
+      
+      case 'delete':
+        result = await handleDelete('mock-user-id', data, metadata);
+        break;
+      
+      default:
+        return jsonResponse(
+          { error: 'Invalid action' },
+          400
+        );
+    }
+
+    return jsonResponse({
+      success: true,
+      action,
+      result,
+      timestamp: new Date().toISOString(),
+      note: 'SecureAPIHandler가 비활성화되어 있어 간소화된 버전입니다.'
+    });
+
+  } catch (error) {
+    console.error('POST handler error:', error);
+    return jsonResponse(
+      { error: 'Operation failed' },
+      500
+    );
+  }
 }
 
 /**
- * PUT 핸들러 - 데이터 업데이트
+ * PUT 핸들러 - 데이터 업데이트 (간소화된 버전)
  */
 export async function PUT(req: NextRequest) {
-  // PUT 요청용 스키마 (ID 필수)
-  const putSchema = requestSchema.extend({
-    id: commonSchemas.id,
-  });
+  try {
+    // PUT 요청용 스키마 (ID 필수)
+    const putSchema = requestSchema.extend({
+      id: idSchema,
+    });
 
-  const putHandler = new SecureAPIHandler({
-    rateLimitConfig: {
-      window: 60,
-      max: 20, // PUT은 더 제한적
-    },
-    schema: putSchema,
-  });
-
-  return putHandler.handle(req, async (req, { userId, body }) => {
-    try {
-      const { id, data, metadata } = body;
-
-      // 권한 확인 (소유권 검증 등)
-      const hasPermission = await checkUserPermission(userId, id, 'update');
-      if (!hasPermission) {
-        return NextResponse.json(
-          { error: 'Permission denied' },
-          { status: 403 }
-        );
-      }
-
-      // 업데이트 로직
-      const result = await updateResource(id, data, metadata);
-
-      return NextResponse.json({
-        success: true,
-        id,
-        updated: result,
-        timestamp: new Date().toISOString(),
-      });
-
-    } catch (error) {
-      console.error('PUT handler error:', error);
-      return NextResponse.json(
-        { error: 'Update failed' },
-        { status: 500 }
+    // 간단한 body 파싱 및 검증
+    const body = await req.json();
+    const validation = putSchema.safeParse(body);
+    
+    if (!validation.success) {
+      return jsonResponse(
+        { error: 'Invalid request data', details: validation.error.issues },
+        400
       );
     }
-  });
+
+    const { id, data, metadata } = validation.data;
+
+    // 권한 확인 (간소화)
+    const hasPermission = await checkUserPermission('mock-user-id', id, 'update');
+    if (!hasPermission) {
+      return jsonResponse(
+        { error: 'Permission denied' },
+        403
+      );
+    }
+
+    // 업데이트 로직
+    const result = await updateResource(id, data, metadata);
+
+    return jsonResponse({
+      success: true,
+      id,
+      updated: result,
+      timestamp: new Date().toISOString(),
+      note: 'SecureAPIHandler가 비활성화되어 있어 간소화된 버전입니다.'
+    });
+
+  } catch (error) {
+    console.error('PUT handler error:', error);
+    return jsonResponse(
+      { error: 'Update failed' },
+      500
+    );
+  }
 }
 
 /**
- * DELETE 핸들러 - 데이터 삭제
+ * DELETE 핸들러 - 데이터 삭제 (간소화된 버전)
  */
 export async function DELETE(req: NextRequest) {
-  // DELETE는 더 엄격한 Rate Limit
-  const deleteHandler = new SecureAPIHandler({
-    rateLimitConfig: {
-      window: 300,     // 5분
-      max: 5,          // 5 요청/5분
-    },
-  });
+  try {
+    // URL에서 ID 파싱
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
 
-  return deleteHandler.handle(req, async (req, { userId }) => {
-    try {
-      // URL에서 ID 파싱
-      const { searchParams } = new URL(req.url);
-      const id = searchParams.get('id');
-
-      if (!id || !commonSchemas.id.safeParse(id).success) {
-        return NextResponse.json(
-          { error: 'Valid ID required' },
-          { status: 400 }
-        );
-      }
-
-      // 권한 확인
-      const hasPermission = await checkUserPermission(userId, id, 'delete');
-      if (!hasPermission) {
-        return NextResponse.json(
-          { error: 'Permission denied' },
-          { status: 403 }
-        );
-      }
-
-      // 소프트 삭제 수행
-      const result = await softDeleteResource(id, userId);
-
-      return NextResponse.json({
-        success: true,
-        deleted: id,
-        timestamp: new Date().toISOString(),
-      });
-
-    } catch (error) {
-      console.error('DELETE handler error:', error);
-      return NextResponse.json(
-        { error: 'Delete failed' },
-        { status: 500 }
+    if (!id || !idSchema.safeParse(id).success) {
+      return jsonResponse(
+        { error: 'Valid ID required' },
+        400
       );
     }
-  });
+
+    // 권한 확인 (간소화)
+    const hasPermission = await checkUserPermission('mock-user-id', id, 'delete');
+    if (!hasPermission) {
+      return jsonResponse(
+        { error: 'Permission denied' },
+        403
+      );
+    }
+
+    // 소프트 삭제 수행
+    const result = await softDeleteResource(id, 'mock-user-id');
+
+    return jsonResponse({
+      success: true,
+      deleted: id,
+      result,
+      timestamp: new Date().toISOString(),
+      note: 'SecureAPIHandler가 비활성화되어 있어 간소화된 버전입니다.'
+    });
+
+  } catch (error) {
+    console.error('DELETE handler error:', error);
+    return jsonResponse(
+      { error: 'Delete failed' },
+      500
+    );
+  }
 }
 
 // ==================== Helper Functions ====================

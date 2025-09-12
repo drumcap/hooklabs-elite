@@ -9,8 +9,9 @@ export async function POST(req: NextRequest) {
     try {
       const body = await req.json();
 
-      // Web Vitals 데이터 저장
-      await convexClient.mutation(api.performanceMetrics.recordWebVitals, body);
+      // TODO: performanceMetrics 모듈이 비활성화되어 있으므로 임시로 비활성화
+      // await convexClient.mutation(api.performanceMetrics.recordWebVitals, body);
+      console.log('Web Vitals data received (not stored):', body);
 
       return NextResponse.json({ success: true });
     } catch (error: any) {

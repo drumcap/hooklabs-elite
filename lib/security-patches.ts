@@ -316,7 +316,7 @@ export class EnvValidator {
     } catch (error) {
       if (error instanceof z.ZodError) {
         console.error('❌ 환경 변수 검증 실패:');
-        error.errors.forEach(err => {
+        error.issues.forEach(err => {
           console.error(`  - ${err.path.join('.')}: ${err.message}`);
         });
       }
@@ -675,7 +675,7 @@ export class EnhancedInputValidator {
       if (error instanceof z.ZodError) {
         return {
           success: false,
-          errors: error.errors.map(e => `${e.path.join('.')}: ${e.message}`),
+          errors: error.issues.map(e => `${e.path.join('.')}: ${e.message}`),
         };
       }
       return {

@@ -141,7 +141,7 @@ export const ErrorFactory = {
       502,
       ErrorSeverity.HIGH,
       true,
-      { service, originalError: error }
+      { details: { service, originalError: error } }
     ),
 
   database: (operation: string, error: any) =>
@@ -151,7 +151,7 @@ export const ErrorFactory = {
       500,
       ErrorSeverity.HIGH,
       false,
-      { operation, originalError: error }
+      { details: { operation, originalError: error } }
     ),
 
   payment: (message: string, details?: any) =>
@@ -171,7 +171,7 @@ export const ErrorFactory = {
       429,
       ErrorSeverity.MEDIUM,
       true,
-      { resource, limit }
+      { details: { resource, limit } }
     ),
 };
 
@@ -293,7 +293,7 @@ export class ErrorHandler {
             500,
             ErrorSeverity.HIGH,
             false,
-            { context, originalError: lastError }
+            { context, details: { originalError: lastError } }
           );
         }
 

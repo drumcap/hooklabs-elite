@@ -3,7 +3,7 @@
  * Core Web Vitals 및 추가 성능 메트릭 수집과 Prometheus 연동
  */
 
-import { getCLS, getFCP, getFID, getLCP, getTTFB, Metric } from 'web-vitals';
+import { onCLS, onFCP, onFID, onLCP, onTTFB, Metric } from 'web-vitals';
 
 // Web Vitals 메트릭 타입 정의
 interface WebVitalsMetric {
@@ -93,11 +93,11 @@ class WebVitalsMonitor {
     };
 
     // Core Web Vitals 등록
-    getCLS(reportWebVital);
-    getFCP(reportWebVital);
-    getFID(reportWebVital);
-    getLCP(reportWebVital);
-    getTTFB(reportWebVital);
+    onCLS(reportWebVital);
+    onFCP(reportWebVital);
+    onFID(reportWebVital);
+    onLCP(reportWebVital);
+    onTTFB(reportWebVital);
   }
 
   /**
@@ -316,30 +316,38 @@ class WebVitalsMonitor {
    * 네비게이션 메트릭 추적
    */
   private trackNavigationMetrics(entry: PerformanceNavigationTiming) {
-    // 전체 페이지 로드 시간
-    const pageLoadTime = entry.loadEventEnd - entry.navigationStart;
-    this.addCustomMetric('page_load_time', pageLoadTime);
+    try {
+      // 전체 페이지 로드 시간
+      if (entry.loadEventEnd && entry.startTime) {
+        const pageLoadTime = entry.loadEventEnd - entry.startTime;
+        this.addCustomMetric('page_load_time', pageLoadTime);
+      }
 
-    // DOM 관련 타이밍
-    const domContentLoadedTime = entry.domContentLoadedEventEnd - entry.navigationStart;
-    this.addCustomMetric('dom_content_loaded_time', domContentLoadedTime);
+      // DOM 관련 타이밍 (안전한 프로퍼티만 사용)
+      if (entry.domContentLoadedEventEnd && entry.startTime) {
+        const domContentLoadedTime = entry.domContentLoadedEventEnd - entry.startTime;
+        this.addCustomMetric('dom_content_loaded_time', domContentLoadedTime);
+      }
 
-    const domProcessingTime = entry.domComplete - entry.domLoading;
-    this.addCustomMetric('dom_processing_time', domProcessingTime);
+      // 네트워크 관련 타이밍
+      if (entry.responseStart && entry.requestStart) {
+        const serverResponseTime = entry.responseStart - entry.requestStart;
+        this.addCustomMetric('server_response_time', serverResponseTime);
+      }
 
-    // 네트워크 관련 타이밍
-    const serverResponseTime = entry.responseStart - entry.requestStart;
-    this.addCustomMetric('server_response_time', serverResponseTime);
+      if (entry.responseEnd && entry.responseStart) {
+        const transferTime = entry.responseEnd - entry.responseStart;
+        this.addCustomMetric('transfer_time', transferTime);
+      }
 
-    const transferTime = entry.responseEnd - entry.responseStart;
-    this.addCustomMetric('transfer_time', transferTime);
-
-    // 리디렉션 시간
-    if (entry.redirectEnd > 0) {
-      const redirectTime = entry.redirectEnd - entry.redirectStart;
-      this.addCustomMetric('redirect_time', redirectTime, {
-        redirect_count: entry.redirectCount.toString()
-      });
+      // 리디렉션 시간
+      if (entry.redirectEnd && entry.redirectEnd > 0 && entry.redirectStart) {
+        const redirectTime = entry.redirectEnd - entry.redirectStart;
+        this.addCustomMetric('redirect_time', redirectTime);
+      }
+    } catch (error) {
+      // Performance API 호환성 문제로 실패한 경우 조용히 무시
+      console.warn('Navigation metrics tracking failed:', error);
     }
   }
 
@@ -404,7 +412,7 @@ class WebVitalsMonitor {
    */
   calculatePerformanceScore(): number {
     const latestMetrics = this.getLatestWebVitals();
-    const scores = Object.values(latestMetrics).map(metric => {
+    const scores: number[] = Object.values(latestMetrics).map(metric => {
       switch (metric.rating) {
         case 'good': return 100;
         case 'needs-improvement': return 60;

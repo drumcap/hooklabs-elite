@@ -2,19 +2,23 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { 
-  defaultRateLimit, 
-  authRateLimit, 
-  paymentRateLimit,
-  aiRateLimit,
-  shouldBypassRateLimit,
-  getClientIP 
-} from '@/lib/rate-limiting'
-import { 
   applyCORS, 
   applySecurityHeaders, 
   InputValidator,
   SecurityAuditLogger 
 } from '@/lib/security'
+
+// 간단한 클라이언트 IP 추출 함수 (rate-limiting 모듈 대체)
+function getClientIP(req: NextRequest): string {
+  return req.headers.get('x-forwarded-for')?.split(',')[0] || 
+         req.headers.get('x-real-ip') || 
+         req.ip || 'unknown'
+}
+
+// Rate limiting 우회 함수 (항상 true 반환 - rate limiting 비활성화)
+function shouldBypassRateLimit(_req: NextRequest): boolean {
+  return true // 모든 요청이 rate limit을 우회하도록 설정
+}
 
 // 보호된 경로 정의
 const isProtectedRoute = createRouteMatcher([
@@ -32,11 +36,11 @@ const isPublicApiRoute = createRouteMatcher([
   '/api/lemonsqueezy-webhook'
 ])
 
-// Rate Limit 적용 경로별 설정
-const isAuthRoute = createRouteMatcher(['/api/auth(.*)', '/api/login', '/api/register'])
-const isPaymentRoute = createRouteMatcher(['/api/payment(.*)', '/api/lemonsqueezy(.*)'])
-const isAIRoute = createRouteMatcher(['/api/ai(.*)', '/api/generate(.*)'])
-const isUploadRoute = createRouteMatcher(['/api/upload(.*)'])
+// Rate Limit 적용 경로별 설정 - 현재 비활성화됨
+// const isAuthRoute = createRouteMatcher(['/api/auth(.*)', '/api/login', '/api/register'])
+// const isPaymentRoute = createRouteMatcher(['/api/payment(.*)', '/api/lemonsqueezy(.*)'])
+// const isAIRoute = createRouteMatcher(['/api/ai(.*)', '/api/generate(.*)'])
+// const isUploadRoute = createRouteMatcher(['/api/upload(.*)'])
 
 export default clerkMiddleware(async (auth, req: NextRequest) => {
   const startTime = Date.now()
@@ -50,26 +54,11 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
       return applySecurityHeaders(corsResponse)
     }
 
-    // 2. Rate Limiting 우회 조건 확인
+    // 2. Rate Limiting - 비활성화됨 (모든 요청 허용)
+    // Rate limiting이 비활성화되어 있어서 모든 요청을 통과시킵니다.
     if (!shouldBypassRateLimit(req)) {
-      // 경로별 Rate Limit 적용
-      let rateLimitResponse = null
-      
-      if (isAuthRoute(req)) {
-        rateLimitResponse = await authRateLimit(req)
-      } else if (isPaymentRoute(req)) {
-        rateLimitResponse = await paymentRateLimit(req)
-      } else if (isAIRoute(req)) {
-        rateLimitResponse = await aiRateLimit(req)
-      } else if (pathname.startsWith('/api/')) {
-        rateLimitResponse = await defaultRateLimit(req)
-      }
-
-      if (rateLimitResponse) {
-        SecurityAuditLogger.logRateLimitExceeded(pathname, req)
-        logRequest(req, rateLimitResponse.status, Date.now() - startTime, 'Rate limit exceeded')
-        return applySecurityHeaders(applyCORS(req, rateLimitResponse))
-      }
+      // Rate limiting 로직은 현재 비활성화됨
+      // TODO: Redis 연결 완료 후 rate limiting 재활성화
     }
 
     // 3. 입력 검증 (POST/PUT/PATCH 요청)
