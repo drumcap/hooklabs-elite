@@ -4,8 +4,32 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createMockSocialPost } from '../../../test-utils';
-import { mockSocialPosts } from '../../../fixtures/social/posts';
+// Mock 함수들 직접 정의
+const createMockSocialPost = (overrides: any = {}) => ({
+  _id: 'mock-post-id',
+  userId: 'test-user-id',
+  personaId: 'test-persona-id',
+  originalContent: 'Test content',
+  status: 'draft',
+  platforms: ['twitter'],
+  hashtags: ['#test'],
+  creditsUsed: 0,
+  ...overrides,
+});
+
+// Mock 데이터 직접 정의
+const mockSocialPosts = {
+  draftPost: {
+    _id: 'draft-post-id',
+    status: 'draft',
+    content: 'Draft content'
+  },
+  publishedPost: {
+    _id: 'published-post-id', 
+    status: 'published',
+    content: 'Published content'
+  }
+};
 
 // Convex 관련 모킹
 const mockDb = {

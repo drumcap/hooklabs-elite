@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createMockContext } from '../../../__mocks__/convex'
-import { mockUser, mockCoupon, mockCouponUsage } from '../../../fixtures/test-data'
+import { createMockContext } from '../../__mocks__/convex'
+import { mockUser, mockCoupon, mockCouponUsage } from '../../fixtures/test-data'
 
 describe('Coupons Functions', () => {
   let mockCtx: ReturnType<typeof createMockContext>

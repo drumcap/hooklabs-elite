@@ -4,8 +4,54 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createMockPersona } from '../../../test-utils';
-import { mockPersonas } from '../../../fixtures/social/personas';
+// Mock 함수는 직접 정의해서 사용
+const createMockPersona = (overrides: any = {}) => ({
+  _id: 'mock-persona-id',
+  name: '모키 Persona',
+  role: '전문가',
+  tone: '전문적',
+  interests: ['기술', '혁신'],
+  expertise: ['개발', '분석'],
+  description: '테스트 페르소나',
+  avatar: 'avatar-url',
+  isActive: true,
+  settings: {},
+  promptTemplates: {},
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
+  userId: 'test-user-id',
+  ...overrides,
+});
+// Mock 데이터 직접 정의
+const mockPersonas = {
+  saasFounder: {
+    _id: 'persona_saas_founder',
+    name: 'SaaS 창업자',
+    role: '스타트업 CEO',
+    tone: '전문적이고 친근한',
+    interests: ['스타트업', '제품 개발'],
+    expertise: ['SaaS', '제품 관리'],
+    isActive: true,
+  },
+  digitalMarketer: {
+    _id: 'persona_digital_marketer', 
+    name: '디지털 마케터',
+    role: '성장 마케터',
+    tone: '열정적이고 데이터 기반',
+    interests: ['디지털 마케팅'],
+    expertise: ['퍼포먼스 마케팅'],
+    isActive: true,
+  },
+  techDeveloper: {
+    _id: 'persona_tech_developer',
+    name: '풀스택 개발자', 
+    role: '시니어 개발자',
+    tone: '기술적이고 실용적',
+    interests: ['웹 개발'],
+    expertise: ['React', 'Node.js'],
+    isActive: true,
+  }
+};
 
 // Convex 관련 모킹
 const mockDb = {

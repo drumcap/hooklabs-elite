@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createMockContext } from '../../../__mocks__/convex'
-import { mockUser, mockSubscription, mockUsageRecord } from '../../../fixtures/test-data'
+import { createMockContext } from '../../__mocks__/convex'
+import { mockUser, mockSubscription, mockUsageRecord } from '../../fixtures/test-data'
 
 // Mock the Convex functions by importing the actual handler logic
 // 실제 환경에서는 Convex 함수를 직접 테스트하기 어려우므로
