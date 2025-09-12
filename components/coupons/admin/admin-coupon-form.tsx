@@ -168,7 +168,7 @@ export function AdminCouponForm({
     setIsSubmitting(true);
     try {
       const couponId = await createCoupon(data);
-      onSuccess?.(couponId);
+      onSuccess?.(couponId as any);
     } catch (error) {
       console.error('Coupon creation failed:', error);
     } finally {

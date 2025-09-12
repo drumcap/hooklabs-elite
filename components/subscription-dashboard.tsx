@@ -249,7 +249,7 @@ export default function SubscriptionDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {creditBalance?.availableCredits?.toLocaleString() || 0}
+              {(creditBalance as any)?.availableCredits?.toLocaleString() || 0}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               사용 가능한 크레딧

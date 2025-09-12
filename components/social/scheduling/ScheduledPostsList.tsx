@@ -343,8 +343,8 @@ export function ScheduledPostsList({
 
   // Mutations
   const cancelPost = useMutation(api.scheduledPosts.cancel)
-  const retryPost = useMutation(api.scheduledPosts.retry)
-  const duplicatePost = useMutation(api.scheduledPosts.duplicate)
+  // const retryPost = useMutation(api.scheduledPosts.retry) // TODO: 구현 필요
+  // const duplicatePost = useMutation(api.scheduledPosts.duplicate) // TODO: 구현 필요
 
   // Filter and sort posts
   const filteredPosts = useMemo(() => {
@@ -393,7 +393,7 @@ export function ScheduledPostsList({
     
     setActionLoading(postId)
     try {
-      await cancelPost({ scheduledPostId: postId })
+      await cancelPost({ id: postId })
       toast.success("게시물 예약이 취소되었습니다.")
     } catch (error) {
       console.error("취소 오류:", error)
@@ -404,29 +404,35 @@ export function ScheduledPostsList({
   }
 
   const handleRetry = async (postId: Id<"scheduledPosts">) => {
-    setActionLoading(postId)
-    try {
-      await retryPost({ scheduledPostId: postId })
-      toast.success("게시물 재시도가 예약되었습니다.")
-    } catch (error) {
-      console.error("재시도 오류:", error)
-      toast.error("게시물 재시도에 실패했습니다.")
-    } finally {
-      setActionLoading(null)
-    }
+    // TODO: retry API 구현 필요
+    toast.info("재시도 기능은 곧 추가될 예정입니다.")
+    
+    // setActionLoading(postId)
+    // try {
+    //   await retryPost({ scheduledPostId: postId })
+    //   toast.success("게시물 재시도가 예약되었습니다.")
+    // } catch (error) {
+    //   console.error("재시도 오류:", error)
+    //   toast.error("게시물 재시도에 실패했습니다.")
+    // } finally {
+    //   setActionLoading(null)
+    // }
   }
 
   const handleDuplicate = async (postId: Id<"scheduledPosts">) => {
-    setActionLoading(postId)
-    try {
-      await duplicatePost({ scheduledPostId: postId })
-      toast.success("게시물이 복제되었습니다.")
-    } catch (error) {
-      console.error("복제 오류:", error)
-      toast.error("게시물 복제에 실패했습니다.")
-    } finally {
-      setActionLoading(null)
-    }
+    // TODO: duplicate API 구현 필요
+    toast.info("복제 기능은 곧 추가될 예정입니다.")
+    
+    // setActionLoading(postId)
+    // try {
+    //   await duplicatePost({ scheduledPostId: postId })
+    //   toast.success("게시물이 복제되었습니다.")
+    // } catch (error) {
+    //   console.error("복제 오류:", error)
+    //   toast.error("게시물 복제에 실패했습니다.")
+    // } finally {
+    //   setActionLoading(null)
+    // }
   }
 
   if (!scheduledPosts) {

@@ -133,7 +133,7 @@ export default function UsageTracker({ showHeader = true, compact = false }: Usa
 
   // 리소스 타입별 사용량 데이터
   const resourceUsageData = usageData.usageByType ? 
-    Object.entries(usageData.usageByType).map(([type, data]) => ({
+    Object.entries(usageData.usageByType).map(([type, data]: [string, any]) => ({
       name: type,
       value: data.amount,
       unit: data.unit,
@@ -397,7 +397,7 @@ export default function UsageTracker({ showHeader = true, compact = false }: Usa
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                          label={({ name, percent }: any) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                           outerRadius={80}
                           fill="#8884d8"
                           dataKey="value"
@@ -468,15 +468,15 @@ export default function UsageTracker({ showHeader = true, compact = false }: Usa
               {usageData.usageRecords.map((record, index) => (
                 <div key={index} className="flex items-center justify-between p-2 rounded border">
                   <div className="flex items-center space-x-3">
-                    <Badge variant="outline">{record.resourceType}</Badge>
-                    <span className="text-sm">{record.description || `${record.resourceType} 사용`}</span>
+                    <Badge variant="outline">{(record as any).resourceType}</Badge>
+                    <span className="text-sm">{(record as any).description || `${(record as any).resourceType} 사용`}</span>
                   </div>
                   <div className="text-right">
                     <div className="font-medium">
-                      {record.amount.toLocaleString()} {record.unit}
+                      {(record as any).amount?.toLocaleString()} {(record as any).unit}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {format(new Date(record.recordedAt), "MM/dd HH:mm", { locale: ko })}
+                      {format(new Date((record as any).recordedAt), "MM/dd HH:mm", { locale: ko })}
                     </div>
                   </div>
                 </div>

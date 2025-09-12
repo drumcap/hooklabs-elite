@@ -254,12 +254,12 @@ export function VariantGenerator({
 
   // Query variants for this post
   const variants = useQuery(
-    api.postVariants.getByPostId, 
+    api.postVariants.getByPost, 
     postId ? { postId } : "skip"
   ) as PostVariant[] | undefined
 
   // Action to generate new variants
-  const generateVariants = useAction(api.ai.generatePostVariants)
+  const generateVariants = useAction(api.ai.generateVariants)
 
   const sortedVariants = variants?.sort((a, b) => b.overallScore - a.overallScore) || []
   const selectedVariant = variants?.find(v => v._id === selectedVariantId)

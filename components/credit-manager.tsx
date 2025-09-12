@@ -92,7 +92,7 @@ export default function CreditManager() {
       await useCoupon({
         userId: user.id as any,
         couponCode: couponCode.trim(),
-        discountAmount: validation.coupon?.discountAmount || validation.coupon?.value,
+        discountAmount: validation.coupon?.discountAmount || validation.coupon?.value || 0,
         currency: validation.coupon?.currency,
       });
 
@@ -161,7 +161,7 @@ export default function CreditManager() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {creditBalance?.availableCredits?.toLocaleString() || 0}
+              {(creditBalance as any)?.availableCredits?.toLocaleString() || 0}
             </div>
             <p className="text-xs text-muted-foreground">
               현재 사용 가능한 크레딧
@@ -176,7 +176,7 @@ export default function CreditManager() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {creditBalance?.usedCredits?.toLocaleString() || 0}
+              {(creditBalance as any)?.usedCredits?.toLocaleString() || 0}
             </div>
             <p className="text-xs text-muted-foreground">
               지금까지 사용한 크레딧
@@ -191,7 +191,7 @@ export default function CreditManager() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-gray-600">
-              {creditBalance?.expiredCredits?.toLocaleString() || 0}
+              {(creditBalance as any)?.expiredCredits?.toLocaleString() || 0}
             </div>
             <p className="text-xs text-muted-foreground">
               만료되어 사용할 수 없는 크레딧

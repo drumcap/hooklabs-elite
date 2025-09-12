@@ -71,7 +71,7 @@ export default function AdminDashboard({ isAdmin = false }: AdminDashboardProps)
   );
 
   // 모든 쿠폰 조회
-  const allCoupons = useQuery(api.coupons.getAllCoupons);
+  const allCoupons = useQuery(api.coupons.getAllCoupons, {});
 
   // 관리자 권한 체크
   if (!isAdmin) {

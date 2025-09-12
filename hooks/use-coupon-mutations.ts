@@ -22,7 +22,6 @@ export const useCouponCreation = () => {
         validFrom: data.validFrom.toISOString(),
         validUntil: data.validUntil?.toISOString(),
         currency: data.currency || 'KRW',
-        isActive: data.isActive ?? true,
       });
       
       toast.success("쿠폰이 성공적으로 생성되었습니다!");

@@ -78,7 +78,7 @@ export default function EnhancedPricingTable({
     const immediateCharge = Math.max(0, proratedAmount - unusedAmount);
 
     // 크레딧 적용 후 최종 금액
-    const availableCredits = creditBalance?.availableCredits || 0;
+    const availableCredits = (creditBalance as any)?.availableCredits || 0;
     const finalAmount = Math.max(0, immediateCharge - (availableCredits * 100)); // 크레딧을 센트로 변환
 
     return {

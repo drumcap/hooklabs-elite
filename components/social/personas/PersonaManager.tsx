@@ -61,7 +61,7 @@ export const PersonaManager = memo(function PersonaManager({ className }: Person
     return personas.filter((persona: any) => {
       const matchesSearch = persona.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            persona.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           persona.interests.some(interest => 
+                           persona.interests.some((interest: string) => 
                              interest.toLowerCase().includes(searchTerm.toLowerCase())
                            )
       

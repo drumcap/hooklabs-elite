@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useQuery, useMutation } from "convex/react"
+import { useQuery, useMutation, useAction } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import dynamic from "next/dynamic"
 import { Suspense } from "react"
@@ -101,7 +101,7 @@ export default function ComposePage() {
   // Mutations
   const createPost = useMutation(api.socialPosts.create)
   const updatePost = useMutation(api.socialPosts.update)
-  const generateVariants = useMutation(api.ai.generateVariants)
+  const generateVariants = useAction(api.ai.generateVariants)
   const schedulePost = useMutation(api.scheduledPosts.schedule)
 
   const handlePersonaChange = (personaId: Id<"personas">) => {
@@ -135,13 +135,13 @@ export default function ComposePage() {
           originalContent: content,
           finalContent: content,
           platforms: ["twitter", "threads"]
-        })
+        }) as any
         
         // Update state with new post
         setState(prev => ({
           ...prev,
           currentPost: {
-            _id: postId,
+            _id: postId as any,
             originalContent: content,
             finalContent: content,
             personaId,
@@ -151,7 +151,7 @@ export default function ComposePage() {
       }
 
       // Generate variants
-      await generateVariants({ postId, content, personaId })
+      await generateVariants({ postId })
       
       setActiveTab("variants")
       toast.success("AI 변형이 생성되었습니다!")
@@ -189,7 +189,7 @@ export default function ComposePage() {
         setState(prev => ({
           ...prev,
           currentPost: {
-            _id: postId,
+            _id: postId as any,
             originalContent: content,
             finalContent: content,
             personaId,

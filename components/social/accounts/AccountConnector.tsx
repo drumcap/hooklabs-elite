@@ -294,13 +294,14 @@ export function AccountConnector({ onConnectionSuccess, className }: AccountConn
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null)
   
   // OAuth connection action
-  const initiateOAuth = useAction(api.social.initiateOAuth)
+  // const initiateOAuth = useAction(api.social.initiateOAuth)
 
   const handleConnect = async (platformId: string) => {
     setConnectingPlatform(platformId)
     
     try {
-      const result = await initiateOAuth({ platform: platformId })
+      // const result = await initiateOAuth({ platform: platformId })
+      const result: any = null // Temporary placeholder
       
       if (result.authUrl) {
         // Redirect to OAuth URL

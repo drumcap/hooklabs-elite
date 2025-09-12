@@ -294,13 +294,13 @@ export function AccountsList({ onAddAccount, className }: AccountsListProps) {
 
   // Mutations
   const toggleActive = useMutation(api.socialAccounts.toggleActive)
-  const refreshAccount = useMutation(api.socialAccounts.refresh)
+  // const refreshAccount = useMutation(api.socialAccounts.refresh) // TODO: 구현 필요
   const disconnectAccount = useMutation(api.socialAccounts.disconnect)
 
   const handleToggleActive = async (accountId: Id<"socialAccounts">) => {
     setActionLoading(accountId)
     try {
-      await toggleActive({ accountId })
+      await toggleActive({ id: accountId })
       toast.success("계정 상태가 변경되었습니다.")
     } catch (error: any) {
       console.error("계정 상태 변경 오류:", error)
@@ -311,16 +311,19 @@ export function AccountsList({ onAddAccount, className }: AccountsListProps) {
   }
 
   const handleRefresh = async (accountId: Id<"socialAccounts">) => {
-    setActionLoading(accountId)
-    try {
-      await refreshAccount({ accountId })
-      toast.success("계정 정보가 새로고침되었습니다.")
-    } catch (error: any) {
-      console.error("계정 새로고침 오류:", error)
-      toast.error(error.message || "계정 새로고침에 실패했습니다.")
-    } finally {
-      setActionLoading(null)
-    }
+    // TODO: refresh API 구현 필요
+    toast.info("계정 새로고침 기능은 곧 추가될 예정입니다.")
+    
+    // setActionLoading(accountId)
+    // try {
+    //   await refreshAccount({ accountId })
+    //   toast.success("계정 정보가 새로고침되었습니다.")
+    // } catch (error: any) {
+    //   console.error("계정 새로고침 오류:", error)
+    //   toast.error(error.message || "계정 새로고침에 실패했습니다.")
+    // } finally {
+    //   setActionLoading(null)
+    // }
   }
 
   const handleDisconnect = async (accountId: Id<"socialAccounts">) => {
@@ -330,7 +333,7 @@ export function AccountsList({ onAddAccount, className }: AccountsListProps) {
 
     setActionLoading(accountId)
     try {
-      await disconnectAccount({ accountId })
+      await disconnectAccount({ id: accountId })
       toast.success("계정 연결이 해제되었습니다.")
     } catch (error: any) {
       console.error("계정 연결 해제 오류:", error)

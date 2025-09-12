@@ -346,7 +346,7 @@ export function PublishStatus({
 
   // Query publish jobs
   const publishJobs = useQuery(
-    postId ? api.scheduledPosts.getByPostId : api.scheduledPosts.getRecent,
+    postId ? api.scheduledPosts.getByPost : api.scheduledPosts.getRecent,
     postId ? { postId } : { limit: 10 }
   ) as PublishJob[] | undefined
 

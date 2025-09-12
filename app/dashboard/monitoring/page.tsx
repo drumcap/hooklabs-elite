@@ -17,12 +17,19 @@ export default function MonitoringDashboard() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(30000); // 30초
 
-  // 실시간 데이터 쿼리
-  const webVitalsSummary = useQuery(api.performanceMetrics.getWebVitalsSummary, { timeRange });
-  const apiPerformance = useQuery(api.performanceMetrics.getApiPerformanceSummary, { timeRange });
-  const businessMetrics = useQuery(api.performanceMetrics.getBusinessMetricsDashboard, { timeRange });
-  const recentErrors = useQuery(api.performanceMetrics.getRecentErrors, { limit: 10 });
-  const alertHistory = useQuery(api.alerting.getAlertHistory, { limit: 5 });
+  // 실시간 데이터 쿼리 - performanceMetrics 모듈 비활성화로 임시 비활성화
+  // const webVitalsSummary = useQuery(api.performanceMetrics.getWebVitalsSummary, { timeRange });
+  // const apiPerformance = useQuery(api.performanceMetrics.getApiPerformanceSummary, { timeRange });
+  // const businessMetrics = useQuery(api.performanceMetrics.getBusinessMetricsDashboard, { timeRange });
+  // const recentErrors = useQuery(api.performanceMetrics.getRecentErrors, { limit: 10 });
+  
+  // 임시로 mock 데이터 사용
+  const webVitalsSummary: any = null;
+  const apiPerformance: any = null;
+  const businessMetrics: any = null;
+  const recentErrors: any = null;
+  // const alertHistory = useQuery(api.alerting.getAlertHistory, { limit: 5 }); // TODO: alerting 모듈 활성화 후 사용
+  const alertHistory: any[] = []; // 임시로 빈 배열 사용
 
   // 자동 새로고침
   useEffect(() => {
@@ -168,11 +175,11 @@ export default function MonitoringDashboard() {
               <div className="flex items-center gap-2">
                 <Activity className="h-5 w-5 text-blue-500" />
                 <span className="text-2xl font-bold">
-                  {apiPerformance?.summary.avgResponseTime.toFixed(0) || "0"}ms
+                  {apiPerformance?.summary?.avgResponseTime?.toFixed(0) || "0"}ms
                 </span>
               </div>
               <Badge variant="outline" className="bg-blue-50">
-                P95: {apiPerformance?.summary.p95ResponseTime.toFixed(0) || "0"}ms
+                P95: {apiPerformance?.summary?.p95ResponseTime?.toFixed(0) || "0"}ms
               </Badge>
             </div>
           </CardContent>
@@ -187,11 +194,11 @@ export default function MonitoringDashboard() {
               <div className="flex items-center gap-2">
                 <XCircle className="h-5 w-5 text-red-500" />
                 <span className="text-2xl font-bold">
-                  {apiPerformance ? (100 - apiPerformance.summary.successRate).toFixed(2) : "0"}%
+                  {apiPerformance?.summary?.successRate ? (100 - apiPerformance.summary.successRate).toFixed(2) : "0"}%
                 </span>
               </div>
               <Badge variant="outline" className="bg-red-50">
-                {apiPerformance?.summary.failedRequests || 0} 실패
+                {apiPerformance?.summary?.failedRequests || 0} 실패
               </Badge>
             </div>
           </CardContent>

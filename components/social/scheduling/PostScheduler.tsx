@@ -208,9 +208,12 @@ export function PostScheduler({
   }>>({})
 
   // Fetch social accounts
-  const socialAccounts = useQuery(api.socialAccounts.getByPlatforms, {
-    platforms: post.platforms
-  })
+  const allSocialAccounts = useQuery(api.socialAccounts.list, {})
+  
+  // Filter accounts by post platforms on client side
+  const socialAccounts = allSocialAccounts?.filter((account: any) => 
+    post.platforms.includes(account.platform)
+  )
 
   const schedulePost = useMutation(api.scheduledPosts.create)
 
