@@ -38,7 +38,8 @@ export default function SocialDashboard() {
   const socialPosts = useQuery(api.socialPosts.getRecent, { limit: 10 })
   const scheduledPosts = useQuery(api.scheduledPosts.getUpcoming, { limit: 5 })
   const socialAccounts = useQuery(api.socialAccounts.list, {})
-  const analytics = useQuery(api.analytics.getDashboardStats, {})
+  // const analytics = useQuery(api.analytics.getDashboardStats, {})
+  const analytics = undefined // Temporarily disabled
 
   const activePersonas = personas?.filter((p: any) => p.isActive) || []
   const activeAccounts = socialAccounts?.filter((acc: any) => acc.isActive) || []

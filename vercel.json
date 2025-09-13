@@ -3,13 +3,15 @@
   "name": "hooklabs-elite",
   "regions": ["icn1", "hnd1", "sin1"],
   "framework": "nextjs",
-  "buildCommand": "npm run build",
+  "buildCommand": "bun run build",
   "outputDirectory": ".next",
-  "installCommand": "npm ci --prefer-offline --no-audit",
+  "installCommand": "bun install --frozen-lockfile",
   
   "env": {
     "NODE_ENV": "production",
-    "NEXT_TELEMETRY_DISABLED": "1"
+    "NEXT_PUBLIC_APP_ENV": "production",
+    "NEXT_TELEMETRY_DISABLED": "1",
+    "BUN_INSTALL_CACHE_DIR": ".bun-cache"
   },
   
   "build": {
@@ -28,6 +30,21 @@
       "runtime": "@vercel/node@3.0.7", 
       "memory": 256,
       "maxDuration": 60
+    },
+    "app/api/social-media/**/*.ts": {
+      "runtime": "@vercel/node@3.0.7",
+      "memory": 768,
+      "maxDuration": 45
+    },
+    "app/api/ai/**/*.ts": {
+      "runtime": "@vercel/node@3.0.7",
+      "memory": 1024,
+      "maxDuration": 60
+    },
+    "app/api/cron/**/*.ts": {
+      "runtime": "@vercel/node@3.0.7",
+      "memory": 512,
+      "maxDuration": 300
     }
   },
   
@@ -126,6 +143,22 @@
     {
       "path": "/api/cron/metrics",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/social-media/token-refresh",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/social-media/metrics-collection",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/social-media/analytics-aggregation",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/social-media/post-variants-cleanup",
+      "schedule": "0 1 * * 0"
     }
   ],
   

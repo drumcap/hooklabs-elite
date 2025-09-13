@@ -259,7 +259,8 @@ export function VariantGenerator({
   ) as PostVariant[] | undefined
 
   // Action to generate new variants
-  const generateVariants = useAction(api.ai.generateVariants)
+  // const generateVariants = useAction(api.ai.generateVariants)
+  const generateVariants = null // Temporarily disabled
 
   const sortedVariants = variants?.sort((a, b) => b.overallScore - a.overallScore) || []
   const selectedVariant = variants?.find(v => v._id === selectedVariantId)
@@ -269,8 +270,12 @@ export function VariantGenerator({
     
     setIsGenerating(true)
     try {
-      await generateVariants({ postId })
-      toast.success("새로운 변형이 생성되었습니다!")
+      // if (generateVariants) {
+      //   await generateVariants({ postId })
+      //   toast.success("새로운 변형이 생성되었습니다!")
+      // } else {
+        toast.error("AI 변형 생성 기능이 비활성화되어 있습니다.")
+      // }
     } catch (error) {
       console.error("변형 생성 오류:", error)
       toast.error("변형 생성에 실패했습니다.")

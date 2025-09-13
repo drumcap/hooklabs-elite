@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Overview
-This is a Next.js 15 SaaS starter template with integrated authentication (Clerk), real-time database (Convex), and subscription billing (Lemon Squeezy). The project has evolved into an enterprise-grade billing system with comprehensive usage tracking, credit management, and coupon systems.
+This is a Next.js 15 enterprise SaaS platform with integrated authentication (Clerk), real-time database (Convex), and subscription billing (Lemon Squeezy). The project has evolved into a comprehensive business automation platform featuring enterprise-grade billing, social media automation, AI content generation, and comprehensive analytics systems.
 
 ## Development Commands
 
@@ -20,9 +20,22 @@ This is a Next.js 15 SaaS starter template with integrated authentication (Clerk
 - `bun test:integration` - Run integration tests (API endpoints)
 - `bun test:components` - Run component tests (React components)
 - `bun test:e2e` - Run end-to-end tests with Playwright
+- `bun test:e2e:headed` - Run E2E tests with browser UI
+- `bun test:e2e:debug` - Run E2E tests in debug mode
 - `bun test:coverage` - Run tests with coverage report
 - `bun test:watch` - Run tests in watch mode
 - `bun test:ui` - Run tests with Vitest UI
+
+### Performance & Analytics Commands
+- `bun run perf:test` - Basic performance testing
+- `bun run perf:lighthouse` - Lighthouse performance audit
+- `bun run perf:load` - Load testing with k6
+- `bun run perf:stress` - Stress testing with k6
+- `bun run perf:api` - API performance testing
+- `bun run perf:all` - Run all performance tests
+- `bun run security-audit` - Security vulnerability audit
+- `bun run deps:check` - Check for outdated dependencies
+- `bun run build:analyze` - Analyze bundle size
 
 ### Convex Development
 - `bunx convex dev` - Start Convex development server (required for database)
@@ -48,17 +61,19 @@ This is a Next.js 15 SaaS starter template with integrated authentication (Clerk
 
 #### Database Architecture
 - **Convex** provides real-time sync and serverless functions
-- Schema defined in `convex/schema.ts`:
-  - `users` table: Synced from Clerk (externalId maps to Clerk ID, added lemonSqueezyCustomerId)
-  - `subscriptions` table: Tracks Lemon Squeezy subscription data
-  - `payments` table: Records payment/order information
-  - `checkouts` table: Tracks checkout sessions
-  - `licenses` table: License key management (optional)
-  - `paymentAttempts` table: Legacy table (to be phased out)
-  - `usage` table: **NEW** - Comprehensive usage tracking with timestamps and metadata
-  - `credits` table: **NEW** - Credit management system with expiration dates
-  - `coupons` table: **NEW** - Coupon system with validation and usage tracking
-- All database operations in `convex/` directory with enhanced business logic
+- **Domain-Driven Schema Design**: Schema is modularized by domain in `convex/schema/`:
+  - `auth.ts`: User authentication and profile management
+  - `payments.ts`: Payment processing and order management  
+  - `billing.ts`: Credits, coupons, and subscription billing
+  - `social.ts`: Social media accounts, posts, and automation
+  - `ai.ts`: AI content generation and personas
+  - `analytics.ts`: Usage tracking and business intelligence
+  - `monitoring.ts`: System metrics and performance monitoring
+  - `pipeline.ts`: Data processing and workflow management
+- **Convex Actions**: Complex business logic in `convex/actions/`:
+  - `contentGeneration.ts`: AI-powered content creation workflows
+  - `socialPublishing.ts`: Social media automation and scheduling
+- All database operations follow domain boundaries with clean separation
 
 #### Payment Integration
 1. Lemon Squeezy handles subscription management and checkout
@@ -68,6 +83,14 @@ This is a Next.js 15 SaaS starter template with integrated authentication (Clerk
 5. Customer portal for subscription management
 6. **NEW**: Enterprise-grade billing with usage tracking and credit system
 7. **NEW**: Coupon management for promotional campaigns
+
+#### Social Media Automation (Current Feature Branch)
+1. **Content Generation**: AI-powered social media content creation
+2. **Multi-Platform Publishing**: Automated posting to various social media platforms
+3. **Scheduling System**: Advanced post scheduling with optimal timing
+4. **Performance Analytics**: Social media engagement and reach tracking
+5. **Account Management**: Multi-account social media management
+6. **Post Variants**: A/B testing for social media content optimization
 
 ### Project Structure
 ```
@@ -90,15 +113,33 @@ components/
 └── ConvexClientProvider.tsx
 
 convex/
-├── schema.ts         # Database schema with enhanced billing tables
+├── schema.ts         # Main schema integrating all domain schemas
+├── schema/           # Domain-driven schema modules
+│   ├── auth.ts       # Authentication and user management
+│   ├── payments.ts   # Payment processing and orders
+│   ├── billing.ts    # Credits, coupons, and billing
+│   ├── social.ts     # Social media automation tables
+│   ├── ai.ts         # AI content generation and personas
+│   ├── analytics.ts  # Usage tracking and analytics
+│   ├── monitoring.ts # System metrics and monitoring
+│   └── pipeline.ts   # Data processing workflows
+├── actions/          # Complex business logic actions
+│   ├── contentGeneration.ts # AI content creation workflows
+│   └── socialPublishing.ts  # Social media automation
 ├── users.ts          # User CRUD operations
 ├── subscriptions.ts  # Subscription queries/mutations
-├── usage.ts          # **NEW** - Usage tracking and analytics
-├── credits.ts        # **NEW** - Credit management system
-├── coupons.ts        # **NEW** - Coupon validation and management
+├── socialAccounts.ts # Social media account management
+├── socialPosts.ts    # Social media post management
+├── postVariants.ts   # A/B testing for social content
+├── scheduledPosts.ts # Post scheduling system
+├── socialMetrics.ts  # Social media analytics
+├── personas.ts       # AI content personas
+├── aiGenerations.ts  # AI content generation tracking
+├── usage.ts          # Usage tracking and analytics
+├── credits.ts        # Credit management system
+├── coupons.ts        # Coupon validation and management
 ├── lemonSqueezyTypes.ts # Webhook data types
 ├── lemonSqueezyWebhooks.ts # Webhook handlers
-├── paymentAttempts.ts # Legacy payment tracking
 ├── http.ts           # Webhook endpoints
 └── auth.config.ts    # JWT configuration
 ```
@@ -163,6 +204,14 @@ convex/
 - Integration tests for API endpoints
 - E2E tests for user workflows
 - Component tests for React UI elements
+
+### Social Media Automation System
+- AI-powered content generation with customizable personas
+- Multi-platform publishing automation (Twitter, LinkedIn, etc.)
+- Advanced scheduling with optimal timing algorithms  
+- Performance analytics and engagement tracking
+- A/B testing for content optimization
+- Account management across multiple platforms
 
 ## Shadcn Component Installation Rules
 When installing shadcn/ui components:

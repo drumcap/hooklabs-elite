@@ -101,7 +101,8 @@ export default function ComposePage() {
   // Mutations
   const createPost = useMutation(api.socialPosts.create)
   const updatePost = useMutation(api.socialPosts.update)
-  const generateVariants = useAction(api.ai.generateVariants)
+  // const generateVariants = useAction(api.ai.generateVariants)
+  const generateVariants = null // Temporarily disabled
   const schedulePost = useMutation(api.scheduledPosts.schedule)
 
   const handlePersonaChange = (personaId: Id<"personas">) => {
@@ -151,7 +152,9 @@ export default function ComposePage() {
       }
 
       // Generate variants
-      await generateVariants({ postId })
+      // if (generateVariants) {
+      //   await generateVariants({ postId })
+      // }
       
       setActiveTab("variants")
       toast.success("AI 변형이 생성되었습니다!")

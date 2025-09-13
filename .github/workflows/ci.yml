@@ -1,14 +1,15 @@
-name: 🚀 CI/CD Pipeline
+name: 🚀 소셜 미디어 자동화 플랫폼 CI/CD
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, 'feat/*', 'fix/*', 'hotfix/*' ]
   pull_request:
     branches: [ main, develop ]
   workflow_dispatch:
 
 env:
   NODE_VERSION: '20'
+  BUN_VERSION: '1.0.15'
   CONVEX_DEPLOYMENT: dev:${{ secrets.CONVEX_DEPLOYMENT_NAME }}
   
 jobs:
@@ -22,33 +23,38 @@ jobs:
     steps:
       - name: 📥 코드 체크아웃
         uses: actions/checkout@v4
-        
-      - name: 🚀 Node.js 설정
-        uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          fetch-depth: 0 # Sonar 분석을 위한 전체 히스토리
+        
+      - name: 🚀 Bun 설정
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
           
       - name: 📦 의존성 설치
-        run: npm ci
+        run: bun install --frozen-lockfile
         
       - name: 🧹 코드 포맷팅 검사
-        run: npm run lint
+        run: bun run lint
         
       - name: 🔍 타입 검사
-        run: npm run type-check
+        run: bun run type-check
         
       - name: 🔒 보안 검사
-        run: npm run security-audit
+        run: bun audit
         
       - name: 📊 의존성 검사
-        run: npm run deps:check
+        run: bun run deps:check
+
+      - name: 🎨 Prettier 포맷 검사
+        run: |
+          npx prettier --check "**/*.{ts,tsx,js,jsx,md,json}"
 
   # =======================
-  # 🧪 테스트 실행
+  # 🧪 기본 테스트 실행
   # =======================
   test:
-    name: 🧪 테스트 실행
+    name: 🧪 기본 테스트 실행
     runs-on: ubuntu-latest
     needs: [quality]
     
@@ -60,29 +66,78 @@ jobs:
       - name: 📥 코드 체크아웃
         uses: actions/checkout@v4
         
-      - name: 🚀 Node.js 설정
-        uses: actions/setup-node@v4
+      - name: 🚀 Bun 설정
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          bun-version: ${{ env.BUN_VERSION }}
           
       - name: 📦 의존성 설치
-        run: npm ci
+        run: bun install --frozen-lockfile
         
       - name: 🧪 ${{ matrix.test-type }} 테스트 실행
-        run: npm run test:${{ matrix.test-type }}
+        run: bun run test:${{ matrix.test-type }}
+        env:
+          NODE_ENV: test
+          CONVEX_DEPLOYMENT: ${{ secrets.TEST_CONVEX_DEPLOYMENT }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.TEST_CONVEX_URL }}
         
       - name: 📊 테스트 커버리지 업로드 (unit 테스트만)
         if: matrix.test-type == 'unit'
-        run: npm run test:coverage
+        run: bun run test:coverage
         
       - name: 📈 커버리지 결과 업로드
         if: matrix.test-type == 'unit'
         uses: codecov/codecov-action@v3
         with:
           files: ./coverage/lcov.info
-          flags: unittests
+          flags: ${{ matrix.test-type }}
           name: codecov-umbrella
+
+  # =======================
+  # 🐦 소셜 미디어 기능 테스트
+  # =======================
+  social-media-tests:
+    name: 🐦 소셜 미디어 기능 테스트
+    runs-on: ubuntu-latest
+    needs: [quality]
+    
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+        
+      - name: 🚀 Bun 설정
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+          
+      - name: 📦 의존성 설치
+        run: bun install --frozen-lockfile
+        
+      - name: 🤖 AI 생성 및 변형 테스트
+        run: bun run test:social-media
+        env:
+          NODE_ENV: test
+          CONVEX_DEPLOYMENT: ${{ secrets.TEST_CONVEX_DEPLOYMENT }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.TEST_CONVEX_URL }}
+          GOOGLE_AI_API_KEY: ${{ secrets.TEST_GOOGLE_AI_API_KEY }}
+          TWITTER_CLIENT_ID: ${{ secrets.TEST_TWITTER_CLIENT_ID }}
+          TWITTER_CLIENT_SECRET: ${{ secrets.TEST_TWITTER_CLIENT_SECRET }}
+        
+      - name: ⚡ 성능 테스트 실행
+        run: bun run test:performance
+        
+      - name: ♿ 접근성 테스트 실행
+        run: bun run test:accessibility
+        
+      - name: 📊 소셜 미디어 커버리지 업로드
+        run: bun run test:social-media:coverage
+        
+      - name: 📈 소셜 미디어 커버리지 업로드
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/lcov.info
+          flags: social-media
+          name: social-media-coverage
 
   # =======================
   # 🎭 E2E 테스트
@@ -90,38 +145,54 @@ jobs:
   e2e:
     name: 🎭 E2E 테스트
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [test, social-media-tests]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     
     steps:
       - name: 📥 코드 체크아웃
         uses: actions/checkout@v4
         
-      - name: 🚀 Node.js 설정
-        uses: actions/setup-node@v4
+      - name: 🚀 Bun 설정
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          bun-version: ${{ env.BUN_VERSION }}
           
       - name: 📦 의존성 설치
-        run: npm ci
+        run: bun install --frozen-lockfile
         
       - name: 🎭 Playwright 설치
-        run: npx playwright install --with-deps
+        run: bunx playwright install --with-deps
         
       - name: 🏗️ 프로덕션 빌드
-        run: npm run build
+        run: bun run build
         env:
           NODE_ENV: production
+          CONVEX_DEPLOYMENT: ${{ secrets.TEST_CONVEX_DEPLOYMENT }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.TEST_CONVEX_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.TEST_CLERK_PUBLISHABLE_KEY }}
+          LEMONSQUEEZY_API_KEY: ${{ secrets.TEST_LEMONSQUEEZY_API_KEY }}
           
       - name: 🚀 애플리케이션 시작
-        run: npm start &
+        run: bun start &
         
       - name: ⏳ 애플리케이션 준비 대기
         run: npx wait-on http://localhost:3000 --timeout 60000
         
-      - name: 🧪 E2E 테스트 실행
-        run: npm run test:e2e
+      - name: 🧪 기본 E2E 테스트 실행
+        run: bun run test:e2e
+        env:
+          NODE_ENV: test
+          CONVEX_DEPLOYMENT: ${{ secrets.TEST_CONVEX_DEPLOYMENT }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.TEST_CONVEX_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.TEST_CLERK_PUBLISHABLE_KEY }}
+        
+      - name: 🐦 소셜 미디어 E2E 테스트 실행
+        run: bun run test:e2e:social-media
+        env:
+          NODE_ENV: test
+          CONVEX_DEPLOYMENT: ${{ secrets.TEST_CONVEX_DEPLOYMENT }}
+          NEXT_PUBLIC_CONVEX_URL: ${{ secrets.TEST_CONVEX_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.TEST_CLERK_PUBLISHABLE_KEY }}
         
       - name: 📸 실패 시 스크린샷 업로드
         if: failure()
@@ -162,23 +233,22 @@ jobs:
       - name: 📥 코드 체크아웃
         uses: actions/checkout@v4
         
-      - name: 🚀 Node.js 설정
-        uses: actions/setup-node@v4
+      - name: 🚀 Bun 설정
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          bun-version: ${{ env.BUN_VERSION }}
           
       - name: 📦 의존성 설치
-        run: npm ci
+        run: bun install --frozen-lockfile
         
       - name: 🗄️ Convex 함수 배포
-        run: npx convex deploy --cmd 'npm run build'
+        run: bunx convex deploy --cmd 'bun run build'
         env:
           CONVEX_DEPLOYMENT: ${{ secrets.CONVEX_DEPLOYMENT }}
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
           
       - name: 🏗️ Next.js 빌드
-        run: npm run build
+        run: bun run build
         env:
           NODE_ENV: production
           NEXT_PUBLIC_APP_ENV: ${{ matrix.environment.name }}
@@ -189,14 +259,14 @@ jobs:
           
       - name: 📊 번들 분석
         if: matrix.environment.name == 'production'
-        run: npm run build:analyze
+        run: bun run build:analyze
         
       - name: 📈 Lighthouse 성능 점수
         if: matrix.environment.name == 'production'
         run: |
-          npm start &
+          bun start &
           sleep 10
-          npm run lighthouse
+          bun run lighthouse
           
       - name: 🚀 Vercel 배포
         uses: amondnet/vercel-action@v25
@@ -265,14 +335,14 @@ jobs:
       - name: 📥 코드 체크아웃
         uses: actions/checkout@v4
         
-      - name: 🚀 Node.js 설정
-        uses: actions/setup-node@v4
+      - name: 🚀 Bun 설정
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          bun-version: ${{ env.BUN_VERSION }}
           
       - name: 📊 Lighthouse CI 실행
         run: |
-          npm install -g @lhci/cli@0.12.x
+          bun install -g @lhci/cli@0.12.x
           lhci autorun
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}

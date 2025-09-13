@@ -1,0 +1,208 @@
+# ======================
+# 소셜 미디어 자동화 플랫폼 Docker Compose
+# 개발 환경 구성
+# ======================
+
+version: '3.8'
+
+services:
+  # ======================
+  # Next.js 개발 서버
+  # ======================
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: hooklabs-elite-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "9229:9229" # Node.js 디버깅 포트
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_APP_ENV=development
+      - TZ=Asia/Seoul
+      - DEBUG=true
+      # Convex 개발 설정
+      - CONVEX_DEPLOYMENT=${CONVEX_DEPLOYMENT:-dev:local}
+      - NEXT_PUBLIC_CONVEX_URL=${NEXT_PUBLIC_CONVEX_URL}
+      # Clerk 개발 설정
+      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      # 소셜 미디어 API 개발 설정
+      - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY}
+      - TWITTER_CLIENT_ID=${TWITTER_CLIENT_ID}
+      - TWITTER_CLIENT_SECRET=${TWITTER_CLIENT_SECRET}
+      - SOCIAL_TOKEN_ENCRYPTION_KEY=${SOCIAL_TOKEN_ENCRYPTION_KEY:-dev-key-32-chars-long-minimum!}
+    volumes:
+      # 소스코드 핫 리로딩
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+      # AI 모델 캐시
+      - ai_cache_dev:/app/.cache
+      # 개발 로그
+      - dev_logs:/app/logs
+    networks:
+      - hooklabs_dev_network
+    command: ["bun", "dev"]
+    depends_on:
+      - redis-dev
+      - convex-dev
+
+  # ======================
+  # Convex 개발 서버
+  # ======================
+  convex-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.convex
+    container_name: hooklabs-elite-convex-dev
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - CONVEX_DEPLOYMENT=${CONVEX_DEPLOYMENT:-dev:local}
+    volumes:
+      - ./convex:/app/convex
+      - convex_data:/app/.convex
+    networks:
+      - hooklabs_dev_network
+    command: ["bunx", "convex", "dev", "--port", "3001"]
+
+  # ======================
+  # Redis 개발 캐시
+  # ======================
+  redis-dev:
+    image: redis:7-alpine
+    container_name: hooklabs-elite-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=devpassword
+    command: >
+      redis-server 
+      --requirepass devpassword
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data_dev:/data
+    networks:
+      - hooklabs_dev_network
+
+  # ======================
+  # 개발용 데이터베이스 UI (Redis Insight)
+  # ======================
+  redis-insight:
+    image: redis/redisinsight:latest
+    container_name: hooklabs-elite-redis-insight
+    restart: unless-stopped
+    ports:
+      - "5540:5540"
+    volumes:
+      - redis_insight_data:/data
+    networks:
+      - hooklabs_dev_network
+    depends_on:
+      - redis-dev
+
+  # ======================
+  # 개발용 모니터링 (가벼운 구성)
+  # ======================
+  prometheus-dev:
+    image: prom/prometheus:latest
+    container_name: hooklabs-elite-prometheus-dev
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.dev.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data_dev:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+    networks:
+      - hooklabs_dev_network
+
+  # ======================
+  # 개발용 테스트 실행기
+  # ======================
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: hooklabs-elite-test-runner
+    environment:
+      - NODE_ENV=test
+      - CONVEX_DEPLOYMENT=${TEST_CONVEX_DEPLOYMENT}
+      - NEXT_PUBLIC_CONVEX_URL=${TEST_CONVEX_URL}
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - test_coverage:/app/coverage
+    networks:
+      - hooklabs_dev_network
+    profiles:
+      - testing
+    command: ["bun", "run", "test:watch"]
+
+  # ======================
+  # 개발용 Storybook (컴포넌트 문서화)
+  # ======================
+  storybook:
+    build:
+      context: .
+      dockerfile: Dockerfile.storybook
+    container_name: hooklabs-elite-storybook
+    restart: unless-stopped
+    ports:
+      - "6006:6006"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - hooklabs_dev_network
+    profiles:
+      - docs
+    command: ["bun", "run", "storybook"]
+
+# ======================
+# 네트워크 설정
+# ======================
+networks:
+  hooklabs_dev_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+# ======================
+# 볼륨 설정
+# ======================
+volumes:
+  # 개발 데이터
+  ai_cache_dev:
+    driver: local
+  dev_logs:
+    driver: local
+  convex_data:
+    driver: local
+  
+  # Redis 개발 데이터
+  redis_data_dev:
+    driver: local
+  redis_insight_data:
+    driver: local
+    
+  # 모니터링 개발 데이터
+  prometheus_data_dev:
+    driver: local
+    
+  # 테스트 데이터
+  test_coverage:
+    driver: local

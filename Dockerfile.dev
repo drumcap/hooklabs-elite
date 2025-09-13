@@ -1,0 +1,47 @@
+# ======================
+# 개발환경용 Dockerfile
+# Hot Reloading 및 디버깅 지원
+# ======================
+
+FROM oven/bun:1.0.15-alpine AS development
+
+# 작업 디렉토리 설정
+WORKDIR /app
+
+# 시스템 패키지 설치
+RUN apk add --no-cache \
+    libc6-compat \
+    git \
+    curl \
+    ca-certificates \
+    tzdata \
+    bash \
+    vim
+
+# 타임존 설정
+ENV TZ=Asia/Seoul
+
+# 개발 환경변수 설정
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV TURBOPACK=1
+
+# 패키지 파일 복사
+COPY package.json bun.lockb ./
+
+# 모든 의존성 설치 (개발 의존성 포함)
+RUN bun install --frozen-lockfile
+
+# 소스코드 복사 (볼륨 마운트로 덮어씀)
+COPY . .
+
+# 개발용 포트 노출
+EXPOSE 3000 9229
+
+# 소유권 설정
+RUN chown -R bun:bun /app
+
+USER bun
+
+# 개발 서버 시작
+CMD ["bun", "dev"]

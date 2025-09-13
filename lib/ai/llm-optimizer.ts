@@ -3,7 +3,7 @@
  * 비용 최적화, 캐싱, 스트리밍 구현
  */
 
-import { LRUCache } from 'lru-cache';
+import LRUCache from 'lru-cache';
 import crypto from 'crypto';
 
 /**
@@ -23,7 +23,7 @@ export class LLMResponseCache {
       max: options?.maxSize || 500,
       ttl: options?.ttl || 1000 * 60 * 60, // 1시간 기본값
       maxSize: options?.maxMemory || 100 * 1024 * 1024, // 100MB
-      sizeCalculation: (value) => {
+      sizeCalculation: (value: CachedResponse) => {
         return JSON.stringify(value).length;
       },
     });
