@@ -50,6 +50,22 @@ interface HealthStatus {
         status: 'configured' | 'not_configured' | 'error'
         error?: string
       }
+      facebook: {
+        status: 'configured' | 'not_configured' | 'error'
+        error?: string
+      }
+      linkedin: {
+        status: 'configured' | 'not_configured' | 'error'
+        error?: string
+      }
+      instagram: {
+        status: 'configured' | 'not_configured' | 'error'
+        error?: string
+      }
+      tiktok: {
+        status: 'configured' | 'not_configured' | 'error'
+        error?: string
+      }
     }
   }
   system: {
@@ -241,10 +257,14 @@ async function checkAIHealth(): Promise<{
   return result
 }
 
-// 소셜 미디어 API 설정 확인
+// 소셜 미디어 API 설정 확인 (소셜 미디어 고급 기능 통합)
 async function checkSocialHealth(): Promise<{
   twitter: { status: 'configured' | 'not_configured' | 'error', error?: string }
   threads: { status: 'configured' | 'not_configured' | 'error', error?: string }
+  facebook: { status: 'configured' | 'not_configured' | 'error', error?: string }
+  linkedin: { status: 'configured' | 'not_configured' | 'error', error?: string }
+  instagram: { status: 'configured' | 'not_configured' | 'error', error?: string }
+  tiktok: { status: 'configured' | 'not_configured' | 'error', error?: string }
 }> {
   const result: any = {}
   
@@ -277,6 +297,74 @@ async function checkSocialHealth(): Promise<{
     }
   } catch (error) {
     result.threads = { 
+      status: 'error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }
+  }
+
+  // Facebook 설정 확인
+  try {
+    const facebookAppId = process.env.FACEBOOK_APP_ID
+    const facebookAppSecret = process.env.FACEBOOK_APP_SECRET
+    
+    if (!facebookAppId || !facebookAppSecret) {
+      result.facebook = { status: 'not_configured' }
+    } else {
+      result.facebook = { status: 'configured' }
+    }
+  } catch (error) {
+    result.facebook = { 
+      status: 'error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }
+  }
+
+  // LinkedIn 설정 확인
+  try {
+    const linkedinClientId = process.env.LINKEDIN_CLIENT_ID
+    const linkedinClientSecret = process.env.LINKEDIN_CLIENT_SECRET
+    
+    if (!linkedinClientId || !linkedinClientSecret) {
+      result.linkedin = { status: 'not_configured' }
+    } else {
+      result.linkedin = { status: 'configured' }
+    }
+  } catch (error) {
+    result.linkedin = { 
+      status: 'error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }
+  }
+
+  // Instagram 설정 확인
+  try {
+    const instagramAccessToken = process.env.INSTAGRAM_ACCESS_TOKEN
+    const instagramClientId = process.env.INSTAGRAM_CLIENT_ID
+    
+    if (!instagramAccessToken || !instagramClientId) {
+      result.instagram = { status: 'not_configured' }
+    } else {
+      result.instagram = { status: 'configured' }
+    }
+  } catch (error) {
+    result.instagram = { 
+      status: 'error', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }
+  }
+
+  // TikTok 설정 확인
+  try {
+    const tiktokClientKey = process.env.TIKTOK_CLIENT_KEY
+    const tiktokClientSecret = process.env.TIKTOK_CLIENT_SECRET
+    
+    if (!tiktokClientKey || !tiktokClientSecret) {
+      result.tiktok = { status: 'not_configured' }
+    } else {
+      result.tiktok = { status: 'configured' }
+    }
+  } catch (error) {
+    result.tiktok = { 
       status: 'error', 
       error: error instanceof Error ? error.message : 'Unknown error' 
     }
@@ -429,7 +517,12 @@ export async function GET(request: NextRequest) {
       payment: lemonSqueezyHealth.status === 'available',
       cache: redisHealth.status === 'connected',
       ai: aiHealth.gemini.status === 'available',
-      social: socialHealth.twitter.status === 'configured' || socialHealth.threads.status === 'configured'
+      social: socialHealth.twitter.status === 'configured' || 
+              socialHealth.threads.status === 'configured' || 
+              socialHealth.facebook.status === 'configured' || 
+              socialHealth.linkedin.status === 'configured' || 
+              socialHealth.instagram.status === 'configured' || 
+              socialHealth.tiktok.status === 'configured'
     }
 
     // 시스템 정보

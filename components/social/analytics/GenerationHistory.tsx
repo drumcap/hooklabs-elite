@@ -26,7 +26,8 @@ import {
   Copy,
   ExternalLink,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Target
 } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import { toast } from "sonner";
@@ -89,9 +90,17 @@ export function GenerationHistory({
   });
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
 
-  // AI 생성 히스토리 조회 (실제로는 Convex에서 필터링과 페이지네이션을 지원해야 함)
-  // 여기서는 임시로 모든 데이터를 가져와서 클라이언트에서 필터링
-  const allGenerations = useQuery(api.postVariants.getUserVariantStats, {});
+  // AI 생성 히스토리 조회 - 실제 Convex API 사용
+  const aiGenerationsQuery = useQuery(api.aiGenerations.list, {
+    limit: 100, // 충분한 수의 데이터를 가져와서 클라이언트에서 필터링
+    paginationOpts: { numItems: 100 }
+  });
+
+  // 사용자 통계 조회
+  const userStats = useQuery(api.aiGenerations.getUserStats, {});
+
+  // 월별 트렌드 조회
+  const monthlyTrends = useQuery(api.aiGenerations.getMonthlyTrends, { months: 12 });
 
   // 생성 타입별 아이콘과 라벨
   const generationTypes = {
@@ -99,59 +108,36 @@ export function GenerationHistory({
     variant_creation: { label: "변형 생성", icon: <Sparkles className="h-4 w-4" />, color: "text-purple-600" },
     optimization: { label: "최적화", icon: <Zap className="h-4 w-4" />, color: "text-yellow-600" },
     analysis: { label: "분석", icon: <BarChart3 className="h-4 w-4" />, color: "text-green-600" },
+    content_scoring: { label: "콘텐츠 평가", icon: <Target className="h-4 w-4" />, color: "text-indigo-600" },
   };
 
-  // 모의 데이터 (실제 구현에서는 Convex 쿼리로 대체)
-  const mockGenerations: AIGeneration[] = React.useMemo(() => [
-    {
-      _id: "1",
-      userId: "user1",
-      postId: "post1",
-      type: "content_generation",
-      prompt: "기술 스타트업의 새로운 AI 제품 출시에 대한 소셜 미디어 게시물 작성",
-      response: "🚀 혁신적인 AI 솔루션이 드디어 출시되었습니다! 우리의 새로운 제품으로 비즈니스 효율성을 극대화하세요. #AI #혁신 #기술",
-      model: "gemini-1.5-pro",
-      creditsUsed: 10,
-      generationTime: 2500,
-      inputTokens: 85,
-      outputTokens: 45,
-      temperature: 0.7,
-      success: true,
-      createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    },
-    {
-      _id: "2",
-      userId: "user1",
-      type: "variant_creation",
-      prompt: "더 참여적이고 감정적인 톤으로 변형 생성",
-      response: "💡 믿을 수 없을 정도로 놀라운 AI 기술이 여러분을 기다리고 있어요! 지금 바로 경험해보세요 ✨",
-      model: "gpt-4",
-      creditsUsed: 8,
-      generationTime: 1800,
-      inputTokens: 120,
-      outputTokens: 32,
-      temperature: 0.8,
-      success: true,
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    },
-    {
-      _id: "3",
-      userId: "user1",
-      type: "analysis",
-      prompt: "게시물의 SEO 최적화 분석",
-      response: "분석 결과: 키워드 밀도 적절, 해시태그 활용 우수, 가독성 높음",
-      model: "claude-3",
-      creditsUsed: 5,
-      generationTime: 1200,
-      success: false,
-      errorMessage: "API 연결 시간 초과",
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
-    },
-  ], []);
+  // 실제 데이터 사용
+  const allGenerations: AIGeneration[] = React.useMemo(() => {
+    if (!aiGenerationsQuery?.page) return [];
+    return aiGenerationsQuery.page.map((gen: any) => ({
+      _id: gen._id,
+      userId: gen.userId,
+      postId: gen.postId,
+      personaId: gen.personaId,
+      type: gen.type,
+      prompt: gen.prompt,
+      response: gen.response,
+      model: gen.model,
+      creditsUsed: gen.creditsUsed,
+      generationTime: gen.generationTime,
+      inputTokens: gen.inputTokens,
+      outputTokens: gen.outputTokens,
+      temperature: gen.temperature,
+      metadata: gen.metadata,
+      success: gen.success,
+      errorMessage: gen.errorMessage,
+      createdAt: gen.createdAt,
+    }));
+  }, [aiGenerationsQuery]);
 
   // 필터링된 데이터
   const filteredGenerations = React.useMemo(() => {
-    return mockGenerations.filter((generation) => {
+    return allGenerations.filter((generation) => {
       if (filters.type !== "all" && generation.type !== filters.type) return false;
       if (filters.model !== "all" && generation.model !== filters.model) return false;
       if (filters.success !== "all") {
@@ -164,7 +150,7 @@ export function GenerationHistory({
       }
       return true;
     });
-  }, [mockGenerations, filters]);
+  }, [allGenerations, filters]);
 
   // 페이지네이션된 데이터
   const paginatedGenerations = React.useMemo(() => {

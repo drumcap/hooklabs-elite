@@ -10,7 +10,7 @@ export default defineConfig({
     environment: 'happy-dom',
     
     // 전역 설정 파일
-    setupFiles: ['./test-setup.ts'],
+    setupFiles: ['./tests/setup/test-setup.ts'],
     
     // 테스트 파일 패턴
     include: ['tests/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
@@ -20,8 +20,13 @@ export default defineConfig({
     testTimeout: 10000,
     
     // 병렬 실행 설정
-    threads: true,
-    maxThreads: 4,
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        maxThreads: 4,
+        isolate: true,
+      },
+    },
     
     // 커버리지 설정
     coverage: {
@@ -57,15 +62,6 @@ export default defineConfig({
     
     // 글로벌 설정
     globals: true,
-    
-    // 테스트 분류를 위한 pool 설정
-    pool: 'threads',
-    poolOptions: {
-      threads: {
-        // Node.js 모듈과 브라우저 환경 분리
-        isolate: true,
-      },
-    },
   },
   
   resolve: {

@@ -1,0 +1,113 @@
+# ======================
+# Horizontal Pod Autoscaler (HPA)
+# HookLabs Elite - 소셜 미디어 자동화 플랫폼
+# 트래픽에 따른 자동 스케일링
+# ======================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hooklabs-elite-hpa
+  labels:
+    app: hooklabs-elite
+    tier: autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hooklabs-elite
+  
+  minReplicas: 3
+  maxReplicas: 20
+  
+  metrics:
+  # CPU 기반 스케일링 
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  
+  # 메모리 기반 스케일링
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  
+  # 커스텀 메트릭 - 요청 수 기반 (Prometheus 메트릭 필요)
+  - type: Pods
+    pods:
+      metric:
+        name: http_requests_per_second
+      target:
+        type: AverageValue
+        averageValue: "100"
+  
+  # 소셜 미디어 특화 메트릭 - 활성 연결 수
+  - type: Pods
+    pods:
+      metric:
+        name: websocket_connections
+      target:
+        type: AverageValue
+        averageValue: "50"
+  
+  # 스케일링 정책
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      - type: Pods
+        value: 4
+        periodSeconds: 15
+      selectPolicy: Max
+    
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Min
+
+---
+# ======================
+# Vertical Pod Autoscaler (VPA) - 선택사항
+# 리소스 요청/제한 자동 조정
+# ======================
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: hooklabs-elite-vpa
+  labels:
+    app: hooklabs-elite
+    tier: autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: hooklabs-elite
+  
+  updatePolicy:
+    updateMode: "Auto"  # "Off", "Initial", "Recreation", "Auto"
+  
+  # 리소스 정책
+  resourcePolicy:
+    containerPolicies:
+    - containerName: hooklabs-elite
+      minAllowed:
+        cpu: 100m
+        memory: 128Mi
+      maxAllowed:
+        cpu: 2000m
+        memory: 4Gi
+      controlledResources: ["cpu", "memory"]
+      controlledValues: RequestsAndLimits

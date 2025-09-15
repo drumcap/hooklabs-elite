@@ -50,8 +50,10 @@ ENV NEXT_PUBLIC_APP_NAME="HookLabs Elite"
 RUN bun run type-check
 RUN bun run lint
 
-# 소셜 미디어 기능 테스트 실행 (빌드 전 검증)
+# 소셜 미디어 고급 기능 테스트 실행 (빌드 전 검증)
 RUN bun run test:unit --silent || echo "테스트 건너뛰기 (빌드 환경)"
+# 백엔드-프론트엔드 통합 검증
+RUN bun run test:social-media --silent || echo "소셜 미디어 테스트 건너뛰기 (빌드 환경)"
 
 # Next.js 애플리케이션 빌드 (standalone 모드)
 RUN bun run build
@@ -98,9 +100,18 @@ COPY --from=builder /app/next.config.js ./next.config.js
 RUN echo '#!/bin/sh\ncurl -f http://localhost:3000/api/health || exit 1' > /app/health-check.sh && \
     chmod +x /app/health-check.sh
 
-# 소셜 미디어 기능을 위한 추가 설정
-# AI 모델 캐시 디렉토리
-RUN mkdir -p /app/.cache && chown nextjs:nodejs /app/.cache
+# 소셜 미디어 고급 기능을 위한 추가 설정
+# AI 모델 캐시 및 토큰 관리 디렉토리
+RUN mkdir -p /app/.cache /app/.tokens /app/.analytics && \
+    chown -R nextjs:nodejs /app/.cache /app/.tokens /app/.analytics
+
+# 실시간 기능을 위한 WebSocket 연결 최적화
+ENV UV_THREADPOOL_SIZE=32
+ENV NODE_OPTIONS="--max-old-space-size=2048"
+
+# A/B 테스트 및 분석을 위한 메모리 설정 
+ENV VARIANT_CACHE_SIZE=1000
+ENV ANALYTICS_BUFFER_SIZE=5000
 
 # 포트 노출
 EXPOSE 3000

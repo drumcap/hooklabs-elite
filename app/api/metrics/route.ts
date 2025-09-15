@@ -137,7 +137,7 @@ class MetricsCollector {
     }
   }
 
-  // 애플리케이션 특화 메트릭 수집
+  // 애플리케이션 특화 메트릭 수집 (소셜 미디어 기능 포함)
   async collectApplicationMetrics() {
     // 메모리 사용량
     if (typeof process !== 'undefined') {
@@ -145,17 +145,45 @@ class MetricsCollector {
       this.setGauge('nodejs_heap_size_used_bytes', memUsage.heapUsed);
       this.setGauge('nodejs_heap_size_total_bytes', memUsage.heapTotal);
       this.setGauge('nodejs_external_memory_bytes', memUsage.external);
+      this.setGauge('nodejs_process_uptime_seconds', process.uptime());
     }
 
-    // 활성 연결 수 (예시)
+    // 활성 연결 수
     this.setGauge('active_connections', Math.floor(Math.random() * 100) + 50);
+    
+    // 소셜 미디어 특화 메트릭 시뮬레이션
+    this.setGauge('social_media_websocket_connections', Math.floor(Math.random() * 200) + 100);
+    this.setGauge('social_media_scheduler_queue_size', Math.floor(Math.random() * 50) + 10);
+    this.setGauge('social_media_token_expiry_days', Math.floor(Math.random() * 30) + 1, { platform: 'twitter' });
+    this.setGauge('social_media_token_expiry_days', Math.floor(Math.random() * 30) + 1, { platform: 'facebook' });
+    this.setGauge('social_media_token_expiry_days', Math.floor(Math.random() * 30) + 1, { platform: 'linkedin' });
+    
+    // API 호출 제한 현황 시뮬레이션
+    this.setGauge('social_media_api_rate_limit_remaining', Math.floor(Math.random() * 300) + 50, { platform: 'twitter' });
+    this.setGauge('social_media_api_rate_limit_remaining', Math.floor(Math.random() * 200) + 30, { platform: 'facebook' });
+    this.setGauge('social_media_api_rate_limit_remaining', Math.floor(Math.random() * 500) + 100, { platform: 'linkedin' });
+    
+    // AI 생성 메트릭
+    this.incrementCounter('social_media_ai_generation_requests_total', { model: 'gemini' });
+    this.incrementCounter('social_media_ai_generation_successes_total', { model: 'gemini' });
+    
+    // 실시간 동기화 메트릭
+    this.incrementCounter('social_media_realtime_sync_events_total', { type: 'post_update' });
+    this.setGauge('social_media_last_sync_timestamp', Date.now() / 1000);
     
     // 버전 정보
     this.setGauge('app_info', 1, {
       version: process.env.npm_package_version || '1.0.0',
       environment: process.env.NODE_ENV || 'development',
-      platform: process.platform
+      platform: process.platform,
+      features: 'social-media-advanced'
     });
+
+    // 피처 플래그 상태 (환경 변수 기반)
+    this.setGauge('feature_flag_enabled', process.env.FEATURE_REAL_TIME_SYNC === 'true' ? 1 : 0, { flag: 'realtime_sync' });
+    this.setGauge('feature_flag_enabled', process.env.FEATURE_AI_GENERATION === 'true' ? 1 : 0, { flag: 'ai_generation' });
+    this.setGauge('feature_flag_enabled', process.env.FEATURE_AB_TESTING === 'true' ? 1 : 0, { flag: 'ab_testing' });
+    this.setGauge('feature_flag_enabled', process.env.FEATURE_ADVANCED_ANALYTICS === 'true' ? 1 : 0, { flag: 'advanced_analytics' });
 
     // 시작 시간
     if (typeof process !== 'undefined') {

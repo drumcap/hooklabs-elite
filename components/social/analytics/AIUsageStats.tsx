@@ -63,6 +63,15 @@ export function AIUsageStats({
   // 변형 통계 조회
   const variantStats = useQuery(api.postVariants.getUserVariantStats, {});
 
+  // AI 생성 통계 조회
+  const aiStats = useQuery(api.aiGenerations.getUserStats, {});
+
+  // 페르소나별 성능 조회
+  const personaPerformance = useQuery(api.aiGenerations.getPersonaPerformance, {});
+
+  // 월별 트렌드 조회
+  const monthlyTrends = useQuery(api.aiGenerations.getMonthlyTrends, { months: 3 });
+
   // 모의 트렌드 데이터 (실제로는 Convex에서 날짜별 통계 조회)
   const mockTrendData: TrendData[] = React.useMemo(() => {
     const data: TrendData[] = [];
@@ -336,6 +345,50 @@ export function AIUsageStats({
           </TabsContent>
 
           <TabsContent value="models" className="space-y-6 mt-4">
+            {/* 페르소나별 성능 */}
+            {personaPerformance && personaPerformance.length > 0 && (
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium flex items-center space-x-2">
+                  <Target className="h-4 w-4" />
+                  <span>페르소나별 AI 성능</span>
+                </h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {personaPerformance.slice(0, 6).map((persona) => (
+                    <Card key={persona.personaId} className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h5 className="font-medium text-sm">{persona.personaName}</h5>
+                          <Badge variant={persona.successRate >= 80 ? "default" : "secondary"}>
+                            {persona.successRate}%
+                          </Badge>
+                        </div>
+                        
+                        <div className="space-y-2 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">총 생성</span>
+                            <span>{persona.total}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">평균 점수</span>
+                            <span className="font-medium">{persona.averageScore}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">크레딧</span>
+                            <span>{persona.creditsUsed}</span>
+                          </div>
+                        </div>
+                        
+                        <Progress value={persona.successRate} className="h-1" />
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
             {/* AI 모델별 사용량 */}
             <div className="space-y-4">
               <h4 className="text-sm font-medium flex items-center space-x-2">

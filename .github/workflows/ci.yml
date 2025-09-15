@@ -94,12 +94,25 @@ jobs:
           name: codecov-umbrella
 
   # =======================
-  # 🐦 소셜 미디어 기능 테스트
+  # 🐦 소셜 미디어 고급 기능 테스트
   # =======================
-  social-media-tests:
-    name: 🐦 소셜 미디어 기능 테스트
+  social-media-advanced-tests:
+    name: 🐦 소셜 미디어 고급 기능 테스트
     runs-on: ubuntu-latest
     needs: [quality]
+    
+    strategy:
+      matrix:
+        test-suite:
+          - name: backend-integration
+            description: "백엔드 API 통합 테스트"
+            tests: "tests/unit/convex/socialAccounts.test.ts tests/unit/convex/postVariants.test.ts tests/unit/convex/aiGenerations.test.ts tests/unit/convex/analytics.test.ts"
+          - name: frontend-components
+            description: "프론트엔드 컴포넌트 테스트"
+            tests: "tests/components/social-media/"
+          - name: real-time-features
+            description: "실시간 기능 테스트"
+            tests: "tests/integration/real-time-sync.test.ts tests/integration/social-media-api.test.ts"
     
     steps:
       - name: 📥 코드 체크아웃
@@ -113,8 +126,16 @@ jobs:
       - name: 📦 의존성 설치
         run: bun install --frozen-lockfile
         
-      - name: 🤖 AI 생성 및 변형 테스트
-        run: bun run test:social-media
+      - name: 🔧 Convex 개발 서버 시작
+        run: |
+          bunx convex dev --until-success &
+          sleep 10
+        env:
+          CONVEX_DEPLOYMENT: ${{ secrets.TEST_CONVEX_DEPLOYMENT }}
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        
+      - name: 🧪 ${{ matrix.test-suite.name }} - ${{ matrix.test-suite.description }}
+        run: vitest run ${{ matrix.test-suite.tests }}
         env:
           NODE_ENV: test
           CONVEX_DEPLOYMENT: ${{ secrets.TEST_CONVEX_DEPLOYMENT }}
@@ -122,22 +143,44 @@ jobs:
           GOOGLE_AI_API_KEY: ${{ secrets.TEST_GOOGLE_AI_API_KEY }}
           TWITTER_CLIENT_ID: ${{ secrets.TEST_TWITTER_CLIENT_ID }}
           TWITTER_CLIENT_SECRET: ${{ secrets.TEST_TWITTER_CLIENT_SECRET }}
+          FACEBOOK_ACCESS_TOKEN: ${{ secrets.TEST_FACEBOOK_ACCESS_TOKEN }}
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.TEST_LINKEDIN_ACCESS_TOKEN }}
+          
+      - name: 🎯 토큰 만료 및 계정 상태 테스트
+        if: matrix.test-suite.name == 'backend-integration'
+        run: |
+          vitest run tests/unit/convex/tokenManagement.test.ts
+          vitest run tests/integration/token-expiry-alerts.test.ts
         
-      - name: ⚡ 성능 테스트 실행
+      - name: 🔄 A/B 테스트 변형 시스템 테스트
+        if: matrix.test-suite.name == 'backend-integration'
+        run: |
+          vitest run tests/unit/convex/variantTesting.test.ts
+          vitest run tests/integration/variant-selection.test.ts
+        
+      - name: 📊 AI 분석 대시보드 테스트
+        if: matrix.test-suite.name == 'backend-integration'
+        run: |
+          vitest run tests/unit/convex/aiAnalytics.test.ts
+          vitest run tests/integration/analytics-dashboard.test.ts
+          
+      - name: ⚡ 성능 테스트 실행 (백엔드 통합만)
+        if: matrix.test-suite.name == 'backend-integration'
         run: bun run test:performance
         
-      - name: ♿ 접근성 테스트 실행
+      - name: ♿ 접근성 테스트 실행 (프론트엔드만)
+        if: matrix.test-suite.name == 'frontend-components'
         run: bun run test:accessibility
         
-      - name: 📊 소셜 미디어 커버리지 업로드
-        run: bun run test:social-media:coverage
+      - name: 📊 커버리지 수집
+        run: vitest run --coverage ${{ matrix.test-suite.tests }}
         
-      - name: 📈 소셜 미디어 커버리지 업로드
+      - name: 📈 커버리지 업로드
         uses: codecov/codecov-action@v3
         with:
           files: ./coverage/lcov.info
-          flags: social-media
-          name: social-media-coverage
+          flags: social-media-${{ matrix.test-suite.name }}
+          name: social-media-${{ matrix.test-suite.name }}-coverage
 
   # =======================
   # 🎭 E2E 테스트
@@ -145,7 +188,7 @@ jobs:
   e2e:
     name: 🎭 E2E 테스트
     runs-on: ubuntu-latest
-    needs: [test, social-media-tests]
+    needs: [test, social-media-advanced-tests]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     
     steps:

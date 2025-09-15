@@ -2,7 +2,8 @@
  * 통합 스키마 정의 - 도메인별 분할된 스키마 통합
  */
 
-import { defineSchema } from "convex/server";
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
 import { authSchema } from "./schema/auth";
 import { paymentsSchema } from "./schema/payments";
 import { billingSchema } from "./schema/billing";
@@ -36,6 +37,51 @@ const schema = defineSchema({
   
   // 데이터 파이프라인
   ...pipelineSchema,
+  
+  // 피처 플래그 (점진적 배포용)
+  featureFlags: defineTable({
+    name: v.string(),
+    key: v.string(),
+    description: v.string(),
+    enabled: v.boolean(),
+    environment: v.union(
+      v.literal('development'),
+      v.literal('staging'),
+      v.literal('production'),
+      v.literal('all')
+    ),
+    rollout: v.object({
+      percentage: v.number(),
+      userGroups: v.optional(v.array(v.string())),
+      userIds: v.optional(v.array(v.string())),
+      rules: v.optional(v.array(v.object({
+        attribute: v.string(),
+        operator: v.union(
+          v.literal('eq'),
+          v.literal('ne'),
+          v.literal('in'),
+          v.literal('nin'),
+          v.literal('contains')
+        ),
+        value: v.any()
+      })))
+    }),
+    tags: v.array(v.string()),
+    category: v.union(
+      v.literal('feature'),
+      v.literal('experiment'),
+      v.literal('operational'),
+      v.literal('performance')
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    createdBy: v.string(),
+    lastModifiedBy: v.optional(v.string())
+  })
+  .index("by_key", ["key"])
+  .index("by_environment", ["environment"])
+  .index("by_category", ["category"])
+  .index("by_enabled", ["enabled"]),
 });
 
 // DataModel 타입 추출 및 export

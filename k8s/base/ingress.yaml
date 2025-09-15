@@ -1,0 +1,161 @@
+# ======================
+# Kubernetes Ingress
+# HookLabs Elite - 소셜 미디어 자동화 플랫폼
+# ======================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hooklabs-elite-ingress
+  labels:
+    app: hooklabs-elite
+    tier: frontend
+  annotations:
+    # Nginx Ingress Controller 설정
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    
+    # SSL/TLS 설정
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    
+    # 보안 헤더
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Frame-Options "DENY" always;
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header X-XSS-Protection "1; mode=block" always;
+      add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    
+    # 소셜 미디어 기능을 위한 WebSocket 프록시 설정
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/server-snippets: |
+      location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+      }
+      
+      # WebSocket 지원 (실시간 기능용)
+      location /api/ws {
+        proxy_pass http://upstream_balancer;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+      }
+    
+    # 요청 크기 제한 (소셜 미디어 이미지 업로드 고려)
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    
+    # 속도 제한
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    
+    # CORS 설정 (소셜 미디어 API 호출용)
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://yourdomain.com"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+
+spec:
+  tls:
+  - hosts:
+    - hooklabs-elite.com
+    - www.hooklabs-elite.com
+    - api.hooklabs-elite.com
+    secretName: hooklabs-elite-tls
+  
+  rules:
+  # 메인 도메인
+  - host: hooklabs-elite.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hooklabs-elite-service
+            port:
+              number: 80
+  
+  # www 리다이렉트
+  - host: www.hooklabs-elite.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hooklabs-elite-service
+            port:
+              number: 80
+  
+  # API 전용 서브도메인
+  - host: api.hooklabs-elite.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: hooklabs-elite-service
+            port:
+              number: 80
+      - path: /convex
+        pathType: Prefix
+        backend:
+          service:
+            name: hooklabs-elite-service
+            port:
+              number: 80
+
+---
+# ======================
+# TLS Certificate (cert-manager)
+# Let's Encrypt 자동 SSL 인증서
+# ======================
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: hooklabs-elite-tls
+  namespace: default
+spec:
+  secretName: hooklabs-elite-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: hooklabs-elite.com
+  dnsNames:
+  - hooklabs-elite.com
+  - www.hooklabs-elite.com
+  - api.hooklabs-elite.com
+
+---
+# ======================
+# ClusterIssuer (cert-manager)
+# Let's Encrypt 설정
+# ======================
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    # Let's Encrypt 프로덕션 서버
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: admin@hooklabs-elite.com
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+          podTemplate:
+            spec:
+              nodeSelector:
+                kubernetes.io/os: linux

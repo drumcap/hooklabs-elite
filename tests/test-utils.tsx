@@ -143,7 +143,7 @@ export const mockDateNow = (date: Date) => {
 };
 
 // API 응답 모킹 유틸리티
-export const mockApiResponse = <T>(data: T, delay = 0) => {
+export const mockApiResponse = <T,>(data: T, delay = 0) => {
   return new Promise<T>((resolve) => {
     setTimeout(() => resolve(data), delay);
   });

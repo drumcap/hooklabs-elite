@@ -3,7 +3,7 @@
  * 비용 최적화, 캐싱, 스트리밍 구현
  */
 
-import LRUCache from 'lru-cache';
+import { LRUCache } from 'lru-cache';
 import crypto from 'crypto';
 
 /**
