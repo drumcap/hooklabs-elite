@@ -109,23 +109,98 @@ export async function getUserContext(ctx: QueryCtx | MutationCtx): Promise<UserC
 }
 
 /**
- * 관리자 권한 확인
+ * 관리자 권한 확인 (DB 기반 역할 시스템)
  */
 export async function requireAdmin(ctx: QueryCtx | MutationCtx): Promise<Id<"users">> {
   const userId = await requireAuth(ctx);
   
-  // 실제 프로덕션에서는 DB의 사용자 역할을 확인해야 함
-  // 여기서는 간단하게 특정 사용자 ID나 이메일로 확인
   const user = await ctx.db.get(userId);
-  const identity = await ctx.auth.getUserIdentity();
-  
-  const adminEmails = ["admin@example.com", "drumcap@example.com"]; // 환경변수로 관리 권장
-  
-  if (!identity?.email || !adminEmails.includes(identity.email)) {
-    throw new Error(AUTH_ERRORS.INSUFFICIENT_PERMISSION);
+  if (!user) {
+    throw new Error(AUTH_ERRORS.USER_NOT_FOUND);
+  }
+
+  // DB에서 사용자 역할 확인
+  const isAdmin = await checkUserRole(ctx, userId, ['admin', 'super_admin']);
+  if (!isAdmin) {
+    // 환경변수 기반 백업 관리자 체크 (초기 설정용)
+    const fallbackAdminEmails = process.env.FALLBACK_ADMIN_EMAILS?.split(',') || [];
+    const identity = await ctx.auth.getUserIdentity();
+    
+    if (!identity?.email || !fallbackAdminEmails.includes(identity.email.trim())) {
+      throw new Error(AUTH_ERRORS.INSUFFICIENT_PERMISSION);
+    }
   }
 
   return userId;
+}
+
+/**
+ * 사용자 역할 확인 헬퍼 함수
+ */
+export async function checkUserRole(
+  ctx: QueryCtx | MutationCtx, 
+  userId: Id<"users">, 
+  allowedRoles: string[]
+): Promise<boolean> {
+  // 사용자 역할 테이블에서 확인
+  const userRole = await ctx.db
+    .query("userRoles")
+    .withIndex("byUserId", (q) => q.eq("userId", userId))
+    .filter((q) => q.eq(q.field("isActive"), true))
+    .first();
+
+  if (!userRole) {
+    return false;
+  }
+
+  return allowedRoles.includes(userRole.role);
+}
+
+/**
+ * 권한 레벨 기반 접근 제어
+ */
+export async function requirePermissionLevel(
+  ctx: QueryCtx | MutationCtx, 
+  requiredLevel: PermissionLevel
+): Promise<Id<"users">> {
+  const userId = await requireAuth(ctx);
+  const userLevel = await getUserPermissionLevel(ctx, userId);
+  
+  if (userLevel < requiredLevel) {
+    throw new Error(AUTH_ERRORS.INSUFFICIENT_PERMISSION);
+  }
+  
+  return userId;
+}
+
+/**
+ * 사용자 권한 레벨 조회
+ */
+export async function getUserPermissionLevel(
+  ctx: QueryCtx | MutationCtx, 
+  userId: Id<"users">
+): Promise<PermissionLevel> {
+  // 사용자 역할 확인
+  const userRole = await ctx.db
+    .query("userRoles")
+    .withIndex("byUserId", (q) => q.eq("userId", userId))
+    .filter((q) => q.eq(q.field("isActive"), true))
+    .first();
+
+  if (!userRole) {
+    return PermissionLevel.USER; // 기본 사용자 권한
+  }
+
+  // 역할을 권한 레벨로 매핑
+  const roleToLevel: Record<string, PermissionLevel> = {
+    'guest': PermissionLevel.GUEST,
+    'user': PermissionLevel.USER,
+    'premium': PermissionLevel.PREMIUM,
+    'admin': PermissionLevel.ADMIN,
+    'super_admin': PermissionLevel.SUPER_ADMIN,
+  };
+
+  return roleToLevel[userRole.role] || PermissionLevel.USER;
 }
 
 /**

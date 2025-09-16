@@ -177,8 +177,7 @@ export const update = mutation({
       
       promptTemplates = {
         system: `당신은 ${role} 역할을 하는 ${name}입니다. ${tone} 톤으로 소통하며, ${interests.join(", ")}에 관심이 있고 ${expertise.join(", ")} 분야의 전문성을 가지고 있습니다.`,
-        content: "주어진 내용을 바탕으로 소셜 미디어에 적합한 게시물을 작성해주세요. 해시태그와 이모지를 적절히 사용하고, 독자의 관심을 끌 수 있도록 작성해주세요.",
-        tone: tone
+        body: "주어진 내용을 바탕으로 소셜 미디어에 적합한 게시물을 작성해주세요. 해시태그와 이모지를 적절히 사용하고, 독자의 관심을 끌 수 있도록 작성해주세요.",
       };
     }
 

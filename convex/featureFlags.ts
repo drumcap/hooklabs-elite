@@ -205,7 +205,7 @@ export const evaluateFeatureFlag = query({
   },
 });
 
-// 여러 피처 플래그를 한번에 평가
+// 여러 피처 플래그를 한번에 평가 (최적화됨 - N+1 쿼리 방지)
 export const evaluateMultipleFlags = query({
   args: {
     flagKeys: v.array(v.string()),
@@ -214,16 +214,95 @@ export const evaluateMultipleFlags = query({
     environment: v.optional(v.string())
   },
   handler: async (ctx, args) => {
+    const currentEnv = args.environment || process.env.NODE_ENV || 'development';
+    
+    // 모든 플래그를 한 번에 조회 (N+1 쿼리 방지)
+    const flags = await ctx.db
+      .query('featureFlags')
+      .filter(q => 
+        q.and(
+          q.or(...args.flagKeys.map(key => q.eq(q.field('key'), key))),
+          q.or(
+            q.eq(q.field('environment'), currentEnv),
+            q.eq(q.field('environment'), 'all')
+          )
+        )
+      )
+      .collect();
+
     const results: Record<string, any> = {};
     
+    // 각 플래그에 대해 평가 수행
     for (const key of args.flagKeys) {
-      const result = await ctx.runQuery(api.featureFlags.evaluateFeatureFlag, {
-        key,
-        userId: args.userId,
-        userAttributes: args.userAttributes,
-        environment: args.environment
-      });
-      results[key] = result;
+      const flag = flags.find(f => f.key === key);
+      
+      if (!flag) {
+        results[key] = { enabled: false, reason: 'flag_not_found' };
+        continue;
+      }
+
+      if (!flag.enabled) {
+        results[key] = { enabled: false, reason: 'flag_disabled' };
+        continue;
+      }
+
+      // 사용자 ID 기반 체크
+      if (flag.rollout.userIds?.includes(args.userId)) {
+        results[key] = { enabled: true, reason: 'user_id_match' };
+        continue;
+      }
+
+      // 사용자 그룹 기반 체크
+      if (flag.rollout.userGroups && args.userAttributes) {
+        const userGroups = args.userAttributes.groups as string[] || [];
+        const hasMatchingGroup = flag.rollout.userGroups.some(group => 
+          userGroups.includes(group)
+        );
+        if (hasMatchingGroup) {
+          results[key] = { enabled: true, reason: 'user_group_match' };
+          continue;
+        }
+      }
+
+      // 규칙 기반 평가
+      if (flag.rollout.rules && args.userAttributes) {
+        const ruleMatch = flag.rollout.rules.every(rule => {
+          const userValue = args.userAttributes![rule.attribute];
+          
+          switch (rule.operator) {
+            case 'eq':
+              return userValue === rule.value;
+            case 'ne':
+              return userValue !== rule.value;
+            case 'in':
+              return Array.isArray(rule.value) && rule.value.includes(userValue);
+            case 'nin':
+              return Array.isArray(rule.value) && !rule.value.includes(userValue);
+            case 'contains':
+              return String(userValue).includes(String(rule.value));
+            default:
+              return false;
+          }
+        });
+
+        if (ruleMatch) {
+          results[key] = { enabled: true, reason: 'rule_match' };
+          continue;
+        }
+      }
+
+      // 퍼센티지 기반 롤아웃
+      if (flag.rollout.percentage > 0) {
+        const hash = await hashUserId(args.userId + flag.key);
+        const userPercentage = hash % 100;
+        
+        if (userPercentage < flag.rollout.percentage) {
+          results[key] = { enabled: true, reason: 'percentage_rollout' };
+          continue;
+        }
+      }
+
+      results[key] = { enabled: false, reason: 'no_match' };
     }
     
     return results;

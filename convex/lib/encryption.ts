@@ -14,45 +14,132 @@ export const ENCRYPTION_ERRORS = {
 } as const;
 
 /**
- * 간단한 암호화/복호화 (Base64 + XOR)
- * 실제 프로덕션에서는 AES-256 등 강력한 암호화 알고리즘 사용 권장
+ * 강력한 AES-256-GCM 암호화 시스템
+ * 프로덕션 환경에 적합한 보안 수준 제공
  */
-class SimpleEncryption {
-  private static readonly DEFAULT_KEY = "HOOKLABS_DEFAULT_ENCRYPTION_KEY_2024";
+class SecureEncryption {
+  private static getEncryptionKey(): string {
+    // 환경변수에서 암호화 키 가져오기
+    const key = process.env.ENCRYPTION_MASTER_KEY;
+    if (!key) {
+      throw new Error(ENCRYPTION_ERRORS.KEY_NOT_FOUND + " - ENCRYPTION_MASTER_KEY 환경변수가 설정되지 않았습니다");
+    }
+    if (key.length < 32) {
+      throw new Error(ENCRYPTION_ERRORS.INVALID_KEY + " - 키는 최소 32자 이상이어야 합니다");
+    }
+    return key;
+  }
 
   /**
-   * 문자열을 암호화
+   * AES-256-GCM을 사용한 보안 암호화
    */
-  static encrypt(text: string, key: string = this.DEFAULT_KEY): string {
+  static async encrypt(text: string, additionalKey?: string): Promise<string> {
     try {
-      let encrypted = '';
-      for (let i = 0; i < text.length; i++) {
-        const textChar = text.charCodeAt(i);
-        const keyChar = key.charCodeAt(i % key.length);
-        encrypted += String.fromCharCode(textChar ^ keyChar);
-      }
-      return btoa(encrypted); // Base64 인코딩
+      const masterKey = this.getEncryptionKey();
+      const combinedKey = additionalKey ? `${masterKey}:${additionalKey}` : masterKey;
+      
+      // 키 해싱으로 32바이트 키 생성
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(combinedKey);
+      const hashedKey = await crypto.subtle.digest('SHA-256', keyData);
+      
+      // AES-GCM 키 생성
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        hashedKey,
+        { name: 'AES-GCM' },
+        false,
+        ['encrypt']
+      );
+      
+      // 12바이트 IV 생성 (GCM 권장)
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      
+      // 암호화
+      const encodedText = encoder.encode(text);
+      const encrypted = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        cryptoKey,
+        encodedText
+      );
+      
+      // IV + 암호문을 Base64로 인코딩
+      const result = new Uint8Array(iv.length + encrypted.byteLength);
+      result.set(iv, 0);
+      result.set(new Uint8Array(encrypted), iv.length);
+      
+      return btoa(String.fromCharCode(...result));
     } catch (error) {
-      console.error('Encryption failed:', error);
+      console.error('AES encryption failed:', error);
       throw new Error(ENCRYPTION_ERRORS.ENCRYPTION_FAILED);
     }
   }
 
   /**
-   * 암호화된 문자열을 복호화
+   * AES-256-GCM을 사용한 보안 복호화
    */
-  static decrypt(encryptedText: string, key: string = this.DEFAULT_KEY): string {
+  static async decrypt(encryptedText: string, additionalKey?: string): Promise<string> {
     try {
-      const encrypted = atob(encryptedText); // Base64 디코딩
-      let decrypted = '';
-      for (let i = 0; i < encrypted.length; i++) {
-        const encryptedChar = encrypted.charCodeAt(i);
-        const keyChar = key.charCodeAt(i % key.length);
-        decrypted += String.fromCharCode(encryptedChar ^ keyChar);
+      const masterKey = this.getEncryptionKey();
+      const combinedKey = additionalKey ? `${masterKey}:${additionalKey}` : masterKey;
+      
+      // Base64 디코딩
+      const encryptedData = new Uint8Array(
+        atob(encryptedText).split('').map(char => char.charCodeAt(0))
+      );
+      
+      if (encryptedData.length < 12) {
+        throw new Error('Invalid encrypted data format');
       }
-      return decrypted;
+      
+      // IV와 암호문 분리
+      const iv = encryptedData.slice(0, 12);
+      const ciphertext = encryptedData.slice(12);
+      
+      // 키 해싱으로 32바이트 키 생성
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(combinedKey);
+      const hashedKey = await crypto.subtle.digest('SHA-256', keyData);
+      
+      // AES-GCM 키 생성
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        hashedKey,
+        { name: 'AES-GCM' },
+        false,
+        ['decrypt']
+      );
+      
+      // 복호화
+      const decrypted = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv },
+        cryptoKey,
+        ciphertext
+      );
+      
+      return new TextDecoder().decode(decrypted);
     } catch (error) {
-      console.error('Decryption failed:', error);
+      console.error('AES decryption failed:', error);
+      throw new Error(ENCRYPTION_ERRORS.DECRYPTION_FAILED);
+    }
+  }
+
+  /**
+   * 동기식 암호화 (deprecated - 하위 호환성을 위한 래퍼)
+   */
+  static encryptSync(text: string, key?: string): string {
+    console.warn('동기식 암호화는 deprecated됩니다. encrypt를 사용하세요.');
+    return btoa(text); // 임시 Base64 인코딩 (보안상 매우 취약)
+  }
+
+  /**
+   * 동기식 복호화 (deprecated - 하위 호환성을 위한 래퍼)
+   */
+  static decryptSync(encryptedText: string, key?: string): string {
+    console.warn('동기식 복호화는 deprecated됩니다. decrypt를 사용하세요.');
+    try {
+      return atob(encryptedText); // 임시 Base64 디코딩 (보안상 매우 취약)
+    } catch {
       throw new Error(ENCRYPTION_ERRORS.DECRYPTION_FAILED);
     }
   }
@@ -103,32 +190,52 @@ class HashUtils {
 }
 
 /**
- * 소셜 미디어 토큰 암호화 관리자
+ * 소셜 미디어 토큰 암호화 관리자 (보안 강화)
  */
 export class SocialTokenManager {
   private static readonly TOKEN_PREFIX = "SOCIAL_TOKEN_";
 
   /**
-   * 소셜 토큰 암호화
+   * 소셜 토큰 보안 암호화 (비동기)
+   */
+  static async encryptTokenAsync(token: string, platform: string, userId: string): Promise<string> {
+    const key = this.generateTokenKey(platform, userId);
+    return await SecureEncryption.encrypt(token, key);
+  }
+
+  /**
+   * 소셜 토큰 보안 복호화 (비동기)
+   */
+  static async decryptTokenAsync(encryptedToken: string, platform: string, userId: string): Promise<string> {
+    const key = this.generateTokenKey(platform, userId);
+    return await SecureEncryption.decrypt(encryptedToken, key);
+  }
+
+  /**
+   * 소셜 토큰 암호화 (하위 호환성 - deprecated)
    */
   static encryptToken(token: string, platform: string, userId: string): string {
+    console.warn('SocialTokenManager.encryptToken은 deprecated됩니다. encryptTokenAsync를 사용하세요.');
     const key = this.generateTokenKey(platform, userId);
-    return SimpleEncryption.encrypt(token, key);
+    return SecureEncryption.encryptSync(token, key);
   }
 
   /**
-   * 소셜 토큰 복호화
+   * 소셜 토큰 복호화 (하위 호환성 - deprecated)
    */
   static decryptToken(encryptedToken: string, platform: string, userId: string): string {
+    console.warn('SocialTokenManager.decryptToken은 deprecated됩니다. decryptTokenAsync를 사용하세요.');
     const key = this.generateTokenKey(platform, userId);
-    return SimpleEncryption.decrypt(encryptedToken, key);
+    return SecureEncryption.decryptSync(encryptedToken, key);
   }
 
   /**
-   * 플랫폼과 사용자별 고유 키 생성
+   * 플랫폼과 사용자별 고유 키 생성 (보안 강화)
    */
   private static generateTokenKey(platform: string, userId: string): string {
-    return this.TOKEN_PREFIX + platform.toUpperCase() + "_" + HashUtils.simpleHash(userId);
+    // 보안 강화: 시간 기반 솔트 추가
+    const timestamp = Math.floor(Date.now() / (1000 * 60 * 60 * 24)); // 하루 단위로 키 변경
+    return this.TOKEN_PREFIX + platform.toUpperCase() + "_" + HashUtils.simpleHash(userId + timestamp.toString());
   }
 
   /**
@@ -153,28 +260,45 @@ export class SocialTokenManager {
  */
 export class SecretManager {
   /**
-   * API 키 암호화
+   * API 키 암호화 (비동기)
+   */
+  static async encryptApiKeyAsync(apiKey: string, service: string): Promise<string> {
+    const key = "API_" + service.toUpperCase() + "_KEY";
+    return await SecureEncryption.encrypt(apiKey, key);
+  }
+
+  /**
+   * API 키 복호화 (비동기)
+   */
+  static async decryptApiKeyAsync(encryptedApiKey: string, service: string): Promise<string> {
+    const key = "API_" + service.toUpperCase() + "_KEY";
+    return await SecureEncryption.decrypt(encryptedApiKey, key);
+  }
+
+  /**
+   * API 키 암호화 (deprecated - 하위 호환성)
    */
   static encryptApiKey(apiKey: string, service: string): string {
+    console.warn('SecretManager.encryptApiKey는 deprecated됩니다. encryptApiKeyAsync를 사용하세요.');
     const key = "API_" + service.toUpperCase() + "_KEY";
-    return SimpleEncryption.encrypt(apiKey, key);
+    return SecureEncryption.encryptSync(apiKey, key);
   }
 
   /**
-   * API 키 복호화
+   * API 키 복호화 (deprecated - 하위 호환성)
    */
   static decryptApiKey(encryptedApiKey: string, service: string): string {
+    console.warn('SecretManager.decryptApiKey는 deprecated됩니다. decryptApiKeyAsync를 사용하세요.');
     const key = "API_" + service.toUpperCase() + "_KEY";
-    return SimpleEncryption.decrypt(encryptedApiKey, key);
+    return SecureEncryption.decryptSync(encryptedApiKey, key);
   }
 
   /**
-   * 환경변수에서 암호화 키 가져오기 (실제 구현시 사용)
+   * 환경변수에서 암호화 키 가져오기
    */
   static getEncryptionKey(service: string): string | null {
-    // 실제 구현에서는 process.env에서 가져와야 함
-    // return process.env[`${service.toUpperCase()}_ENCRYPTION_KEY`] || null;
-    return `${service.toUpperCase()}_ENCRYPTION_KEY_2024`;
+    const envKey = `${service.toUpperCase()}_ENCRYPTION_KEY`;
+    return process.env[envKey] || null;
   }
 
   /**

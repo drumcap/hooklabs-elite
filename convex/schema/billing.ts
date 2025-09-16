@@ -20,7 +20,15 @@ export const usage = defineTable({
   periodStart: v.optional(v.string()), // 청구 주기 시작일
   periodEnd: v.optional(v.string()), // 청구 주기 종료일
   // 메타데이터
-  metadata: v.optional(v.any()),
+  metadata: v.optional(v.object({
+    platform: v.optional(v.string()),
+    requestId: v.optional(v.string()),
+    sessionId: v.optional(v.string()),
+    apiVersion: v.optional(v.string()),
+    source: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
+    properties: v.optional(v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))),
+  })),
   timestamp: v.string(),
   createdAt: v.string(),
 })
@@ -41,7 +49,14 @@ export const credits = defineTable({
   expiresAt: v.optional(v.string()),
   relatedOrderId: v.optional(v.string()), // 관련 주문 ID
   relatedCouponId: v.optional(v.id("coupons")),
-  metadata: v.optional(v.any()),
+  metadata: v.optional(v.object({
+    source: v.optional(v.string()), // 크레딧 출처
+    campaign: v.optional(v.string()), // 캠페인 정보
+    bonusType: v.optional(v.string()), // 보너스 유형
+    transactionId: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    properties: v.optional(v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))),
+  })),
   createdAt: v.string(),
 })
   .index("byUserId", ["userId"])
@@ -65,7 +80,20 @@ export const coupons = defineTable({
   validFrom: v.string(),
   validUntil: v.optional(v.string()),
   isActive: v.boolean(),
-  metadata: v.optional(v.any()),
+  metadata: v.optional(v.object({
+    campaign: v.optional(v.string()),
+    promotionType: v.optional(v.string()),
+    targetAudience: v.optional(v.array(v.string())),
+    createdBy: v.optional(v.id("users")),
+    approvedBy: v.optional(v.id("users")),
+    categories: v.optional(v.array(v.string())),
+    restrictions: v.optional(v.object({
+      products: v.optional(v.array(v.string())),
+      userTypes: v.optional(v.array(v.string())),
+      regions: v.optional(v.array(v.string())),
+    })),
+    properties: v.optional(v.record(v.string(), v.union(v.string(), v.number(), v.boolean()))),
+  })),
   createdAt: v.string(),
   updatedAt: v.string(),
 })

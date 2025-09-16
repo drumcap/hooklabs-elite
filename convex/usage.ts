@@ -268,8 +268,11 @@ export const trackCreditUsage = internalMutation({
       unit: "credits",
       description: `Credit usage for ${args.feature}`,
       metadata: {
-        creditAmount: args.amount,
-        feature: args.feature,
+        source: "credit_usage",
+        properties: {
+          creditAmount: args.amount,
+          feature: args.feature,
+        },
       },
       timestamp: args.timestamp,
       createdAt: args.timestamp,

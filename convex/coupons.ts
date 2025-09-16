@@ -163,20 +163,22 @@ export const getUserCouponUsages = query({
       .order("desc")
       .take(limit);
 
-    // 쿠폰 정보와 함께 반환
-    const usagesWithCoupons = await Promise.all(
-      usages.map(async (usage) => {
-        const coupon = await ctx.db.get(usage.couponId);
-        return {
-          ...usage,
-          coupon: coupon ? {
-            code: coupon.code,
-            name: coupon.name,
-            type: coupon.type,
-          } : null,
-        };
-      })
-    );
+    // 쿠폰 정보와 함께 반환 (최적화됨 - N+1 쿼리 방지)
+    const couponIds = [...new Set(usages.map(usage => usage.couponId))];
+    const coupons = await Promise.all(couponIds.map(id => ctx.db.get(id)));
+    const couponMap = new Map(coupons.filter(Boolean).map(coupon => [coupon!._id, coupon]));
+    
+    const usagesWithCoupons = usages.map(usage => {
+      const coupon = couponMap.get(usage.couponId);
+      return {
+        ...usage,
+        coupon: coupon ? {
+          code: coupon.code,
+          name: coupon.name,
+          type: coupon.type,
+        } : null,
+      };
+    });
 
     return usagesWithCoupons;
   },
