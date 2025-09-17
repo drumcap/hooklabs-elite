@@ -6,6 +6,7 @@
 import { QueryCtx, MutationCtx, ActionCtx } from "../_generated/server";
 import { Id } from "../_generated/dataModel";
 import { DataModel } from "../schema";
+import { internal } from "../_generated/api";
 
 // 권한 레벨 정의
 export enum PermissionLevel {
@@ -64,14 +65,16 @@ export async function requireAuth(ctx: QueryCtx | MutationCtx): Promise<Id<"user
     if ('insert' in ctx.db) {
       const mutationCtx = ctx as MutationCtx;
 
-      const newUserId = await mutationCtx.db.insert("users", {
+      // Internal mutation을 사용하여 사용자 생성
+      const newUserId = await mutationCtx.runMutation(internal.users.createUserFromAuth, {
         externalId,
-        name: identity.name || identity.email || "사용자",
+        name: identity.name,
+        email: identity.email,
       });
 
       return newUserId;
     } else {
-      // Query context에서는 임시로 기본 사용자 정보 반환 처리
+      // Query context에서는 사용자를 생성할 수 없으므로 오류 대신 null 반환하도록 변경
       console.warn(`User not found for externalId: ${externalId}. 웹훅 동기화가 필요합니다.`);
       throw new Error(`${AUTH_ERRORS.USER_NOT_FOUND}. Clerk 웹훅 동기화를 확인해주세요.`);
     }

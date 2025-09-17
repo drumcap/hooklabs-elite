@@ -151,36 +151,42 @@ export const useCoupon = mutation({
 
 // 사용자의 쿠폰 사용 내역 조회
 export const getUserCouponUsages = query({
-  args: { 
+  args: {
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { limit = 20 }) => {
-    const userId = await requireAuth(ctx);
+    try {
+      const userId = await requireAuth(ctx);
 
-    const usages = await ctx.db
-      .query("couponUsages")
-      .withIndex("byUserId", (q) => q.eq("userId", userId))
-      .order("desc")
-      .take(limit);
+      const usages = await ctx.db
+        .query("couponUsages")
+        .withIndex("byUserId", (q) => q.eq("userId", userId))
+        .order("desc")
+        .take(limit);
 
-    // 쿠폰 정보와 함께 반환 (최적화됨 - N+1 쿼리 방지)
-    const couponIds = [...new Set(usages.map(usage => usage.couponId))];
-    const coupons = await Promise.all(couponIds.map(id => ctx.db.get(id)));
-    const couponMap = new Map(coupons.filter(Boolean).map(coupon => [coupon!._id, coupon]));
-    
-    const usagesWithCoupons = usages.map(usage => {
-      const coupon = couponMap.get(usage.couponId);
-      return {
-        ...usage,
-        coupon: coupon ? {
-          code: coupon.code,
-          name: coupon.name,
-          type: coupon.type,
-        } : null,
-      };
-    });
+      // 쿠폰 정보와 함께 반환 (최적화됨 - N+1 쿼리 방지)
+      const couponIds = [...new Set(usages.map(usage => usage.couponId))];
+      const coupons = await Promise.all(couponIds.map(id => ctx.db.get(id)));
+      const couponMap = new Map(coupons.filter(Boolean).map(coupon => [coupon!._id, coupon]));
 
-    return usagesWithCoupons;
+      const usagesWithCoupons = usages.map(usage => {
+        const coupon = couponMap.get(usage.couponId);
+        return {
+          ...usage,
+          coupon: coupon ? {
+            code: coupon.code,
+            name: coupon.name,
+            type: coupon.type,
+          } : null,
+        };
+      });
+
+      return usagesWithCoupons;
+    } catch (error) {
+      // 사용자 인증 실패 시 빈 배열 반환
+      console.warn("사용자 인증 실패 - 빈 쿠폰 사용 내역 반환:", error);
+      return [];
+    }
   },
 });
 

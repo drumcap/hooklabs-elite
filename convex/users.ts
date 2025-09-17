@@ -30,6 +30,28 @@ export const upsertFromClerk = internalMutation({
   },
 });
 
+// 인증된 사용자 자동 생성 (fallback용)
+export const createUserFromAuth = internalMutation({
+  args: {
+    externalId: v.string(),
+    name: v.optional(v.string()),
+    email: v.optional(v.string())
+  },
+  async handler(ctx, { externalId, name, email }) {
+    const userAttributes = {
+      name: name || email || "사용자",
+      externalId,
+    };
+
+    const existingUser = await userByExternalId(ctx, externalId);
+    if (existingUser) {
+      return existingUser._id;
+    }
+
+    return await createResource(ctx, "users", userAttributes);
+  },
+});
+
 export const deleteFromClerk = internalMutation({
   args: { clerkUserId: v.string() },
   async handler(ctx, { clerkUserId }) {
