@@ -296,29 +296,40 @@ async function updateCreditBalance(ctx: any, userId: any) {
 export const getBalance = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await requireAuth(ctx);
+    try {
+      const userId = await requireAuth(ctx);
 
-    const balance = await ctx.db
-      .query("userCreditBalances" as any)
-      .withIndex("byUserId", (q: any) => q.eq("userId", userId))
-      .first();
+      const balance = await ctx.db
+        .query("userCreditBalances" as any)
+        .withIndex("byUserId", (q: any) => q.eq("userId", userId))
+        .first();
 
-    if (balance) {
+      if (balance) {
+        return {
+          availableCredits: balance.availableCredits,
+          totalCredits: balance.totalCredits,
+          usedCredits: balance.usedCredits,
+          expiredCredits: balance.expiredCredits,
+        };
+      }
+
+      // 집계 테이블이 없으면 기본값 반환
       return {
-        availableCredits: balance.availableCredits,
-        totalCredits: balance.totalCredits,
-        usedCredits: balance.usedCredits,
-        expiredCredits: balance.expiredCredits,
+        availableCredits: 0,
+        totalCredits: 0,
+        usedCredits: 0,
+        expiredCredits: 0,
+      };
+    } catch (error) {
+      // 사용자 인증 실패 시 기본값 반환
+      console.warn("사용자 인증 실패 - 기본 크레딧 잔액 반환:", error);
+      return {
+        availableCredits: 0,
+        totalCredits: 0,
+        usedCredits: 0,
+        expiredCredits: 0,
       };
     }
-
-    // 집계 테이블이 없으면 기본값 반환
-    return {
-      availableCredits: 0,
-      totalCredits: 0,
-      usedCredits: 0,
-      expiredCredits: 0,
-    };
   },
 });
 
@@ -326,46 +337,57 @@ export const getBalance = query({
 export const getUsageStats = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await requireAuth(ctx);
+    try {
+      const userId = await requireAuth(ctx);
 
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const thisWeekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const thisWeekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-    // 사용된 크레딧 내역 조회
-    const usedCredits = await ctx.db
-      .query("credits" as any)
-      .withIndex("byUserId", (q: any) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("type"), "used"))
-      .collect();
+      // 사용된 크레딧 내역 조회
+      const usedCredits = await ctx.db
+        .query("credits" as any)
+        .withIndex("byUserId", (q: any) => q.eq("userId", userId))
+        .filter((q) => q.eq(q.field("type"), "used"))
+        .collect();
 
-    const todayUsage = usedCredits
-      .filter((c) => c.createdAt >= today)
-      .reduce((sum, c) => sum + Math.abs(c.amount), 0);
+      const todayUsage = usedCredits
+        .filter((c) => c.createdAt >= today)
+        .reduce((sum, c) => sum + Math.abs(c.amount), 0);
 
-    const thisWeekUsage = usedCredits
-      .filter((c) => c.createdAt >= thisWeekStart)
-      .reduce((sum, c) => sum + Math.abs(c.amount), 0);
+      const thisWeekUsage = usedCredits
+        .filter((c) => c.createdAt >= thisWeekStart)
+        .reduce((sum, c) => sum + Math.abs(c.amount), 0);
 
-    const thisMonthUsage = usedCredits
-      .filter((c) => c.createdAt >= thisMonthStart)
-      .reduce((sum, c) => sum + Math.abs(c.amount), 0);
+      const thisMonthUsage = usedCredits
+        .filter((c) => c.createdAt >= thisMonthStart)
+        .reduce((sum, c) => sum + Math.abs(c.amount), 0);
 
-    // 일평균 계산 (지난 30일 기준)
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    const last30DaysUsage = usedCredits
-      .filter((c) => c.createdAt >= thirtyDaysAgo)
-      .reduce((sum, c) => sum + Math.abs(c.amount), 0);
-    
-    const average = Math.round(last30DaysUsage / 30);
+      // 일평균 계산 (지난 30일 기준)
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const last30DaysUsage = usedCredits
+        .filter((c) => c.createdAt >= thirtyDaysAgo)
+        .reduce((sum, c) => sum + Math.abs(c.amount), 0);
 
-    return {
-      today: todayUsage,
-      thisWeek: thisWeekUsage,
-      thisMonth: thisMonthUsage,
-      average,
-    };
+      const average = Math.round(last30DaysUsage / 30);
+
+      return {
+        today: todayUsage,
+        thisWeek: thisWeekUsage,
+        thisMonth: thisMonthUsage,
+        average,
+      };
+    } catch (error) {
+      // 사용자 인증 실패 시 기본값 반환
+      console.warn("사용자 인증 실패 - 기본 사용량 통계 반환:", error);
+      return {
+        today: 0,
+        thisWeek: 0,
+        thisMonth: 0,
+        average: 0,
+      };
+    }
   },
 });
 
@@ -373,23 +395,29 @@ export const getUsageStats = query({
 export const getRecentTransactions = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, { limit = 10 }) => {
-    const userId = await requireAuth(ctx);
+    try {
+      const userId = await requireAuth(ctx);
 
-    const transactions = await ctx.db
-      .query("credits" as any)
-      .withIndex("byUserId", (q: any) => q.eq("userId", userId))
-      .order("desc")
-      .take(limit);
+      const transactions = await ctx.db
+        .query("credits" as any)
+        .withIndex("byUserId", (q: any) => q.eq("userId", userId))
+        .order("desc")
+        .take(limit);
 
-    return transactions.map((transaction) => ({
-      _id: transaction._id,
-      amount: transaction.amount,
-      type: transaction.type,
-      description: transaction.description,
-      createdAt: transaction.createdAt,
-      relatedOrderId: transaction.relatedOrderId,
-      metadata: transaction.metadata,
-    }));
+      return transactions.map((transaction) => ({
+        _id: transaction._id,
+        amount: transaction.amount,
+        type: transaction.type,
+        description: transaction.description,
+        createdAt: transaction.createdAt,
+        relatedOrderId: transaction.relatedOrderId,
+        metadata: transaction.metadata,
+      }));
+    } catch (error) {
+      // 사용자 인증 실패 시 빈 배열 반환
+      console.warn("사용자 인증 실패 - 빈 거래 내역 반환:", error);
+      return [];
+    }
   },
 });
 

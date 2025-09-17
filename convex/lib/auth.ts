@@ -45,22 +45,36 @@ export interface UserContext {
  */
 export async function requireAuth(ctx: QueryCtx | MutationCtx): Promise<Id<"users">> {
   const identity = await ctx.auth.getUserIdentity();
-  
+
   if (!identity) {
     throw new Error(AUTH_ERRORS.NOT_AUTHENTICATED);
   }
 
   // Clerk에서 제공하는 subject가 사용자의 externalId
   const externalId = identity.subject;
-  
+
   // DB에서 사용자 찾기
-  const user = await ctx.db
+  let user = await ctx.db
     .query("users")
     .withIndex("byExternalId", (q) => q.eq("externalId", externalId))
     .unique();
 
   if (!user) {
-    throw new Error(AUTH_ERRORS.USER_NOT_FOUND);
+    // 사용자가 없으면 자동으로 생성 (Clerk 웹훅 동기화 실패 대응)
+    if ('insert' in ctx.db) {
+      const mutationCtx = ctx as MutationCtx;
+
+      const newUserId = await mutationCtx.db.insert("users", {
+        externalId,
+        name: identity.name || identity.email || "사용자",
+      });
+
+      return newUserId;
+    } else {
+      // Query context에서는 임시로 기본 사용자 정보 반환 처리
+      console.warn(`User not found for externalId: ${externalId}. 웹훅 동기화가 필요합니다.`);
+      throw new Error(`${AUTH_ERRORS.USER_NOT_FOUND}. Clerk 웹훅 동기화를 확인해주세요.`);
+    }
   }
 
   return user._id;
