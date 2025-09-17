@@ -132,7 +132,7 @@ export const evaluateFeatureFlag = query({
   args: {
     key: v.string(),
     userId: v.string(),
-    userAttributes: v.optional(v.object({})),
+    userAttributes: v.optional(v.any()),
     environment: v.optional(v.string())
   },
   handler: async (ctx, args) => {
@@ -156,8 +156,8 @@ export const evaluateFeatureFlag = query({
 
     // 사용자 그룹 기반 체크
     if (flag.rollout.userGroups && args.userAttributes) {
-      const userGroups = args.userAttributes.groups as string[] || [];
-      const hasMatchingGroup = flag.rollout.userGroups.some(group => 
+      const userGroups = (args.userAttributes as any)?.groups as string[] || [];
+      const hasMatchingGroup = flag.rollout.userGroups.some((group: string) =>
         userGroups.includes(group)
       );
       if (hasMatchingGroup) {
@@ -167,8 +167,8 @@ export const evaluateFeatureFlag = query({
 
     // 규칙 기반 평가
     if (flag.rollout.rules && args.userAttributes) {
-      const ruleMatch = flag.rollout.rules.every(rule => {
-        const userValue = args.userAttributes![rule.attribute];
+      const ruleMatch = flag.rollout.rules.every((rule: any) => {
+        const userValue = (args.userAttributes as any)![rule.attribute];
         
         switch (rule.operator) {
           case 'eq':
@@ -210,7 +210,7 @@ export const evaluateMultipleFlags = query({
   args: {
     flagKeys: v.array(v.string()),
     userId: v.string(),
-    userAttributes: v.optional(v.object({})),
+    userAttributes: v.optional(v.any()),
     environment: v.optional(v.string())
   },
   handler: async (ctx, args) => {
@@ -254,8 +254,8 @@ export const evaluateMultipleFlags = query({
 
       // 사용자 그룹 기반 체크
       if (flag.rollout.userGroups && args.userAttributes) {
-        const userGroups = args.userAttributes.groups as string[] || [];
-        const hasMatchingGroup = flag.rollout.userGroups.some(group => 
+        const userGroups = (args.userAttributes as any)?.groups as string[] || [];
+        const hasMatchingGroup = flag.rollout.userGroups.some((group: string) =>
           userGroups.includes(group)
         );
         if (hasMatchingGroup) {
@@ -266,8 +266,8 @@ export const evaluateMultipleFlags = query({
 
       // 규칙 기반 평가
       if (flag.rollout.rules && args.userAttributes) {
-        const ruleMatch = flag.rollout.rules.every(rule => {
-          const userValue = args.userAttributes![rule.attribute];
+        const ruleMatch = flag.rollout.rules.every((rule: any) => {
+          const userValue = (args.userAttributes as any)![rule.attribute];
           
           switch (rule.operator) {
             case 'eq':
@@ -436,7 +436,7 @@ export const getFeatureFlagUsage = query({
 // 소셜 미디어 기능별 피처 플래그 초기화
 export const initializeSocialMediaFeatureFlags = action({
   args: { createdBy: v.string() },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<any[]> => {
     const flags = [
       {
         name: '실시간 동기화',
@@ -503,7 +503,7 @@ export const initializeSocialMediaFeatureFlags = action({
     const results = [];
     for (const flag of flags) {
       try {
-        const result = await ctx.runMutation(api.featureFlags.createFeatureFlag, {
+        const result: any = await ctx.runMutation(api.featureFlags.createFeatureFlag, {
           ...flag,
           createdAt: Date.now(),
           updatedAt: Date.now(),
