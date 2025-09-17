@@ -3,7 +3,7 @@ import { mutation, query, internalQuery } from "./_generated/server";
 import { getAuthUserId } from "./auth";
 
 // 특정 게시물의 변형들 조회
-export const getByPost = query({
+export const getByPostId = query({
   args: { postId: v.id("socialPosts") },
   handler: async (ctx, { postId }) => {
     const userId = await getAuthUserId(ctx);

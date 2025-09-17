@@ -254,39 +254,88 @@ export function VariantGenerator({
 
   // Query variants for this post
   const variants = useQuery(
-    api.postVariants.getByPost, 
+    api.postVariants.getByPostId,
     postId ? { postId } : "skip"
   ) as PostVariant[] | undefined
 
+  // Get current user
+  const currentUser = useQuery(api.users.current)
+
   // Action to generate new variants
-  // const generateVariants = useAction(api.ai.generateVariants)
-  const generateVariants = null // Temporarily disabled
+  const generateVariants = useAction(api.actions.contentGeneration.generateVariants)
+
+  // Actions for variant selection
+  const selectVariant = useAction(api.postVariants.selectVariant)
+  const deselectVariant = useAction(api.postVariants.deselectVariant)
 
   const sortedVariants = variants?.sort((a, b) => b.overallScore - a.overallScore) || []
-  const selectedVariant = variants?.find(v => v._id === selectedVariantId)
+  const selectedVariant = variants?.find(v => v.isSelected)
 
   const handleGenerateVariants = async () => {
-    if (!postId) return
-    
+    if (!postId || !currentUser) {
+      toast.error("사용자 정보를 불러올 수 없습니다. 페이지를 새로고침 해주세요.")
+      return
+    }
+
     setIsGenerating(true)
     try {
-      // if (generateVariants) {
-      //   await generateVariants({ postId })
-      //   toast.success("새로운 변형이 생성되었습니다!")
-      // } else {
-        toast.error("AI 변형 생성 기능이 비활성화되어 있습니다.")
-      // }
+      const result = await generateVariants({
+        userId: currentUser._id,
+        postId,
+        personaId: persona._id,
+        originalContent,
+        platforms: ["twitter", "threads"], // Default platforms
+        variantCount: 5
+      })
+
+      if (result.success) {
+        toast.success(`${result.totalVariants}개의 새로운 변형이 생성되었습니다! (${result.creditsUsed} 크레딧 사용)`)
+        onGenerateMore() // Refresh the parent component
+      } else {
+        toast.error("변형 생성에 실패했습니다.")
+      }
     } catch (error) {
       console.error("변형 생성 오류:", error)
-      toast.error("변형 생성에 실패했습니다.")
+
+      // Error message based on error type
+      let errorMessage = "변형 생성에 실패했습니다."
+
+      if (error instanceof Error) {
+        if (error.message.includes("크레딧")) {
+          errorMessage = "크레딧이 부족합니다. 크레딧을 충전한 후 다시 시도해주세요."
+        } else if (error.message.includes("API")) {
+          errorMessage = "AI 서비스 연결에 실패했습니다. 잠시 후 다시 시도해주세요."
+        } else if (error.message.includes("권한")) {
+          errorMessage = "접근 권한이 없습니다. 로그인 상태를 확인해주세요."
+        } else {
+          errorMessage = error.message
+        }
+      }
+
+      toast.error(errorMessage)
     } finally {
       setIsGenerating(false)
     }
   }
 
-  const handleVariantSelect = (variant: PostVariant) => {
-    setSelectedVariantId(variant._id)
-    onVariantSelect(variant)
+  const handleVariantSelect = async (variant: PostVariant) => {
+    try {
+      if (variant.isSelected) {
+        // If already selected, deselect it
+        await deselectVariant({ id: variant._id })
+        setSelectedVariantId(null)
+        toast.success("변형 선택이 해제되었습니다")
+      } else {
+        // Select this variant
+        await selectVariant({ id: variant._id })
+        setSelectedVariantId(variant._id)
+        onVariantSelect(variant)
+        toast.success("변형이 선택되었습니다")
+      }
+    } catch (error) {
+      console.error("변형 선택 오류:", error)
+      toast.error(error instanceof Error ? error.message : "변형 선택에 실패했습니다")
+    }
   }
 
   const handleCopyVariant = () => {
@@ -392,7 +441,7 @@ export function VariantGenerator({
               variant={variant}
               persona={persona}
               onSelect={() => handleVariantSelect(variant)}
-              isSelected={selectedVariantId === variant._id}
+              isSelected={variant.isSelected}
               onCopy={handleCopyVariant}
             />
           ))}

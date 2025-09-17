@@ -61,16 +61,37 @@ export const list = query({
       if (status) query = query.filter((q) => q.eq(q.field("status"), status));
       if (personaId) query = query.filter((q) => q.eq(q.field("personaId"), personaId));
 
-      return await query
+      const result = await query
         .order("desc")
         .paginate({
           cursor: paginationOpts.cursor ?? null,
           numItems: paginationOpts.numItems
         });
+
+      // 페르소나 정보 추가
+      const postsWithPersona = await Promise.all(
+        result.page.map(async (post) => {
+          const persona = await ctx.db.get(post.personaId);
+          return { ...post, persona };
+        })
+      );
+
+      return {
+        ...result,
+        page: postsWithPersona,
+      };
     }
 
+    // 페르소나 정보 추가
+    const postsWithPersona = await Promise.all(
+      posts.slice(0, limit).map(async (post) => {
+        const persona = await ctx.db.get(post.personaId);
+        return { ...post, persona };
+      })
+    );
+
     return {
-      page: posts.slice(0, limit),
+      page: postsWithPersona,
       isDone: true,
       continueCursor: null
     };

@@ -71,6 +71,11 @@ const data = {
           icon: IconEdit,
         },
         {
+          title: "게시물 관리",
+          url: "/dashboard/social/posts",
+          icon: IconFileDescription,
+        },
+        {
           title: "페르소나 관리",
           url: "/dashboard/social/personas", 
           icon: IconBrain,
