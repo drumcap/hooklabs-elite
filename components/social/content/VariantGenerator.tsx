@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useQuery, useAction } from "convex/react"
+import { useQuery, useAction, useMutation } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -265,8 +265,8 @@ export function VariantGenerator({
   const generateVariants = useAction(api.actions.contentGeneration.generateVariants)
 
   // Actions for variant selection
-  const selectVariant = useAction(api.postVariants.selectVariant)
-  const deselectVariant = useAction(api.postVariants.deselectVariant)
+  const selectVariant = useMutation(api.postVariants.selectVariant)
+  const deselectVariant = useMutation(api.postVariants.deselectVariant)
 
   const sortedVariants = variants?.sort((a, b) => b.overallScore - a.overallScore) || []
   const selectedVariant = variants?.find(v => v.isSelected)

@@ -274,7 +274,7 @@ export function PostDetailModal({
                       <div>
                         <h4 className="font-medium text-sm text-muted-foreground mb-2">해시태그</h4>
                         <div className="flex flex-wrap gap-2">
-                          {post.hashtags.map((tag, index) => (
+                          {post.hashtags.map((tag: string, index: number) => (
                             <Badge key={index} variant="outline">
                               {tag}
                             </Badge>
@@ -320,9 +320,21 @@ export function PostDetailModal({
 
               <TabsContent value="schedule" className="mt-0">
                 <PostScheduler
-                  postId={postId}
-                  currentStatus={post.status}
-                  platforms={post.platforms || []}
+                  post={{
+                    _id: postId,
+                    finalContent: post.finalContent,
+                    personaId: post.personaId,
+                    platforms: post.platforms || []
+                  }}
+                  persona={post.persona}
+                  onSchedule={(scheduleData) => {
+                    console.log("Schedule data:", scheduleData)
+                    // TODO: 스케줄링 로직 구현
+                  }}
+                  onPublishNow={() => {
+                    console.log("Publishing now")
+                    // TODO: 즉시 발행 로직 구현
+                  }}
                 />
               </TabsContent>
 

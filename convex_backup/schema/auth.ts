@@ -12,9 +12,6 @@ export const users = defineTable({
   externalId: v.string(),
   // Lemon Squeezy customer ID
   lemonSqueezyCustomerId: v.optional(v.string()),
-  // 타임스탬프 필드 (기존 데이터 호환성을 위해 optional)
-  createdAt: v.optional(v.string()),
-  updatedAt: v.optional(v.string()),
 }).index("byExternalId", ["externalId"])
   .index("byLemonSqueezyCustomerId", ["lemonSqueezyCustomerId"]);
 

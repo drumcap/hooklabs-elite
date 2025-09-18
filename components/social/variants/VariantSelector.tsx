@@ -73,7 +73,7 @@ export function VariantSelector({
   const [copiedText, setCopiedText] = React.useState<string | null>(null);
 
   // 변형들 조회
-  const variants = useQuery(api.postVariants.getByPost, { postId });
+  const variants = useQuery(api.postVariants.getByPostId, { postId });
   
   // 현재 선택된 변형 조회
   const currentSelection = useQuery(api.postVariants.getSelectedVariant, { postId });

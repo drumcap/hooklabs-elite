@@ -139,22 +139,22 @@ export async function listResources<T extends string>(
 ): Promise<any[]> {
   try {
     let query: any = ctx.db.query(tableName as any);
-
+    
     // 인덱스 사용
     if (options.indexName && userId) {
       query = query.withIndex(options.indexName as any, (q: any) => q.eq("userId", userId));
     }
-
+    
     // 정렬
     if (options.sort) {
       query = query.order(options.sort.direction);
     }
-
+    
     // 페이징
     if (options.pagination?.limit) {
-      return await query.take(options.pagination.limit);
+      query = query.take(options.pagination.limit);
     }
-
+    
     return await query.collect();
   } catch (error) {
     console.error(`Failed to list ${tableName}:`, error);

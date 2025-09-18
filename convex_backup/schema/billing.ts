@@ -117,23 +117,10 @@ export const couponUsages = defineTable({
   .index("byOrderId", ["orderId"])
   .index("byUsedAt", ["usedAt"]);
 
-// 사용자 크레딧 잔액 집계 테이블
-export const userCreditBalances = defineTable({
-  userId: v.id("users"),
-  totalCredits: v.number(),      // 총 크레딧 (만료 제외)
-  availableCredits: v.number(),  // 사용 가능한 크레딧
-  usedCredits: v.number(),       // 사용된 크레딧
-  expiredCredits: v.number(),    // 만료된 크레딧
-  lastUpdated: v.string(),       // 마지막 업데이트 시간
-})
-  .index("byUserId", ["userId"])
-  .index("byLastUpdated", ["lastUpdated"]);
-
 // 빌링 스키마 export
 export const billingSchema = {
   usage, // usageRecords와 통합됨
   credits,
   coupons,
   couponUsages,
-  userCreditBalances,
 };

@@ -54,13 +54,10 @@ export const list = query({
     console.log(SecurityLogger.createSecurityLog(
       "social_accounts_accessed",
       userId,
-      {
-        accountsCount: accounts.length,
-        platform: platform || undefined,
-        isActive: isActive !== undefined ? isActive : undefined,
-        // Convex에서는 HTTP 헤더에 직접 접근할 수 없으므로 기본값 사용
-        ip: 'convex-server',
-        userAgent: 'convex-query-handler'
+      { 
+        accountsCount: accounts.length, 
+        platform,
+        isActive 
       },
       "info"
     ));

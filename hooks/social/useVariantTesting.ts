@@ -20,7 +20,7 @@ export function useVariantTesting(options: UseVariantTestingOptions) {
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
 
   // 변형들 조회
-  const variants = useQuery(api.postVariants.getByPost, { postId });
+  const variants = useQuery(api.postVariants.getByPostId, { postId });
   
   // 최고 점수 변형 조회
   const bestVariant = useQuery(api.postVariants.getBestVariant, { postId });

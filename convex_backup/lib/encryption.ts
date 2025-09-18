@@ -385,17 +385,14 @@ export class SecurityLogger {
     details: any = {},
     level: 'info' | 'warning' | 'error' = 'info'
   ): any {
-    // details에서 ip와 userAgent를 분리하여 별도 필드로 처리
-    const { ip, userAgent, ...sanitizedDetails } = details;
-
     return {
       timestamp: new Date().toISOString(),
       event,
       userId,
       level,
-      details: this.sanitizeForLogging(sanitizedDetails),
-      ip: ip || 'unknown',
-      userAgent: userAgent || 'unknown',
+      details: this.sanitizeForLogging(details),
+      ip: details.ip || 'unknown',
+      userAgent: details.userAgent || 'unknown',
     };
   }
 }
