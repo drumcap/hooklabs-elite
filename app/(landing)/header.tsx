@@ -6,12 +6,17 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import React from 'react'
 import { cn } from '@/lib/utils'
+import dynamic from 'next/dynamic'
 
-import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
-import { SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+// Dynamic imports to prevent HMR issues
+const Authenticated = dynamic(() => import("convex/react").then(mod => ({ default: mod.Authenticated })), { ssr: false });
+const Unauthenticated = dynamic(() => import("convex/react").then(mod => ({ default: mod.Unauthenticated })), { ssr: false });
+const AuthLoading = dynamic(() => import("convex/react").then(mod => ({ default: mod.AuthLoading })), { ssr: false });
+const SignInButton = dynamic(() => import("@clerk/nextjs").then(mod => ({ default: mod.SignInButton })), { ssr: false });
+const SignUpButton = dynamic(() => import("@clerk/nextjs").then(mod => ({ default: mod.SignUpButton })), { ssr: false });
+const UserButton = dynamic(() => import("@clerk/nextjs").then(mod => ({ default: mod.UserButton })), { ssr: false });
 
-import { dark } from '@clerk/themes'
-import { useTheme } from "next-themes"
+import { useTheme } from "next-themes";
 
 
 
@@ -25,11 +30,21 @@ const menuItems = [
 export const HeroHeader = () => {
     const [menuState, setMenuState] = React.useState(false)
     const [isScrolled, setIsScrolled] = React.useState(false)
+    const [isMounted, setIsMounted] = React.useState(false)
     const { theme } = useTheme()
+    const [dark, setDark] = React.useState<any>(null)
 
-    const appearance = {
-        baseTheme: theme === "dark" ? dark : undefined,
-    }
+    const appearance = React.useMemo(() => ({
+        baseTheme: theme === "dark" && dark ? dark : undefined,
+    }), [theme, dark])
+
+    React.useEffect(() => {
+        setIsMounted(true)
+        // Load dark theme dynamically
+        import('@clerk/themes').then(mod => {
+            setDark(mod.dark)
+        })
+    }, [])
 
     React.useEffect(() => {
         const handleScroll = () => {
@@ -93,53 +108,57 @@ export const HeroHeader = () => {
                                 </ul>
                             </div>
                             <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
-                                <AuthLoading>
-                                    <div className="flex items-center justify-center">
-                                        <Loader2 className="size-8 p-2 animate-spin" />
-                                    </div>
-                                </AuthLoading>
-                                <Authenticated>
-                                    <Button asChild size="sm">
-                                        <Link href="/dashboard">
-                                            <span>Dashboard</span>
-                                        </Link>
-                                    </Button>
-                                    <UserButton appearance={appearance} />
-                                </Authenticated>
+                                {isMounted && (
+                                    <>
+                                        <AuthLoading>
+                                            <div className="flex items-center justify-center">
+                                                <Loader2 className="size-8 p-2 animate-spin" />
+                                            </div>
+                                        </AuthLoading>
+                                        <Authenticated>
+                                            <Button asChild size="sm">
+                                                <Link href="/dashboard">
+                                                    <span>Dashboard</span>
+                                                </Link>
+                                            </Button>
+                                            <UserButton appearance={appearance} />
+                                        </Authenticated>
 
-                                <Unauthenticated>
-                                    <SignInButton mode="modal">
-                                        <Button
-                                            asChild
-                                            variant="outline"
-                                            size="sm"
-                                            className={cn(isScrolled && 'lg:hidden')}>
-                                            <Link href="#">
-                                                <span>Login</span>
-                                            </Link>
-                                        </Button>
-                                    </SignInButton>
-                                    <SignUpButton mode="modal">
-                                        <Button
-                                            asChild
-                                            size="sm"
-                                            className={cn(isScrolled && 'lg:hidden')}>
-                                            <Link href="#">
-                                                <span>Sign Up</span>
-                                            </Link>
-                                        </Button>
-                                    </SignUpButton>
-                                    <SignUpButton mode="modal">
-                                        <Button
-                                            asChild
-                                            size="sm"
-                                            className={cn(isScrolled ? 'lg:inline-flex' : 'hidden')}>
-                                            <Link href="#">
-                                                <span>Get Started</span>
-                                            </Link>
-                                        </Button>
-                                    </SignUpButton>
-                                </Unauthenticated>
+                                        <Unauthenticated>
+                                            <SignInButton mode="modal">
+                                                <Button
+                                                    asChild
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className={cn(isScrolled && 'lg:hidden')}>
+                                                    <Link href="#">
+                                                        <span>Login</span>
+                                                    </Link>
+                                                </Button>
+                                            </SignInButton>
+                                            <SignUpButton mode="modal">
+                                                <Button
+                                                    asChild
+                                                    size="sm"
+                                                    className={cn(isScrolled && 'lg:hidden')}>
+                                                    <Link href="#">
+                                                        <span>Sign Up</span>
+                                                    </Link>
+                                                </Button>
+                                            </SignUpButton>
+                                            <SignUpButton mode="modal">
+                                                <Button
+                                                    asChild
+                                                    size="sm"
+                                                    className={cn(isScrolled ? 'lg:inline-flex' : 'hidden')}>
+                                                    <Link href="#">
+                                                        <span>Get Started</span>
+                                                    </Link>
+                                                </Button>
+                                            </SignUpButton>
+                                        </Unauthenticated>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
