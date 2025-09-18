@@ -37,6 +37,8 @@ export const personas = defineTable({
     hook: v.optional(v.string()),
     body: v.optional(v.string()),
     callToAction: v.optional(v.string()),
+    content: v.optional(v.string()), // 추가된 content 필드
+    tone: v.optional(v.string()), // 추가된 tone 필드
     custom: v.optional(v.array(v.object({
       name: v.string(),
       template: v.string(),
