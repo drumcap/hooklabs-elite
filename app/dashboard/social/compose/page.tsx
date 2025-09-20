@@ -101,8 +101,7 @@ export default function ComposePage() {
   // Mutations
   const createPost = useMutation(api.socialPosts.create)
   const updatePost = useMutation(api.socialPosts.update)
-  // const generateVariants = useAction(api.ai.generateVariants)
-  const generateVariants = null // Temporarily disabled
+  const generateVariants = useAction(api.actions.contentGeneration.generateVariants)
   const schedulePost = useMutation(api.scheduledPosts.schedule)
 
   const handlePersonaChange = (personaId: Id<"personas">) => {
@@ -152,9 +151,19 @@ export default function ComposePage() {
       }
 
       // Generate variants
-      // if (generateVariants) {
-      //   await generateVariants({ postId })
-      // }
+      if (generateVariants && state.selectedPersona) {
+        try {
+          await generateVariants({
+            userId: "user_placeholder", // This should be replaced with actual user ID
+            postId,
+            personaId: state.selectedPersona._id,
+            count: 3
+          })
+        } catch (error) {
+          console.error("Failed to generate variants:", error)
+          toast.error("변형 생성에 실패했습니다")
+        }
+      }
       
       setActiveTab("variants")
       toast.success("AI 변형이 생성되었습니다!")
