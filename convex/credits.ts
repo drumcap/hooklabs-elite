@@ -4,6 +4,7 @@ import { InsufficientCreditsError, NotFoundError, withErrorHandling } from "./li
 import { requireAuth, getOptionalAuth } from "./lib/auth";
 import { createResource, updateResource, CRUD_ERRORS } from "./lib/crud";
 import { isValidCreditAmount } from "./lib/validators";
+import { internal } from "./_generated/api";
 
 // 크레딧 잔액 계산 헬퍼 함수
 function calculateCreditBalance(credits: any[], userId: any) {
@@ -431,13 +432,31 @@ export const useCreditsInternal = internalMutation({
     metadata: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    const balance = await ctx.db
+    let balance = await ctx.db
       .query("userCreditBalances" as any)
       .withIndex("byUserId", (q) => q.eq("userId", args.userId))
       .first();
 
     if (!balance) {
-      throw new NotFoundError("크레딧 잔액", args.userId);
+      // 사용자 크레딧 잔액이 없으면 초기 잔액 생성 (0 크레딧으로 시작)
+      const now = new Date().toISOString();
+      await ctx.db.insert("userCreditBalances", {
+        userId: args.userId,
+        totalCredits: 0,
+        availableCredits: 0,
+        usedCredits: 0,
+        expiredCredits: 0,
+        lastUpdated: now,
+      });
+
+      balance = {
+        userId: args.userId,
+        totalCredits: 0,
+        availableCredits: 0,
+        usedCredits: 0,
+        expiredCredits: 0,
+        lastUpdated: now,
+      };
     }
     
     if (balance.availableCredits < args.amount) {
@@ -472,7 +491,82 @@ export const getBalanceInternal = internalQuery({
       .query("userCreditBalances" as any)
       .withIndex("byUserId", (q: any) => q.eq("userId", userId))
       .first();
-    
+
     return balance || { availableCredits: 0 };
+  },
+});
+
+// Internal mutation for initializing user credits
+export const initializeUserCredits = internalMutation({
+  args: {
+    userId: v.id("users"),
+    initialCredits: v.optional(v.number()),
+  },
+  handler: async (ctx, { userId, initialCredits = 100 }) => {
+    // 이미 크레딧 잔액이 있는지 확인
+    const existingBalance = await ctx.db
+      .query("userCreditBalances" as any)
+      .withIndex("byUserId", (q: any) => q.eq("userId", userId))
+      .first();
+
+    if (existingBalance) {
+      return existingBalance._id;
+    }
+
+    // 초기 크레딧 잔액 생성
+    const now = new Date().toISOString();
+
+    // 크레딧 지급 기록 생성
+    await ctx.db.insert("credits", {
+      userId,
+      amount: initialCredits,
+      type: "earned",
+      description: "신규 가입 환영 크레딧",
+      createdAt: now,
+    });
+
+    // 크레딧 잔액 집계 테이블 생성
+    const balanceId = await ctx.db.insert("userCreditBalances", {
+      userId,
+      totalCredits: initialCredits,
+      availableCredits: initialCredits,
+      usedCredits: 0,
+      expiredCredits: 0,
+      lastUpdated: now,
+    });
+
+    return balanceId;
+  },
+});
+
+// One-time migration for existing users
+export const migrateExistingUserCredits = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    // 모든 사용자 조회
+    const users = await ctx.db.query("users").collect();
+
+    let migratedCount = 0;
+    for (const user of users) {
+      // 이미 크레딧 잔액이 있는지 확인
+      const existingBalance = await ctx.db
+        .query("userCreditBalances" as any)
+        .withIndex("byUserId", (q: any) => q.eq("userId", user._id))
+        .first();
+
+      if (!existingBalance) {
+        // 초기 크레딧 지급
+        await ctx.runMutation(internal.credits.initializeUserCredits, {
+          userId: user._id,
+          initialCredits: 100
+        });
+        migratedCount++;
+      }
+    }
+
+    return {
+      totalUsers: users.length,
+      migratedUsers: migratedCount
+    };
   },
 });

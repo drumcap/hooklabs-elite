@@ -5,6 +5,7 @@ import { AuthenticationError } from "./lib/errors";
 import { requireAuth, getOptionalAuth } from "./lib/auth";
 import { createResource, updateResource, checkDuplicate } from "./lib/crud";
 import { DataSanitizer } from "./lib/validators";
+import { internal } from "./_generated/api";
 
 export const current = query({
   args: {},
@@ -23,7 +24,9 @@ export const upsertFromClerk = internalMutation({
 
     const user = await userByExternalId(ctx, data.id);
     if (user === null) {
-      await createResource(ctx, "users", userAttributes);
+      const userId = await createResource(ctx, "users", userAttributes);
+      // 새 사용자에게 초기 크레딧 지급
+      await ctx.runMutation(internal.credits.initializeUserCredits, { userId });
     } else {
       await updateResource(ctx, "users", user._id, userAttributes, undefined, false);
     }
@@ -48,7 +51,10 @@ export const createUserFromAuth = internalMutation({
       return existingUser._id;
     }
 
-    return await createResource(ctx, "users", userAttributes);
+    const userId = await createResource(ctx, "users", userAttributes);
+    // 새 사용자에게 초기 크레딧 지급
+    await ctx.runMutation(internal.credits.initializeUserCredits, { userId });
+    return userId;
   },
 });
 
