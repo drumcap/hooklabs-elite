@@ -59,12 +59,12 @@
         "react-dom": "^19.0.0",
         "react-hook-form": "^7.62.0",
         "react-use-measure": "^2.1.7",
-        "recharts": "^3.1.2",
+        "recharts": "^3.2.1",
         "sonner": "^2.0.6",
         "svix": "^1.76.1",
         "tailwind-merge": "^3.3.1",
         "vaul": "^1.1.2",
-        "web-vitals": "^4.2.4",
+        "web-vitals": "^5.1.0",
         "ws": "^8.18.3",
         "zod": "^4.1.5",
       },
@@ -2627,7 +2627,7 @@
 
     "watchpack": ["watchpack@2.4.4", "", { "dependencies": { "glob-to-regexp": "^0.4.1", "graceful-fs": "^4.1.2" } }, "sha512-c5EGNOiyxxV5qmTtAB7rbiXxi1ooX1pQKMLX/MIabJjRA0SJBQOjKF+KSVfHkr9U1cADPon0mRiVe/riyaiDUA=="],
 
-    "web-vitals": ["web-vitals@4.2.4", "", {}, "sha512-r4DIlprAGwJ7YM11VZp4R884m0Vmgr6EAKe3P+kO0PPj3Unqyvv59rczf6UiGcb9Z8QxZVcqKNwv/g0WNdWwsw=="],
+    "web-vitals": ["web-vitals@5.1.0", "", {}, "sha512-ArI3kx5jI0atlTtmV0fWU3fjpLmq/nD3Zr1iFFlJLaqa5wLBkUSzINwBPySCX/8jRyjlmy1Volw1kz1g9XE4Jg=="],
 
     "webdriver-bidi-protocol": ["webdriver-bidi-protocol@0.2.11", "", {}, "sha512-Y9E1/oi4XMxcR8AT0ZC4OvYntl34SPgwjmELH+owjBr0korAX4jKgZULBWILGCVGdVCQ0dodTToIETozhG8zvA=="],
 

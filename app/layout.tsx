@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import WebVitalsMonitor from "@/components/WebVitalsMonitor";
+import SLOMonitoringProvider from "@/components/SLOMonitoringProvider";
 
 import { ClerkProvider } from '@clerk/nextjs'
 import ConvexClientProvider from '@/components/ConvexClientProvider'
@@ -131,6 +132,7 @@ export default function RootLayout({
             <ConvexClientProvider>
               <ServiceWorkerRegister />
               <WebVitalsMonitor />
+              <SLOMonitoringProvider />
               {children}
             </ConvexClientProvider>
           </ClerkProvider>
