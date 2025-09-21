@@ -1,0 +1,123 @@
+# OWASP ZAP 베이스라인 스캔 규칙
+# 형식: RULE_ID	STATUS	REASON
+# STATUS: IGNORE (무시), FAIL (실패로 처리), WARN (경고로 처리)
+
+# 보안 헤더 관련
+10016	WARN	Content Security Policy (CSP) Header Not Set
+10017	WARN	Cross-Domain JavaScript Source File Inclusion
+10020	FAIL	X-Frame-Options Header Not Set
+10021	FAIL	X-Content-Type-Options Header Missing
+10023	WARN	Information Disclosure - Debug Error Messages
+10024	WARN	Information Disclosure - Sensitive Information in URL
+10025	WARN	Information Disclosure - Sensitive Information in HTTP Referrer Header
+10026	WARN	HTTP Parameter Override
+10027	WARN	Information Disclosure - Suspicious Comments
+10028	WARN	Open Redirect
+10029	WARN	Cookie Poisoning
+10030	WARN	User Controllable Charset
+10031	WARN	User Controllable HTML Element Attribute (Potential XSS)
+10032	WARN	Viewstate Scanner
+10033	WARN	Directory Browsing
+10034	WARN	Heartbleed OpenSSL Vulnerability (Indicative)
+10035	WARN	Strict-Transport-Security Header Not Set
+10036	WARN	HTTP Server Response Header
+10037	WARN	Server Leaks Information via "X-Powered-By" HTTP Response Header Field(s)
+10038	WARN	Content Security Policy (CSP) Header Not Set
+10040	WARN	Secure Pages Include Mixed Content
+10041	WARN	HTTP to HTTPS Insecure Transition in Form Post
+10042	WARN	HTTPS to HTTP Insecure Transition in Form Post
+10043	WARN	User Controllable JavaScript Event (XSS)
+10044	WARN	Big Redirect Detected (Potential Sensitive Information Leak)
+10045	WARN	Source Code Disclosure - /WEB-INF folder
+10046	WARN	Source Code Disclosure - /META-INF folder
+10047	WARN	Source Code Disclosure - File Inclusion
+10048	WARN	Remote Code Execution - Shell Shock
+10049	WARN	Content Cacheability
+10050	WARN	Retrieved from Cache
+10051	WARN	Relative Path Confusion
+10052	WARN	X-ChromeLogger-Data (XCOLD) Header Information Leak
+10054	WARN	Cookie Without SameSite Attribute
+10055	WARN	CSP Scanner
+10056	WARN	X-Debug-Token Information Leak
+10057	WARN	Username Hash Found
+10061	WARN	X-AspNet-Version Response Header
+10062	WARN	PII Scanner
+10063	WARN	Feature Policy Header Not Set
+10094	WARN	Base64 Disclosure
+10095	WARN	Backup File Disclosure
+10096	WARN	Timestamp Disclosure
+10097	WARN	Hash Disclosure
+10098	WARN	Cross-Domain Misconfiguration
+10099	WARN	Source Code Disclosure
+
+# 인증 및 세션 관리
+10040	FAIL	Secure Pages Include Mixed Content
+10041	FAIL	HTTP to HTTPS Insecure Transition in Form Post
+10042	FAIL	HTTPS to HTTP Insecure Transition in Form Post
+10054	FAIL	Cookie Without SameSite Attribute
+10055	WARN	CSP Scanner
+10108	FAIL	Reverse Tabnabbing
+10109	FAIL	Modern Web Application
+10110	FAIL	Dangerous JS Functions
+
+# SQL 인젝션
+40018	FAIL	SQL Injection
+40019	FAIL	SQL Injection - MySQL
+40020	FAIL	SQL Injection - Hypersonic SQL
+40021	FAIL	SQL Injection - Oracle
+40022	FAIL	SQL Injection - PostgreSQL
+40023	FAIL	Possible Username Enumeration
+
+# XSS 관련
+40012	FAIL	Cross Site Scripting (Reflected)
+40013	FAIL	Cross Site Scripting (Persistent)
+40014	FAIL	Cross Site Scripting (Persistent) - Prime
+40015	FAIL	LDAP Injection
+40016	FAIL	Cross Site Scripting (Persistent) - Spider
+40017	FAIL	Cross Site Scripting (Persistent) - OData
+
+# 파일 업로드 및 경로 탐색
+40018	FAIL	SQL Injection
+40019	FAIL	External Redirect
+40020	FAIL	Cross Site Scripting (Reflected)
+40021	FAIL	Cross Site Scripting (Persistent)
+40022	FAIL	Possible Username Enumeration
+40023	FAIL	Possible Password Enumeration
+40024	FAIL	SQL Injection - MySQL
+40025	FAIL	Possible Username Enumeration - MySQL
+40026	FAIL	Cross Site Scripting (DOM Based)
+40027	FAIL	SQL Injection - MsSQL
+40028	FAIL	SQL Injection - Oracle
+40029	FAIL	SQL Injection - PostgreSQL
+
+# CSRF 보호
+40031	FAIL	Cross Site Request Forgery
+40032	FAIL	Cross Site Request Forgery (Token)
+
+# API 보안
+90001	WARN	Insecure JSViewState
+90002	WARN	Charset Mismatch
+90003	WARN	Charset Mismatch (Header Versus Meta Content-Type Charset)
+90004	WARN	Insufficient Site Isolation Against Spectre Vulnerability
+90005	WARN	Sec-Fetch Metadata Request Headers
+90006	WARN	Permissions Policy Header Not Set
+90011	WARN	Charset Mismatch (Header Versus Body Content-Type Charset)
+90017	WARN	XSLT Injection
+90018	WARN	SQL Injection - SQLite
+90019	WARN	Code Injection
+90020	WARN	Command Injection
+90021	WARN	XPath Injection
+90022	WARN	Application Error Disclosure
+90023	WARN	XML External Entity Attack
+90024	WARN	Generic Padding Oracle
+90025	WARN	Expression Language Injection
+90026	WARN	SOAP Action Spoofing
+90027	WARN	Cookie Slack Detector
+90028	WARN	Insecure Authentication
+90029	WARN	LDAP Injection
+90030	WARN	WSDL File Detection
+
+# 개발 환경 특화 제외 규칙 (로컬 개발시에만)
+10023	IGNORE	Information Disclosure - Debug Error Messages (개발 환경에서 허용)
+10027	IGNORE	Information Disclosure - Suspicious Comments (개발 환경에서 허용)
+10037	IGNORE	Server Leaks Information via "X-Powered-By" (Next.js 개발 서버)

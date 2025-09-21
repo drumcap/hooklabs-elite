@@ -28,6 +28,7 @@ import { VariantScorer } from "./VariantScorer"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import type { Id } from "@/convex/_generated/dataModel"
+import type { VariantPerformance } from "@/types/social-analytics"
 
 interface VariantGeneratorProps {
   postId?: Id<"socialPosts">
@@ -41,29 +42,11 @@ interface VariantGeneratorProps {
     expertise: string[]
     avatar?: string
   }
-  onVariantSelect: (variant: PostVariant) => void
+  onVariantSelect: (variant: VariantPerformance) => void
   onGenerateMore: () => void
   className?: string
 }
 
-interface PostVariant {
-  _id: Id<"postVariants">
-  postId: Id<"socialPosts">
-  content: string
-  overallScore: number
-  scoreBreakdown: {
-    engagement: number
-    virality: number
-    personaMatch: number
-    readability: number
-    trending: number
-  }
-  isSelected: boolean
-  aiModel: string
-  promptUsed: string
-  creditsUsed: number
-  generatedAt: string
-}
 
 interface ScoreCardProps {
   title: string
@@ -92,14 +75,14 @@ function ScoreCard({ title, score, icon: Icon, description, color }: ScoreCardPr
   )
 }
 
-function VariantCard({ 
-  variant, 
-  persona, 
-  onSelect, 
-  isSelected, 
-  onCopy 
-}: { 
-  variant: PostVariant
+function VariantCard({
+  variant,
+  persona,
+  onSelect,
+  isSelected,
+  onCopy
+}: {
+  variant: VariantPerformance
   persona: VariantGeneratorProps["persona"]
   onSelect: () => void
   isSelected: boolean
@@ -256,7 +239,7 @@ export function VariantGenerator({
   const variants = useQuery(
     api.postVariants.getByPostId,
     postId ? { postId } : "skip"
-  ) as PostVariant[] | undefined
+  ) as VariantPerformance[] | undefined
 
   // Get current user
   const currentUser = useQuery(api.users.current)
@@ -318,7 +301,7 @@ export function VariantGenerator({
     }
   }
 
-  const handleVariantSelect = async (variant: PostVariant) => {
+  const handleVariantSelect = async (variant: VariantPerformance) => {
     try {
       if (variant.isSelected) {
         // If already selected, deselect it

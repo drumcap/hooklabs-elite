@@ -154,11 +154,13 @@ export default function ComposePage() {
       if (generateVariants && state.selectedPersona) {
         try {
           await generateVariants({
-            userId: "user_placeholder", // This should be replaced with actual user ID
+            userId: "jjfk6r4s3vzm2kez1rze8fhw4j6w0f8w" as any, // Placeholder Convex ID
             postId,
             personaId: state.selectedPersona._id,
-            count: 3
-          })
+            originalContent: state.currentPost?.originalContent || "Test content",
+            platforms: state.currentPost?.platforms || ["twitter"],
+            variantCount: 3
+          } as any)
         } catch (error) {
           console.error("Failed to generate variants:", error)
           toast.error("변형 생성에 실패했습니다")

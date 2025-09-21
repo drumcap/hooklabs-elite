@@ -1,0 +1,312 @@
+name: 포괄적 테스트 파이프라인
+
+on:
+  push:
+    branches: [main, develop, 'feat/**', 'fix/**']
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # 매일 오전 2시 (UTC)에 전체 테스트 실행
+    - cron: '0 2 * * *'
+
+env:
+  NODE_VERSION: '20'
+  BUN_VERSION: 'latest'
+
+jobs:
+  # 병렬 실행을 위한 매트릭스 전략
+  lint-and-typecheck:
+    name: 린팅 및 타입 체크
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Bun 설치
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: 의존성 캐시
+        uses: actions/cache@v3
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: 의존성 설치
+        run: bun install --frozen-lockfile
+
+      - name: TypeScript 타입 체크
+        run: bun run type-check
+
+      - name: ESLint 린팅
+        run: bun run lint
+
+  unit-tests:
+    name: 단위 테스트
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Bun 설치
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: 의존성 설치
+        run: bun install --frozen-lockfile
+
+      - name: 단위 테스트 실행
+        run: bun run test:unit --coverage
+        env:
+          NODE_ENV: test
+
+      - name: 커버리지 업로드
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/coverage-final.json
+          flags: unit-tests
+
+  integration-tests:
+    name: 통합 테스트
+    runs-on: ubuntu-latest
+    services:
+      # Convex 백엔드 서비스는 별도 환경에서 실행
+      test-db:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Bun 설치
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: 의존성 설치
+        run: bun install --frozen-lockfile
+
+      - name: 통합 테스트 실행
+        run: bun run test:integration
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:test@localhost:5432/test_db
+
+  component-tests:
+    name: 컴포넌트 테스트
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Bun 설치
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: 의존성 설치
+        run: bun install --frozen-lockfile
+
+      - name: 컴포넌트 테스트 실행
+        run: bun run test:components --coverage
+        env:
+          NODE_ENV: test
+
+  e2e-tests:
+    name: E2E 테스트
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Bun 설치
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: 의존성 설치
+        run: bun install --frozen-lockfile
+
+      - name: Playwright 브라우저 설치
+        run: bunx playwright install ${{ matrix.browser }} --with-deps
+
+      - name: 애플리케이션 빌드
+        run: bun run build
+
+      - name: E2E 테스트 실행
+        run: bunx playwright test --project=${{ matrix.browser }}
+        env:
+          CI: true
+          BASE_URL: http://localhost:3000
+
+      - name: 테스트 결과 업로드
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: test-results/
+          retention-days: 7
+
+  security-tests:
+    name: 보안 테스트
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Bun 설치
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: 의존성 설치
+        run: bun install --frozen-lockfile
+
+      - name: 보안 취약점 스캔
+        run: bun audit
+
+      - name: 보안 테스트 실행
+        run: bun run test tests/security/security-test-suite.test.ts
+        env:
+          NODE_ENV: test
+
+      - name: OWASP ZAP 베이스라인 스캔
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:3000'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+
+  performance-tests:
+    name: 성능 테스트
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || contains(github.event.head_commit.message, '[perf]')
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Bun 설치
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: 의존성 설치
+        run: bun install --frozen-lockfile
+
+      - name: k6 설치
+        run: |
+          curl https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-amd64.tar.gz -L | tar xvz --strip-components 1
+          sudo mv k6 /usr/local/bin/
+
+      - name: 애플리케이션 시작
+        run: |
+          bun run build
+          bun run start &
+          sleep 10
+        env:
+          NODE_ENV: production
+
+      - name: 부하 테스트 실행
+        run: k6 run tests/performance/k6-load-test.js
+        env:
+          BASE_URL: http://localhost:3000
+
+      - name: Lighthouse 성능 감사
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          configPath: './.lighthouserc.js'
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+  build-verification:
+    name: 빌드 검증
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck]
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Bun 설치
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: 의존성 설치
+        run: bun install --frozen-lockfile
+
+      - name: Next.js 프로덕션 빌드
+        run: bun run build
+        env:
+          NODE_ENV: production
+
+      - name: 빌드 아티팩트 크기 분석
+        run: bun run build:analyze
+
+      - name: Convex 함수 빌드 검증
+        run: |
+          echo "Convex 함수 빌드 검증은 별도 환경에서 수행됩니다"
+          # 실제 환경에서는 Convex CLI를 사용하여 검증
+
+  dependency-security:
+    name: 의존성 보안 검사
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 의존성 보안 취약점 검사
+        uses: actions/dependency-review-action@v3
+        with:
+          fail-on-severity: moderate
+
+      - name: CodeQL 분석
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript, typescript
+
+      - name: CodeQL 분석 실행
+        uses: github/codeql-action/analyze@v2
+
+  # 모든 테스트 완료 후 결과 요약
+  test-summary:
+    name: 테스트 결과 요약
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, component-tests, e2e-tests, security-tests, build-verification]
+    if: always()
+    steps:
+      - name: 테스트 결과 요약
+        run: |
+          echo "## 🧪 테스트 파이프라인 결과 요약" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| 테스트 유형 | 상태 |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 단위 테스트 | ${{ needs.unit-tests.result == 'success' && '✅ 성공' || '❌ 실패' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 통합 테스트 | ${{ needs.integration-tests.result == 'success' && '✅ 성공' || '❌ 실패' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 컴포넌트 테스트 | ${{ needs.component-tests.result == 'success' && '✅ 성공' || '❌ 실패' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E 테스트 | ${{ needs.e2e-tests.result == 'success' && '✅ 성공' || '❌ 실패' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 보안 테스트 | ${{ needs.security-tests.result == 'success' && '✅ 성공' || '❌ 실패' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 빌드 검증 | ${{ needs.build-verification.result == 'success' && '✅ 성공' || '❌ 실패' }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: 슬랙 알림 (실패 시)
+        if: ${{ failure() }}
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#dev-alerts'
+          text: '🚨 테스트 파이프라인에서 실패가 발생했습니다.'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

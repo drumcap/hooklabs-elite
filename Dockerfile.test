@@ -1,0 +1,69 @@
+# 테스트 환경용 Docker 이미지
+FROM oven/bun:1.1-alpine AS base
+
+# 의존성 설치
+FROM base AS deps
+WORKDIR /app
+
+# 패키지 파일 복사
+COPY package.json bun.lockb ./
+COPY convex ./convex
+
+# 의존성 설치 (프로덕션 + 개발 의존성)
+RUN bun install --frozen-lockfile --include=dev
+
+# 테스트 실행 단계
+FROM base AS test
+WORKDIR /app
+
+# 의존성 복사
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json ./package.json
+
+# 소스 코드 복사
+COPY . .
+
+# 브라우저 설치 (E2E 테스트용)
+RUN apk add --no-cache \
+    chromium \
+    firefox \
+    webkit2gtk-4.0 \
+    ca-certificates \
+    tzdata
+
+# Playwright 브라우저 설치
+RUN bunx playwright install --with-deps
+
+# k6 설치 (성능 테스트용)
+RUN apk add --no-cache curl && \
+    curl -L https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-amd64.tar.gz | tar xvz --strip-components 1 && \
+    mv k6 /usr/local/bin/
+
+# OWASP ZAP 설치 (보안 테스트용)
+RUN apk add --no-cache openjdk11-jre && \
+    curl -L https://github.com/zaproxy/zaproxy/releases/download/v2.14.0/ZAP_2_14_0_unix.sh -o zap-installer.sh && \
+    chmod +x zap-installer.sh && \
+    ./zap-installer.sh -q && \
+    rm zap-installer.sh
+
+# 환경 변수 설정
+ENV NODE_ENV=test
+ENV CI=true
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+# 테스트 실행 권한 설정
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S testuser -u 1001 -G nodejs && \
+    chown -R testuser:nodejs /app
+
+USER testuser
+
+# 포트 노출
+EXPOSE 3000
+
+# 헬스체크
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
+
+# 기본 명령어 (전체 테스트 스위트 실행)
+CMD ["bun", "run", "test:ci"]

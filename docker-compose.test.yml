@@ -1,0 +1,201 @@
+version: '3.8'
+
+services:
+  # 메인 애플리케이션 테스트
+  app-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      - NODE_ENV=test
+      - CI=true
+      - CONVEX_DEPLOYMENT=${CONVEX_DEPLOYMENT}
+      - NEXT_PUBLIC_CONVEX_URL=${NEXT_PUBLIC_CONVEX_URL}
+      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./test-results:/app/test-results
+      - ./coverage:/app/coverage
+    networks:
+      - test-network
+    depends_on:
+      - test-db
+      - redis-test
+    command: ["bun", "run", "test:ci"]
+
+  # 테스트용 데이터베이스
+  test-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: test_db
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass
+    ports:
+      - "5433:5432"
+    volumes:
+      - test-db-data:/var/lib/postgresql/data
+      - ./tests/fixtures/db-init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser -d test_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 테스트용 Redis
+  redis-test:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    networks:
+      - test-network
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-test-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # 단위 테스트 실행기
+  unit-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      - NODE_ENV=test
+    volumes:
+      - ./test-results:/app/test-results
+      - ./coverage:/app/coverage
+    networks:
+      - test-network
+    command: ["bun", "run", "test:unit", "--coverage"]
+    profiles:
+      - unit
+
+  # 통합 테스트 실행기
+  integration-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgresql://testuser:testpass@test-db:5432/test_db
+      - REDIS_URL=redis://redis-test:6379
+    volumes:
+      - ./test-results:/app/test-results
+    networks:
+      - test-network
+    depends_on:
+      test-db:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    command: ["bun", "run", "test:integration"]
+    profiles:
+      - integration
+
+  # E2E 테스트 실행기
+  e2e-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      - NODE_ENV=test
+      - CI=true
+      - BASE_URL=http://app-test:3000
+    volumes:
+      - ./test-results:/app/test-results
+    networks:
+      - test-network
+    depends_on:
+      - app-test
+    command: ["bunx", "playwright", "test"]
+    profiles:
+      - e2e
+
+  # 성능 테스트 실행기
+  performance-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      - BASE_URL=http://app-test:3000
+    volumes:
+      - ./test-results:/app/test-results
+    networks:
+      - test-network
+    depends_on:
+      - app-test
+    command: ["k6", "run", "tests/performance/k6-load-test.js"]
+    profiles:
+      - performance
+
+  # 보안 테스트 실행기
+  security-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      - NODE_ENV=test
+      - TARGET_URL=http://app-test:3000
+    volumes:
+      - ./test-results:/app/test-results
+    networks:
+      - test-network
+    depends_on:
+      - app-test
+    command: ["bun", "run", "security:test"]
+    profiles:
+      - security
+
+  # OWASP ZAP 보안 스캔
+  zap-security:
+    image: owasp/zap2docker-stable
+    environment:
+      - ZAP_TARGET=http://app-test:3000
+    volumes:
+      - ./test-results:/zap/wrk
+      - ./.zap:/zap/conf
+    networks:
+      - test-network
+    depends_on:
+      - app-test
+    command: >
+      zap-baseline.py
+      -t http://app-test:3000
+      -r zap-baseline-report.html
+      -c /zap/conf/rules.tsv
+    profiles:
+      - zap
+
+  # Lighthouse 성능 감사
+  lighthouse:
+    image: femtopixel/google-lighthouse
+    environment:
+      - URL=http://app-test:3000
+    volumes:
+      - ./test-results:/home/chrome/reports
+    networks:
+      - test-network
+    depends_on:
+      - app-test
+    command: >
+      lighthouse http://app-test:3000
+      --output-path=/home/chrome/reports/lighthouse-report.html
+      --output=html
+      --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage"
+    profiles:
+      - lighthouse
+
+networks:
+  test-network:
+    driver: bridge
+
+volumes:
+  test-db-data:
+  redis-test-data:
