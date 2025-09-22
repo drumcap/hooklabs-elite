@@ -3,62 +3,46 @@ import { v } from "convex/values";
 import { InsufficientCreditsError, NotFoundError, withErrorHandling } from "./lib/errors";
 import { requireAuth, getOptionalAuth } from "./lib/auth";
 import { createResource, updateResource, CRUD_ERRORS } from "./lib/crud";
-import { isValidCreditAmount } from "./lib/validators";
 import { internal } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
+import { CreditService } from "./services/CreditService";
+import { CacheService } from "./services/CacheService";
+import {
+  CreditRecord,
+  CreditBalance,
+  AddCreditRequest,
+  UseCreditRequest,
+  CREDIT_TYPES
+} from "./types/credit";
 
-// 크레딧 잔액 계산 헬퍼 함수
-function calculateCreditBalance(credits: any[], userId: any) {
-  const now = new Date().toISOString();
-  
-  const totalCredits = credits
-    .filter((c: any) => c.type !== "expired")
-    .reduce((sum: number, credit: any) => sum + credit.amount, 0);
-
-  const availableCredits = credits
-    .filter((c: any) => 
-      c.type !== "expired" && 
-      (!c.expiresAt || c.expiresAt > now)
-    )
-    .reduce((sum: number, credit: any) => sum + credit.amount, 0);
-
-  const usedCredits = credits
-    .filter((c: any) => c.type === "used")
-    .reduce((sum: number, credit: any) => sum + Math.abs(credit.amount), 0);
-
-  const expiredCredits = credits
-    .filter((c: any) => c.type === "expired" || (c.expiresAt && c.expiresAt <= now))
-    .reduce((sum: number, credit: any) => sum + Math.abs(credit.amount), 0);
-
-  return {
-    userId,
-    totalCredits,
-    availableCredits: Math.max(0, availableCredits),
-    usedCredits,
-    expiredCredits,
-    lastUpdated: now,
-  };
-}
-
-// 사용자의 크레딧 잔액 조회
+// 사용자의 크레딧 잔액 조회 (캐싱 적용)
 export const getUserCreditBalance = query({
   args: { userId: v.id("users") },
-  handler: async (ctx, { userId }) => {
+  handler: async (ctx, { userId }): Promise<CreditBalance> => {
     // 권한 확인: 본인 또는 관리자만 조회 가능
     const currentUserId = await getOptionalAuth(ctx);
     if (currentUserId !== userId) {
       throw new Error(CRUD_ERRORS.UNAUTHORIZED);
     }
 
-    // TODO: userCreditBalances 집계 테이블 구현 필요
-    // 현재는 실시간 계산으로 처리
-    
-    // 실시간 계산
-    const credits = await ctx.db
-      .query("credits" as any)
-      .withIndex("byUserId", (q: any) => q.eq("userId", userId))
-      .collect();
+    // 캐시에서 먼저 조회
+    const cachedBalance = CacheService.getCreditBalance(userId);
+    if (cachedBalance) {
+      return cachedBalance;
+    }
 
-    return calculateCreditBalance(credits, userId);
+    // 캐시 미스 시 실시간 계산
+    const credits = await ctx.db
+      .query("credits")
+      .withIndex("byUserId", (q) => q.eq("userId", userId))
+      .collect() as CreditRecord[];
+
+    const balance = CreditService.calculateBalance(credits, userId);
+
+    // 결과를 캐시에 저장
+    CacheService.setCreditBalance(userId, balance);
+
+    return balance;
   },
 });
 
@@ -73,27 +57,25 @@ export const addCredits = mutation({
     relatedOrderId: v.optional(v.string()),
     metadata: v.optional(v.any()),
   },
-  handler: async (ctx, args) => {
-    // 데이터 검증
-    if (!isValidCreditAmount(args.amount)) {
-      throw new Error("유효한 크레딧 금액이 아닙니다");
-    }
-
-    const creditData = {
+  handler: async (ctx, args): Promise<Id<"credits">> => {
+    const request: AddCreditRequest = {
       userId: args.userId,
       amount: args.amount,
-      type: args.type,
+      type: args.type as any,
       description: args.description,
       expiresAt: args.expiresAt,
       relatedOrderId: args.relatedOrderId,
       metadata: args.metadata,
     };
 
-    // 크레딧 기록 추가
-    const creditId = await createResource(ctx, "credits" as any, creditData);
+    const creditData = CreditService.createCreditRecord(request);
+    const creditId = await createResource(ctx, "credits", creditData);
 
     // 집계 테이블 업데이트
     await updateCreditBalance(ctx, args.userId);
+
+    // 캐시 무효화
+    CacheService.invalidateCreditBalance(args.userId);
 
     return creditId;
   },
@@ -108,39 +90,27 @@ export const useCredits = mutation({
     relatedOrderId: v.optional(v.string()),
     metadata: v.optional(v.any()),
   },
-  handler: async (ctx, args) => {
-    // 데이터 검증
-    if (!isValidCreditAmount(args.amount)) {
-      throw new Error("유효한 크레딧 금액이 아닙니다");
-    }
-
-    const balance = await ctx.db
-      .query("userCreditBalances" as any)
-      .withIndex("byUserId", (q) => q.eq("userId", args.userId))
-      .first();
-
-    if (!balance) {
-      throw new NotFoundError("크레딧 잔액", args.userId);
-    }
-    
-    if (balance.availableCredits < args.amount) {
-      throw new InsufficientCreditsError(args.amount, balance.availableCredits);
-    }
-
-    const creditData = {
+  handler: async (ctx, args): Promise<Id<"credits">> => {
+    const request: UseCreditRequest = {
       userId: args.userId,
-      amount: -args.amount, // 음수로 저장
-      type: "used",
+      amount: args.amount,
       description: args.description,
       relatedOrderId: args.relatedOrderId,
       metadata: args.metadata,
     };
 
-    // 크레딧 사용 기록
-    const creditId = await createResource(ctx, "credits" as any, creditData);
+    // 사용 가능 여부 검증
+    await CreditService.validateCreditUsage(ctx.db, args.userId, args.amount);
+
+    // 사용 레코드 생성 및 저장
+    const creditData = CreditService.createUsageRecord(request);
+    const creditId = await createResource(ctx, "credits", creditData);
 
     // 집계 테이블 업데이트
     await updateCreditBalance(ctx, args.userId);
+
+    // 캐시 무효화
+    CacheService.invalidateCreditBalance(args.userId);
 
     return creditId;
   },
