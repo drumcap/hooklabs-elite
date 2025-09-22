@@ -125,21 +125,60 @@ class SecureEncryption {
   }
 
   /**
-   * 동기식 암호화 (deprecated - 하위 호환성을 위한 래퍼)
+   * 동기식 암호화 (Node.js crypto 기반 AES-256-CBC)
+   * 백워드 호환성을 위해 유지하되 실제 암호화 사용
    */
   static encryptSync(text: string, key?: string): string {
-    console.warn('동기식 암호화는 deprecated됩니다. encrypt를 사용하세요.');
-    return btoa(text); // 임시 Base64 인코딩 (보안상 매우 취약)
+    try {
+      const crypto = require('crypto');
+      const masterKey = this.getEncryptionKey();
+      const combinedKey = key ? `${masterKey}:${key}` : masterKey;
+
+      // 16바이트 IV 생성 (CBC 모드)
+      const iv = crypto.randomBytes(16);
+
+      // AES-256-CBC 암호화
+      const cipher = crypto.createCipher('aes-256-cbc', combinedKey);
+
+      let encrypted = cipher.update(text, 'utf8', 'hex');
+      encrypted += cipher.final('hex');
+
+      // IV:암호문 형태로 반환
+      return iv.toString('hex') + ':' + encrypted;
+    } catch (error) {
+      console.error('Sync encryption failed:', error);
+      throw new Error(ENCRYPTION_ERRORS.ENCRYPTION_FAILED);
+    }
   }
 
   /**
-   * 동기식 복호화 (deprecated - 하위 호환성을 위한 래퍼)
+   * 동기식 복호화 (Node.js crypto 기반 AES-256-CBC)
+   * 백워드 호환성을 위해 유지하되 실제 복호화 사용
    */
   static decryptSync(encryptedText: string, key?: string): string {
-    console.warn('동기식 복호화는 deprecated됩니다. decrypt를 사용하세요.');
     try {
-      return atob(encryptedText); // 임시 Base64 디코딩 (보안상 매우 취약)
-    } catch {
+      const crypto = require('crypto');
+      const masterKey = this.getEncryptionKey();
+      const combinedKey = key ? `${masterKey}:${key}` : masterKey;
+
+      // IV와 암호문 분리
+      const parts = encryptedText.split(':');
+      if (parts.length !== 2) {
+        throw new Error('Invalid encrypted data format');
+      }
+
+      const iv = Buffer.from(parts[0], 'hex');
+      const encryptedData = parts[1];
+
+      // AES-256-CBC 복호화
+      const decipher = crypto.createDecipher('aes-256-cbc', combinedKey);
+
+      let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+      decrypted += decipher.final('utf8');
+
+      return decrypted;
+    } catch (error) {
+      console.error('Sync decryption failed:', error);
       throw new Error(ENCRYPTION_ERRORS.DECRYPTION_FAILED);
     }
   }
