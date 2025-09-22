@@ -30,16 +30,19 @@ export type AccountStatus = typeof ACCOUNT_STATUS[keyof typeof ACCOUNT_STATUS];
 export interface SocialAccountInfo {
   _id: Id<"socialAccounts">;
   userId: Id<"users">;
-  platform: SocialPlatform;
-  platformUserId: string;
+  platform: string;
+  accountId: string;
   username: string;
-  displayName?: string;
-  profileImageUrl?: string;
+  displayName: string;
+  profileImage?: string;
+  followers?: number;
+  following?: number;
+  postsCount?: number;
+  verificationStatus?: string;
   isActive: boolean;
-  status: AccountStatus;
-  lastTokenRefresh?: string;
-  tokenExpiresAt?: string;
-  metadata?: Record<string, unknown>;
+  lastSyncedAt: string;
+  createdAt: string;
+  updatedAt: string;
   _creationTime: number;
 }
 
@@ -75,7 +78,6 @@ export interface UpdateAccountStatusRequest {
 
 // 계정 필터 옵션
 export interface AccountFilterOptions {
-  platform?: SocialPlatform;
+  platform?: string;
   isActive?: boolean;
-  status?: AccountStatus;
 }

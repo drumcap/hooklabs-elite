@@ -54,10 +54,10 @@ export const syncCurrentUser = internalMutation({
     const name = identity.name;
     const email = identity.email;
 
-    return await ctx.runMutation(internal.syncClerkUsers.syncSingleUser, {
+    // 기존 함수 사용 - api 임포트가 순환 참조를 만드므로 내부적으로 처리
+    return await ctx.runMutation(internal.users.createUserFromAuth, {
       externalId,
-      name,
-      email,
+      name: name || "",
     });
   },
 });

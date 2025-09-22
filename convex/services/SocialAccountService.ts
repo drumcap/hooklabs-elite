@@ -36,9 +36,7 @@ export class SocialAccountService {
       if (options.isActive !== undefined && account.isActive !== options.isActive) {
         return false;
       }
-      if (options.status && account.status !== options.status) {
-        return false;
-      }
+      // status 필드는 현재 스키마에 없으므로 제거
       return true;
     }) as SocialAccountInfo[];
   }
@@ -118,7 +116,7 @@ export class SocialAccountService {
       .filter((q) =>
         q.and(
           q.eq(q.field("platform"), platform),
-          q.eq(q.field("platformUserId"), platformUserId)
+          q.eq(q.field("accountId"), platformUserId)
         )
       )
       .first();

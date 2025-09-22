@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useCallback, useRef } from 'react'
-import { onTTFB, onCLS, onFID, onLCP, onINP, onFCP } from 'web-vitals'
+import { onTTFB, onCLS, onLCP, onINP, onFCP } from 'web-vitals'
 
 interface MetricData {
   name: string
@@ -63,9 +63,7 @@ export default function WebVitalsMonitor() {
       sendToAnalytics('CLS', metric)
     })
     
-    onFID((metric) => {
-      sendToAnalytics('FID', metric)
-    })
+    // FID는 더 이상 사용되지 않고 INP로 대체됨
     
     onLCP((metric) => {
       sendToAnalytics('LCP', metric)
@@ -105,7 +103,7 @@ export default function WebVitalsMonitor() {
     analyticsQueue.current.push(metricData)
 
     // 즉시 전송이 필요한 중요 메트릭
-    if (['LCP', 'CLS', 'FID'].includes(name) && metric.rating === 'poor') {
+    if (['LCP', 'CLS', 'INP'].includes(name) && metric.rating === 'poor') {
       flushAnalytics()
     }
   }, [flushAnalytics])

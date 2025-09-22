@@ -136,10 +136,17 @@ export const evaluateFeatureFlag = query({
     environment: v.optional(v.string())
   },
   handler: async (ctx, args) => {
-    const flag = await ctx.runQuery(api.featureFlags.getFeatureFlag, {
-      key: args.key,
-      environment: args.environment
-    });
+    // 직접 데이터베이스 조회
+    const flag = await ctx.db
+      .query("featureFlags")
+      .withIndex("by_key", (q) => q.eq("key", args.key))
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("environment"), args.environment || "production"),
+          q.eq(q.field("environment"), "all")
+        )
+      )
+      .first();
 
     if (!flag) {
       return { enabled: false, reason: 'flag_not_found' };
@@ -503,7 +510,8 @@ export const initializeSocialMediaFeatureFlags = action({
     const results = [];
     for (const flag of flags) {
       try {
-        const result: any = await ctx.runMutation(api.featureFlags.createFeatureFlag, {
+        // 내부 mutation 사용
+        const result = await ctx.runMutation(internal.featureFlags.createFeatureFlag, {
           ...flag,
           createdAt: Date.now(),
           updatedAt: Date.now(),
