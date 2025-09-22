@@ -48,6 +48,17 @@ bundle-analysis.json
 # .claude/
 # .windsurf/
 .vscode/
+
+# backup files and temporary directories
+*backup/
+*.backup
+*_backup.*
+*-backup.*
+*temp/
+*.tmp
+playwright-results/
+package-full.json
+package-minimal.json
 .idea/
 
 # Convex
